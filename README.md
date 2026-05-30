@@ -7,8 +7,19 @@
 ## 현재 상태
 
 - 기획 문서: [docs](./docs)
-- 앱 코드: 아직 생성 전
-- 다음 단계: Sprint 0 앱 뼈대 생성
+- 앱 코드: Sprint 0 foundation 구현 중
+- 현재 브랜치: `codex/sprint-0-foundation`
+- 주요 화면: `/login`, `/dashboard`, `/admin/users`, `/admin/roles`, `/admin/audit-logs`, `/admin/access-logs`, `/admin/pwa`, `/admin/settings`
+
+## 개발 명령
+
+```bash
+npm install
+npm run dev
+npm run lint
+npm run typecheck
+npm run build
+```
 
 ## 문서 읽는 순서
 
