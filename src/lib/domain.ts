@@ -123,6 +123,77 @@ export type ActivityLog = {
   detail: string;
 };
 
+export type Team = {
+  id: string;
+  cohortId: string;
+  name: string;
+  topic: string;
+  mentorId: string;
+  memberIds: string[];
+  status: "forming" | "active" | "closed";
+};
+
+export type ArtifactStatus =
+  | "not_started"
+  | "drafting"
+  | "submitted"
+  | "in_review"
+  | "revision_requested"
+  | "pending_evaluation"
+  | "evaluated"
+  | "final_confirmed";
+
+export type Artifact = {
+  id: string;
+  cohortId: string;
+  artifactType: "profile" | "literature_log" | "research_plan" | "presentation" | "final_report";
+  title: string;
+  ownerType: "student" | "team";
+  ownerId: string;
+  learningPieceId?: string;
+  status: ArtifactStatus;
+  dueAt: string;
+  finalConfirmed: boolean;
+  outcomeTags: string[];
+};
+
+export type Submission = {
+  id: string;
+  artifactId: string;
+  submittedBy: string;
+  version: number;
+  submittedAt: string;
+  fileName?: string;
+  externalUrl?: string;
+  note: string;
+};
+
+export type Feedback = {
+  id: string;
+  artifactId?: string;
+  mentoringSessionId?: string;
+  authorId: string;
+  targetUserId?: string;
+  targetTeamId?: string;
+  body: string;
+  status: "open" | "resolved";
+  createdAt: string;
+};
+
+export type MentoringSession = {
+  id: string;
+  cohortId: string;
+  targetType: "student" | "team";
+  targetId: string;
+  mentorId: string;
+  scheduledAt: string;
+  status: "scheduled" | "completed" | "absent" | "cancelled";
+  externalMeetingUrl?: string;
+  notes: string;
+  linkedArtifactId?: string;
+  nextActions: string[];
+};
+
 export const cohort2026: Cohort = {
   id: "cohort-2026-1",
   name: "2026년 1기",
@@ -417,6 +488,133 @@ export const activityLogs: ActivityLog[] = [
   },
 ];
 
+export const teams: Team[] = [
+  {
+    id: "team-001",
+    cohortId: cohort2026.id,
+    name: "바이오메디컬 질문 설계팀",
+    topic: "청소년 의사과학자 관점의 임상 연구 질문 설계",
+    mentorId: "mentor-001",
+    memberIds: ["student-001"],
+    status: "active",
+  },
+];
+
+export const artifacts: Artifact[] = [
+  {
+    id: "artifact-001",
+    cohortId: cohort2026.id,
+    artifactType: "profile",
+    title: "연구 관심사 자기소개",
+    ownerType: "student",
+    ownerId: "student-001",
+    learningPieceId: "lp-002",
+    status: "submitted",
+    dueAt: "2026-07-08",
+    finalConfirmed: false,
+    outcomeTags: ["진로탐색", "문제 인식"],
+  },
+  {
+    id: "artifact-002",
+    cohortId: cohort2026.id,
+    artifactType: "literature_log",
+    title: "핵심 논문 3편 탐색 기록",
+    ownerType: "student",
+    ownerId: "student-001",
+    learningPieceId: "lp-004",
+    status: "drafting",
+    dueAt: "2026-07-24",
+    finalConfirmed: false,
+    outcomeTags: ["문헌 탐색", "데이터 해석"],
+  },
+  {
+    id: "artifact-003",
+    cohortId: cohort2026.id,
+    artifactType: "research_plan",
+    title: "팀 연구계획서 초안",
+    ownerType: "team",
+    ownerId: "team-001",
+    learningPieceId: "lp-005",
+    status: "in_review",
+    dueAt: "2026-08-12",
+    finalConfirmed: false,
+    outcomeTags: ["연구 설계", "과학 커뮤니케이션"],
+  },
+];
+
+export const submissions: Submission[] = [
+  {
+    id: "submission-001",
+    artifactId: "artifact-001",
+    submittedBy: "student-001",
+    version: 1,
+    submittedAt: "2026-07-07 21:10",
+    externalUrl: "https://example.com/submissions/research-interest",
+    note: "관심 연구 분야와 자기소개 제출",
+  },
+  {
+    id: "submission-002",
+    artifactId: "artifact-003",
+    submittedBy: "student-001",
+    version: 1,
+    submittedAt: "2026-08-09 20:40",
+    fileName: "research-plan-v1.pdf",
+    note: "팀 연구계획서 1차 초안",
+  },
+];
+
+export const mentoringSessions: MentoringSession[] = [
+  {
+    id: "mentoring-001",
+    cohortId: cohort2026.id,
+    targetType: "student",
+    targetId: "student-001",
+    mentorId: "mentor-001",
+    scheduledAt: "2026-07-18 19:00",
+    status: "scheduled",
+    externalMeetingUrl: "https://meet.example.com/ps-track-mentoring-001",
+    notes: "연구 관심사와 문헌 탐색 방향을 점검할 예정",
+    linkedArtifactId: "artifact-001",
+    nextActions: ["관심 주제를 연구 질문 형태로 다시 작성", "문헌 탐색 키워드 5개 정리"],
+  },
+  {
+    id: "mentoring-002",
+    cohortId: cohort2026.id,
+    targetType: "team",
+    targetId: "team-001",
+    mentorId: "mentor-001",
+    scheduledAt: "2026-08-10 20:00",
+    status: "completed",
+    externalMeetingUrl: "https://meet.example.com/ps-track-mentoring-002",
+    notes: "연구계획서 초안의 연구 질문 범위를 좁히도록 피드백",
+    linkedArtifactId: "artifact-003",
+    nextActions: ["연구 대상 정의 보완", "방법론 섹션에 변수 정의 추가"],
+  },
+];
+
+export const feedback: Feedback[] = [
+  {
+    id: "feedback-001",
+    artifactId: "artifact-001",
+    mentoringSessionId: "mentoring-001",
+    authorId: "mentor-001",
+    targetUserId: "student-001",
+    body: "관심 주제는 좋지만 임상 문제와 연구 질문을 더 분리해서 써보면 좋겠습니다.",
+    status: "open",
+    createdAt: "2026-07-18 20:05",
+  },
+  {
+    id: "feedback-002",
+    artifactId: "artifact-003",
+    mentoringSessionId: "mentoring-002",
+    authorId: "mentor-001",
+    targetTeamId: "team-001",
+    body: "팀 연구계획서는 질문 범위를 좁히고 측정 가능한 변수 정의를 보강해야 합니다.",
+    status: "open",
+    createdAt: "2026-08-10 21:00",
+  },
+];
+
 export const auditLogs: LogEvent[] = [
   {
     id: "audit-001",
@@ -553,6 +751,70 @@ export function getStatusLabel(status: LearningPieceStatus) {
     pending_evaluation: "평가 대기",
     completed: "완료",
     delayed: "지연",
+  };
+
+  return labels[status];
+}
+
+export function getUserById(userId: string) {
+  return users.find((user) => user.id === userId);
+}
+
+export function getTeamById(teamId: string) {
+  return teams.find((team) => team.id === teamId);
+}
+
+export function getArtifactById(artifactId: string) {
+  return artifacts.find((artifact) => artifact.id === artifactId);
+}
+
+export function getArtifactOwnerName(artifact: Artifact) {
+  if (artifact.ownerType === "student") {
+    return getUserById(artifact.ownerId)?.name ?? artifact.ownerId;
+  }
+  return getTeamById(artifact.ownerId)?.name ?? artifact.ownerId;
+}
+
+export function getArtifactStatusLabel(status: ArtifactStatus) {
+  const labels: Record<ArtifactStatus, string> = {
+    not_started: "작성 전",
+    drafting: "작성 중",
+    submitted: "제출됨",
+    in_review: "리뷰 중",
+    revision_requested: "수정 요청",
+    pending_evaluation: "평가 대기",
+    evaluated: "평가 완료",
+    final_confirmed: "최종 확정",
+  };
+
+  return labels[status];
+}
+
+export function getArtifactSubmissions(artifactId: string) {
+  return submissions.filter((submission) => submission.artifactId === artifactId);
+}
+
+export function getArtifactFeedback(artifactId: string) {
+  return feedback.filter((item) => item.artifactId === artifactId);
+}
+
+export function getMentoringSessionById(sessionId: string) {
+  return mentoringSessions.find((session) => session.id === sessionId);
+}
+
+export function getMentoringTargetName(session: MentoringSession) {
+  if (session.targetType === "student") {
+    return getUserById(session.targetId)?.name ?? session.targetId;
+  }
+  return getTeamById(session.targetId)?.name ?? session.targetId;
+}
+
+export function getMentoringStatusLabel(status: MentoringSession["status"]) {
+  const labels: Record<MentoringSession["status"], string> = {
+    scheduled: "예정",
+    completed: "완료",
+    absent: "불참",
+    cancelled: "취소",
   };
 
   return labels[status];

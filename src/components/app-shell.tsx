@@ -6,6 +6,8 @@ const navItems = [
   { href: "/student", label: "학생" },
   { href: "/journeys/students", label: "여정" },
   { href: "/objects/learning-pieces", label: "학습피스" },
+  { href: "/artifacts", label: "산출물" },
+  { href: "/mentoring/sessions", label: "멘토링" },
   { href: "/admin/users", label: "사용자" },
   { href: "/admin/roles", label: "권한" },
   { href: "/admin/audit-logs", label: "감사 로그" },
