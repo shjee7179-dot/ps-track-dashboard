@@ -3,7 +3,6 @@ import type {
   ArtifactStatus,
   LearningPiece,
   LearningPieceStatus,
-  MentoringSession,
   ReminderCandidate,
   RiskSignal,
   StudentLearningPieceStatus,
@@ -19,7 +18,6 @@ import {
   feedback,
   learningOutcomes,
   learningPieces,
-  mentoringSessions,
   modules,
   outcomeEvidence,
   programTemplates,
@@ -86,6 +84,12 @@ export {
   getParticipationReportRows,
   getProgramEvaluationSummary,
 } from "@/lib/reports";
+
+export {
+  getMentoringSessionById,
+  getMentoringStatusLabel,
+  getMentoringTargetName,
+} from "@/lib/mentoring";
 
 export function getStudentById(studentId: string) {
   return users.find((user) => user.id === studentId && user.defaultRole === "student");
@@ -288,28 +292,6 @@ export function getOutcomeScoreSummary(outcomeId: string) {
     averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
     evidenceCount: getOutcomeEvidence(outcomeId).length,
   };
-}
-
-export function getMentoringSessionById(sessionId: string) {
-  return mentoringSessions.find((session) => session.id === sessionId);
-}
-
-export function getMentoringTargetName(session: MentoringSession) {
-  if (session.targetType === "student") {
-    return getUserById(session.targetId)?.name ?? session.targetId;
-  }
-  return getTeamById(session.targetId)?.name ?? session.targetId;
-}
-
-export function getMentoringStatusLabel(status: MentoringSession["status"]) {
-  const labels: Record<MentoringSession["status"], string> = {
-    scheduled: "예정",
-    completed: "완료",
-    absent: "불참",
-    cancelled: "취소",
-  };
-
-  return labels[status];
 }
 
 export function getRiskSignalById(riskSignalId: string) {
