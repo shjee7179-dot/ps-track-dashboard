@@ -89,21 +89,22 @@
 - PR #20: evaluation/outcome helper 분리
 - PR #21: MVP completion ledger 작성
 - PR #22: Auth/session + persistence 전환 준비
+- PR #23: mock repository implementation 추가
 
 ## 현재 진행 흐름
 
-### Mock repository implementation 추가
+### Session helper를 SessionProvider contract에 맞게 보강
 
-- 목적: mock data 직접 참조에서 실제 DB repository로 넘어가기 전, contract를 만족하는 mock repository 구현을 추가
+- 목적: 기존 `getMockSession` 흐름을 유지하면서 실제 Auth provider로 교체 가능한 `SessionProvider` contract 구현을 추가
 - 산출물:
-  - `src/lib/mock-repositories.ts`
+  - `mockSessionProvider`
+  - `getMockAppSession`
   - `docs/AUTH_PERSISTENCE_PREP.md` 갱신
   - `docs/MVP_COMPLETION_LEDGER.md` 갱신
-- 활용 방식: 다음 PR부터 화면 또는 server action을 repository 경유로 부분 전환
+- 활용 방식: 다음 PR부터 server action guard 또는 repository 경유 화면에서 동일한 session interface 사용
 
 ### 다음 예정 작업
 
-- session helper를 `SessionProvider` contract에 맞게 보강
 - 학생 여정 읽기 화면 1개를 repository 경유로 전환
 
 ## 열린 판단

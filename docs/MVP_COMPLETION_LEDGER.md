@@ -118,7 +118,7 @@
 
 | 항목 | 상태 | 근거 |
 | --- | --- | --- |
-| Auth/session contract | Planned | `src/lib/session-contract.ts` |
+| Auth/session contract | Functional Mock | `src/lib/session-contract.ts`, `mockSessionProvider` |
 | Repository contract | Planned | `src/lib/repository-contracts.ts` |
 | 전환 순서 문서 | Planned | `docs/AUTH_PERSISTENCE_PREP.md` |
 | mock repository implementation | Planned | `src/lib/mock-repositories.ts` |
