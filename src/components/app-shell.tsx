@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { getAccessibleNavItems, type Role } from "@/lib/domain";
+import { canAccessPath, getAccessibleNavItems, type Role } from "@/lib/domain";
 
 export function AppShell({
   children,
@@ -43,12 +43,14 @@ function AppShellWithSearchParams({
   role: Role;
 }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const queryRole = searchParams.get("role") as Role | null;
   const activeRole = queryRole ?? role;
+  const canReadPage = canAccessPath(activeRole, pathname);
 
   return (
-    <AppShellFrame title={title} eyebrow={eyebrow} role={activeRole}>
-      {children}
+    <AppShellFrame title={title} eyebrow={eyebrow} role={activeRole} canReadPage={canReadPage}>
+      {canReadPage ? children : <AccessDenied role={activeRole} />}
     </AppShellFrame>
   );
 }
@@ -58,11 +60,13 @@ function AppShellFrame({
   title,
   eyebrow,
   role,
+  canReadPage = true,
 }: {
   children?: ReactNode;
   title: string;
   eyebrow: string;
   role: Role;
+  canReadPage?: boolean;
 }) {
   const activeRole = role;
   const navItems = getAccessibleNavItems(activeRole);
@@ -103,9 +107,38 @@ function AppShellFrame({
         <div className="mb-6">
           <p className="text-sm font-medium text-teal-800">{eyebrow}</p>
           <h1 className="mt-1 text-2xl font-semibold text-stone-950 sm:text-3xl">{title}</h1>
+          {!canReadPage ? (
+            <p className="mt-2 text-sm text-rose-700">현재 역할로 이 화면을 볼 수 없습니다.</p>
+          ) : null}
         </div>
         {children}
       </main>
     </div>
+  );
+}
+
+function AccessDenied({ role }: { role: Role }) {
+  return (
+    <section className="rounded-lg border border-rose-200 bg-rose-50 p-5">
+      <p className="text-base font-semibold text-rose-950">접근 권한이 없습니다</p>
+      <p className="mt-2 text-sm leading-6 text-rose-800">
+        현재 선택된 역할은 <span className="font-medium">{role}</span>입니다. 이 화면은 role +
+        scope 정책상 허용된 역할에서만 볼 수 있습니다.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          href={`/dashboard?role=${role}`}
+          className="rounded-md border border-rose-700 bg-rose-700 px-3 py-2 text-sm font-medium text-white"
+        >
+          내 대시보드로
+        </Link>
+        <Link
+          href="/login"
+          className="rounded-md border border-rose-200 bg-white px-3 py-2 text-sm font-medium text-rose-800"
+        >
+          역할 다시 선택
+        </Link>
+      </div>
+    </section>
   );
 }

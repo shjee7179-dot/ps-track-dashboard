@@ -1328,6 +1328,14 @@ export const routeAccessPolicies: RouteAccessPolicy[] = [
     navGroup: "operations",
   },
   {
+    href: "/operations/risks",
+    label: "리스크",
+    roles: ["operator", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "operations",
+  },
+  {
     href: "/templates",
     label: "템플릿",
     roles: ["operator", "admin"],
@@ -1474,8 +1482,14 @@ export function getDefaultAssignment(role: Role) {
   return roleAssignments.find((assignment) => assignment.role === role) ?? roleAssignments[0];
 }
 
+export function getRouteAccessPolicy(pathname: string) {
+  return routeAccessPolicies
+    .filter((policy) => pathname === policy.href || pathname.startsWith(`${policy.href}/`))
+    .sort((first, second) => second.href.length - first.href.length)[0];
+}
+
 export function canAccessRoute(role: Role, href: string) {
-  const policy = routeAccessPolicies.find((item) => item.href === href);
+  const policy = getRouteAccessPolicy(href);
   const assignment = getDefaultAssignment(role);
 
   if (!policy || !policy.roles.includes(role)) return false;
@@ -1493,6 +1507,10 @@ export function canAccessRoute(role: Role, href: string) {
     return ["program", "cohort", "team", "student"].includes(policy.targetScopeType);
   }
   return false;
+}
+
+export function canAccessPath(role: Role, pathname: string) {
+  return canAccessRoute(role, pathname);
 }
 
 export function getAccessibleNavItems(role: Role) {
