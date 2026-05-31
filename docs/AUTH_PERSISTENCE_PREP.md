@@ -87,7 +87,7 @@
 
 ## 다음 PR 제안
 
-1. 학생 여정 읽기 화면 1개를 repository 경유로 전환
-2. 학습피스 상태 변경 server action 설계
-3. 산출물 제출 mock action 연결
-4. Supabase session provider 설계
+1. 산출물 제출 mock action 연결
+2. 피드백 생성 mock action 연결
+3. Supabase session provider 설계
+4. DB-backed repository 구현 후보 선정

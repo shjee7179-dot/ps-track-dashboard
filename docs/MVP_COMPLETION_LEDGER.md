@@ -122,7 +122,7 @@
 | Repository contract | Planned | `src/lib/repository-contracts.ts` |
 | 전환 순서 문서 | Planned | `docs/AUTH_PERSISTENCE_PREP.md` |
 | mock repository implementation | Planned | `src/lib/mock-repositories.ts` |
-| 첫 server action guard | Next | 학습피스 상태 변경 또는 산출물 제출 후보 |
+| 첫 server action guard | Functional Mock | 학습피스 상태 변경 mock action |
 
 ## 최근 검증 기준
 

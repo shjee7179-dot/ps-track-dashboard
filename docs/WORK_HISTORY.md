@@ -90,24 +90,24 @@
 - PR #21: MVP completion ledger 작성
 - PR #22: Auth/session + persistence 전환 준비
 - PR #23: mock repository implementation 추가
+- PR #24: session helper를 SessionProvider contract에 맞게 보강
+- PR #25: 학생 대시보드를 repository 경유로 전환하고 LMS 연동을 Future Integration Track으로 분리
 
 ## 현재 진행 흐름
 
-### Session helper를 SessionProvider contract에 맞게 보강
+### 학습피스 상태 변경 server action 설계/구현
 
-- 목적: 기존 `getMockSession` 흐름을 유지하면서 실제 Auth provider로 교체 가능한 `SessionProvider` contract 구현을 추가
+- 목적: 첫 mutation 후보인 학습피스 상태 변경을 server action guard 흐름으로 구현
 - 산출물:
-  - `mockSessionProvider`
-  - `getMockAppSession`
+  - `src/app/journeys/status/actions.ts`
+  - `/journeys/status` 상태 변경 form
   - `docs/AUTH_PERSISTENCE_PREP.md`
-  - `docs/13-lms-db-integration-proposal.md` (Future Integration Track으로 분리 보관)
-  - `src/lib/session-contract.ts`
-  - `src/lib/repository-contracts.ts`
-- 활용 방식: 현재 본선은 PS Track 독립형 MVP를 완수하고, LMS 연동은 환경 준비 후 별도 integration branch에서 추진
+  - `docs/MVP_COMPLETION_LEDGER.md`
+- 활용 방식: `requireSession -> canAccess -> repository mutation -> revalidate` 흐름의 기준 구현
 
 ### 다음 예정 작업
 
-- 학생 여정 읽기 화면 1개를 repository 경유로 전환
+- 산출물 제출 mock action 연결
 
 ## 열린 판단
 
