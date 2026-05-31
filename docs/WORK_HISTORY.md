@@ -87,18 +87,23 @@
 - PR #18: journey helper 분리
 - PR #19: artifact helper 분리
 - PR #20: evaluation/outcome helper 분리
+- PR #21: MVP completion ledger 작성
 
 ## 현재 진행 흐름
 
-### MVP Completion Ledger 작성
+### Auth/session + persistence 전환 준비
 
-- 목적: Sprint 0~5의 현재 구현 상태를 `Verified Mock`, `Functional Mock`, `UI Mock`, `Deferred`로 구분해 완료 기준을 명확히 기록
-- 산출물: `docs/MVP_COMPLETION_LEDGER.md`
-- 활용 방식: 이후 제품화 PR마다 실제 완료 상태와 남은 gap을 갱신
+- 목적: mock 기반 MVP에서 실제 Auth/session, repository, server action, audit log 흐름으로 넘어가기 전 contract와 전환 순서를 정의
+- 산출물:
+  - `docs/AUTH_PERSISTENCE_PREP.md`
+  - `src/lib/session-contract.ts`
+  - `src/lib/repository-contracts.ts`
+- 활용 방식: 다음 PR부터 mock repository 구현과 실제 persistence 전환의 기준으로 사용
 
 ### 다음 예정 작업
 
-- Auth/session과 persistence 전환 전 준비 작업 선정
+- mock repository implementation 추가
+- session helper를 `SessionProvider` contract에 맞게 보강
 
 ## 열린 판단
 
