@@ -1,9 +1,6 @@
 import type {
   Artifact,
   ArtifactStatus,
-  LearningPiece,
-  LearningPieceStatus,
-  StudentLearningPieceStatus,
 } from "@/lib/types";
 
 export type * from "@/lib/types";
@@ -15,20 +12,19 @@ import {
   evaluations,
   feedback,
   learningOutcomes,
-  learningPieces,
   modules,
   outcomeEvidence,
   programTemplates,
   rubrics,
   rubricItems,
   scheduleTemplates,
-  studentLearningPieceStatuses,
   submissions,
   surveyResponses,
   surveys,
   teams,
   users,
 } from "@/lib/mock-data";
+import { getLearningPieceById } from "@/lib/journeys";
 
 export {
   accessLogs,
@@ -95,12 +91,15 @@ export {
   getRiskTypeLabel,
 } from "@/lib/risks";
 
+export {
+  getJourneySummary,
+  getLearningPieceById,
+  getStatusLabel,
+  getStudentJourney,
+} from "@/lib/journeys";
+
 export function getStudentById(studentId: string) {
   return users.find((user) => user.id === studentId && user.defaultRole === "student");
-}
-
-export function getLearningPieceById(learningPieceId: string) {
-  return learningPieces.find((piece) => piece.id === learningPieceId);
 }
 
 export function getModuleById(moduleId: string) {
@@ -109,51 +108,6 @@ export function getModuleById(moduleId: string) {
 
 export function getContentById(contentId?: string) {
   return contents.find((content) => content.id === contentId);
-}
-
-export function getStudentJourney(studentId: string) {
-  return studentLearningPieceStatuses
-    .filter((status) => status.studentId === studentId)
-    .map((status) => ({
-      status,
-      learningPiece: getLearningPieceById(status.learningPieceId),
-    }))
-    .filter((item): item is { status: StudentLearningPieceStatus; learningPiece: LearningPiece } =>
-      Boolean(item.learningPiece),
-    );
-}
-
-export function getJourneySummary(studentId: string) {
-  const journey = getStudentJourney(studentId);
-  const completed = journey.filter((item) => item.status.status === "completed").length;
-  const delayed = journey.filter((item) => item.status.status === "delayed").length;
-  const needsAction = journey.filter((item) =>
-    ["needs_submission", "pending_review", "revising", "in_progress"].includes(item.status.status),
-  ).length;
-
-  return {
-    total: journey.length,
-    completed,
-    delayed,
-    needsAction,
-    completionRate: journey.length ? Math.round((completed / journey.length) * 100) : 0,
-  };
-}
-
-export function getStatusLabel(status: LearningPieceStatus) {
-  const labels: Record<LearningPieceStatus, string> = {
-    locked: "미공개",
-    not_started: "진행 전",
-    in_progress: "진행 중",
-    needs_submission: "제출 필요",
-    pending_review: "확인 대기",
-    revising: "피드백 반영 중",
-    pending_evaluation: "평가 대기",
-    completed: "완료",
-    delayed: "지연",
-  };
-
-  return labels[status];
 }
 
 function addDays(dateString: string, days: number) {
