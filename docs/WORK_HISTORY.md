@@ -84,22 +84,24 @@
 - PR #15: report/export helper 분리
 - PR #16: mentoring helper 분리와 작업 히스토리 문서 생성
 - PR #17: risk/reminder helper 분리
+- PR #18: journey helper 분리
 
 ## 현재 진행 흐름
 
-### Journey helper 분리
+### Artifact helper 분리
 
-- 목적: 학생 개인 기준 학습 여정의 조회/요약/상태 라벨 헬퍼를 `src/lib/journeys.ts`로 분리
+- 목적: 산출물 조회, 소유자명, 상태 라벨, 제출/피드백 조회 헬퍼를 `src/lib/artifacts.ts`로 분리
 - 유지 전략: 기존 화면 import가 깨지지 않도록 `domain.ts`에서 re-export
 - 대상 함수:
-  - `getLearningPieceById`
-  - `getStudentJourney`
-  - `getJourneySummary`
-  - `getStatusLabel`
+  - `getArtifactById`
+  - `getArtifactOwnerName`
+  - `getArtifactStatusLabel`
+  - `getArtifactSubmissions`
+  - `getArtifactFeedback`
 
 ### 다음 예정 작업
 
-- Artifact/Evaluation/Outcome helper 분리
+- Evaluation/Outcome helper 분리
 - 이후 `MVP_COMPLETION_LEDGER.md` 작성
 
 ## 열린 판단
