@@ -5,7 +5,6 @@ import type {
   LearningPieceStatus,
   MentoringSession,
   ReminderCandidate,
-  ReportExport,
   RiskSignal,
   StudentLearningPieceStatus,
 } from "@/lib/types";
@@ -80,6 +79,13 @@ export {
   getDefaultAssignment,
   getRouteAccessPolicy,
 } from "@/lib/permissions";
+
+export {
+  getArtifactReportRows,
+  getCsvPreview,
+  getParticipationReportRows,
+  getProgramEvaluationSummary,
+} from "@/lib/reports";
 
 export function getStudentById(studentId: string) {
   return users.find((user) => user.id === studentId && user.defaultRole === "student");
@@ -183,67 +189,6 @@ export function getSurveyResponseSummary(surveyId: string) {
   };
 }
 
-export function getParticipationReportRows() {
-  return studentLearningPieceStatuses.map((status) => {
-    const piece = getLearningPieceById(status.learningPieceId);
-    return {
-      student: getStudentById(status.studentId)?.name ?? status.studentId,
-      learningPiece: piece?.title ?? status.learningPieceId,
-      status: getStatusLabel(status.status),
-      updatedAt: status.updatedAt,
-    };
-  });
-}
-
-export function getArtifactReportRows() {
-  return artifacts.map((artifact) => ({
-    artifact: artifact.title,
-    owner: getArtifactOwnerName(artifact),
-    status: getArtifactStatusLabel(artifact.status),
-    dueAt: artifact.dueAt,
-    finalConfirmed: artifact.finalConfirmed ? "Y" : "N",
-  }));
-}
-
-function toCsvRow(values: Array<string | number>) {
-  return values
-    .map((value) => {
-      const text = String(value);
-      if (/[",\n\r]/.test(text)) {
-        return `"${text.replaceAll('"', '""')}"`;
-      }
-      return text;
-    })
-    .join(",");
-}
-
-export function getCsvPreview(reportType: ReportExport["reportType"]) {
-  if (reportType === "participation") {
-    const rows = getParticipationReportRows();
-    return [
-      toCsvRow(["student", "learning_piece", "status", "updated_at"]),
-      ...rows.map((row) => toCsvRow([row.student, row.learningPiece, row.status, row.updatedAt])),
-    ].join("\n");
-  }
-  if (reportType === "artifact_status") {
-    const rows = getArtifactReportRows();
-    return [
-      toCsvRow(["artifact", "owner", "status", "due_at", "final_confirmed"]),
-      ...rows.map((row) =>
-        toCsvRow([row.artifact, row.owner, row.status, row.dueAt, row.finalConfirmed]),
-      ),
-    ].join("\n");
-  }
-
-  return [
-    toCsvRow(["outcome", "average_rate", "evidence_count"]),
-    ...learningOutcomes.map((outcome) => {
-      const summary = getOutcomeScoreSummary(outcome.id);
-      return toCsvRow([outcome.title, `${summary.averageRate}%`, summary.evidenceCount]);
-    }),
-  ].join("\n");
-}
-
 export function getUserById(userId: string) {
   return users.find((user) => user.id === userId);
 }
@@ -342,21 +287,6 @@ export function getOutcomeScoreSummary(outcomeId: string) {
     maxScore,
     averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
     evidenceCount: getOutcomeEvidence(outcomeId).length,
-  };
-}
-
-export function getProgramEvaluationSummary() {
-  const submittedEvaluations = evaluations.filter((evaluation) => evaluation.status === "submitted");
-  const totalScore = submittedEvaluations.reduce((sum, evaluation) => sum + evaluation.totalScore, 0);
-  const maxScore = submittedEvaluations.reduce((sum, evaluation) => sum + evaluation.maxScore, 0);
-  const evaluatedArtifactIds = new Set(submittedEvaluations.map((evaluation) => evaluation.artifactId));
-  const pendingArtifacts = artifacts.filter((artifact) => !evaluatedArtifactIds.has(artifact.id));
-
-  return {
-    evaluationCount: submittedEvaluations.length,
-    averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
-    pendingEvaluationCount: pendingArtifacts.length,
-    outcomeCount: learningOutcomes.length,
   };
 }
 
