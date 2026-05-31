@@ -1,5 +1,5 @@
 import { StatusBadge } from "@/components/ui";
-import type { LogEvent, RoleAssignment, User } from "@/lib/domain";
+import type { LogEvent, Role, RoleAssignment, RouteAccessPolicy, User } from "@/lib/domain";
 
 export function UsersTable({ users }: { users: User[] }) {
   return (
@@ -86,6 +86,51 @@ export function LogsTable({ logs }: { logs: LogEvent[] }) {
               <td className="py-3">
                 <StatusBadge>{log.severity}</StatusBadge>
               </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function RouteAccessTable({
+  policies,
+  canAccess,
+}: {
+  policies: RouteAccessPolicy[];
+  canAccess: (role: Role, href: string) => boolean;
+}) {
+  const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[840px] border-collapse text-left text-sm">
+        <thead>
+          <tr className="border-b border-stone-200 text-stone-500">
+            <th className="py-3 pr-4 font-medium">화면</th>
+            <th className="py-3 pr-4 font-medium">그룹</th>
+            <th className="py-3 pr-4 font-medium">대상 Scope</th>
+            {roles.map((role) => (
+              <th key={role} className="py-3 pr-4 font-medium">
+                {role}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {policies.map((policy) => (
+            <tr key={policy.href} className="border-b border-stone-100">
+              <td className="py-3 pr-4 font-medium text-stone-950">{policy.label}</td>
+              <td className="py-3 pr-4 text-stone-600">{policy.navGroup}</td>
+              <td className="py-3 pr-4 text-stone-600">
+                {policy.targetScopeType} / {policy.targetScopeId}
+              </td>
+              {roles.map((role) => (
+                <td key={role} className="py-3 pr-4">
+                  <StatusBadge>{canAccess(role, policy.href) ? "허용" : "차단"}</StatusBadge>
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
