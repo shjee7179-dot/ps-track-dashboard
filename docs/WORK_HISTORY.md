@@ -86,28 +86,19 @@
 - PR #17: risk/reminder helper 분리
 - PR #18: journey helper 분리
 - PR #19: artifact helper 분리
+- PR #20: evaluation/outcome helper 분리
 
 ## 현재 진행 흐름
 
-### Evaluation/Outcome helper 분리
+### MVP Completion Ledger 작성
 
-- 목적: 루브릭/평가와 학습성과/성과증거/점수 요약 헬퍼를 각각 `src/lib/evaluations.ts`, `src/lib/outcomes.ts`로 분리
-- 유지 전략: 기존 화면 import가 깨지지 않도록 `domain.ts`에서 re-export
-- 대상 함수:
-  - `getRubricById`
-  - `getRubricForArtifact`
-  - `getRubricItems`
-  - `getArtifactEvaluations`
-  - `getEvaluationById`
-  - `getEvaluationItemScores`
-  - `getLearningOutcomeById`
-  - `getOutcomeEvidence`
-  - `getStudentOutcomeEvidence`
-  - `getOutcomeScoreSummary`
+- 목적: Sprint 0~5의 현재 구현 상태를 `Verified Mock`, `Functional Mock`, `UI Mock`, `Deferred`로 구분해 완료 기준을 명확히 기록
+- 산출물: `docs/MVP_COMPLETION_LEDGER.md`
+- 활용 방식: 이후 제품화 PR마다 실제 완료 상태와 남은 gap을 갱신
 
 ### 다음 예정 작업
 
-- 이후 `MVP_COMPLETION_LEDGER.md` 작성
+- Auth/session과 persistence 전환 전 준비 작업 선정
 
 ## 열린 판단
 
