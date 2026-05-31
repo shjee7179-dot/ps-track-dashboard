@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { cohort2026, getDefaultAssignment, type Role } from "@/lib/domain";
+import { cohort2026, type Role } from "@/lib/domain";
+import { getMockSession, withRoleQuery } from "@/lib/session";
 
 const roleCopy: Record<Role, { title: string; focus: string; stats: string[] }> = {
   student: {
@@ -34,12 +35,12 @@ const roleCopy: Record<Role, { title: string; focus: string; stats: string[] }> 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: Role }>;
+  searchParams: Promise<{ role?: string }>;
 }) {
   const params = await searchParams;
-  const role = params.role ?? "admin";
+  const session = getMockSession(params.role);
+  const role = session.role;
   const copy = roleCopy[role] ?? roleCopy.admin;
-  const assignment = getDefaultAssignment(role);
 
   return (
     <AppShell title={copy.title} eyebrow={`${cohort2026.name} / ${role}`} role={role}>
@@ -58,12 +59,12 @@ export default async function DashboardPage({
           <div className="grid gap-3 text-sm text-stone-600 sm:grid-cols-2">
             <div>
               <p className="text-stone-500">Role</p>
-              <p className="mt-1 font-medium text-stone-950">{assignment.role}</p>
+              <p className="mt-1 font-medium text-stone-950">{session.assignment.role}</p>
             </div>
             <div>
               <p className="text-stone-500">Scope</p>
               <p className="mt-1 font-medium text-stone-950">
-                {assignment.scopeType} / {assignment.scopeId}
+                {session.assignment.scopeType} / {session.assignment.scopeId}
               </p>
             </div>
             <div>
@@ -95,7 +96,7 @@ export default async function DashboardPage({
             ].map(([href, label]) => (
               <Link
                 key={href}
-                href={href}
+                href={withRoleQuery(href, role)}
                 className="rounded-md border border-stone-200 px-3 py-2 text-sm text-stone-700 transition hover:border-teal-700 hover:text-teal-800"
               >
                 {label}
