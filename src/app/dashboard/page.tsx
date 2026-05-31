@@ -42,7 +42,7 @@ export default async function DashboardPage({
   const assignment = getDefaultAssignment(role);
 
   return (
-    <AppShell title={copy.title} eyebrow={`${cohort2026.name} / ${role}`}>
+    <AppShell title={copy.title} eyebrow={`${cohort2026.name} / ${role}`} role={role}>
       <div className="grid gap-4 sm:grid-cols-3">
         {copy.stats.map((stat, index) => (
           <Stat

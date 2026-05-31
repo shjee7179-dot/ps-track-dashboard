@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/app-shell";
-import { RolesTable } from "@/components/tables";
+import { RolesTable, RouteAccessTable } from "@/components/tables";
 import { Card, Stat } from "@/components/ui";
-import { roleAssignments } from "@/lib/domain";
+import { canAccessRoute, roleAssignments, routeAccessPolicies } from "@/lib/domain";
 
 export default function RolesPage() {
   return (
@@ -14,6 +14,11 @@ export default function RolesPage() {
       <Card title="Role Assignment" subtitle="역할과 접근 범위를 함께 관리">
         <RolesTable assignments={roleAssignments} />
       </Card>
+      <div className="mt-6">
+        <Card title="Route Access Matrix" subtitle="화면별 role + scope 접근 정책 미리보기">
+          <RouteAccessTable policies={routeAccessPolicies} canAccess={canAccessRoute} />
+        </Card>
+      </div>
     </AppShell>
   );
 }

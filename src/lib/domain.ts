@@ -339,6 +339,15 @@ export type PwaQualityCheck = {
   detail: string;
 };
 
+export type RouteAccessPolicy = {
+  href: string;
+  label: string;
+  roles: Role[];
+  targetScopeType: ScopeType;
+  targetScopeId: string;
+  navGroup: "core" | "learning" | "operations" | "admin";
+};
+
 export const cohort2026: Cohort = {
   id: "cohort-2026-1",
   name: "2026년 1기",
@@ -1245,6 +1254,161 @@ export const pwaQualityChecks: PwaQualityCheck[] = [
   },
 ];
 
+export const routeAccessPolicies: RouteAccessPolicy[] = [
+  {
+    href: "/dashboard",
+    label: "대시보드",
+    roles: ["student", "operator", "mentor", "pi", "admin"],
+    targetScopeType: "program",
+    targetScopeId: "program-ps-track",
+    navGroup: "core",
+  },
+  {
+    href: "/student",
+    label: "학생",
+    roles: ["student", "operator", "mentor", "pi", "admin"],
+    targetScopeType: "student",
+    targetScopeId: "student-001",
+    navGroup: "learning",
+  },
+  {
+    href: "/journeys/students",
+    label: "여정",
+    roles: ["operator", "mentor", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "learning",
+  },
+  {
+    href: "/objects/learning-pieces",
+    label: "학습피스",
+    roles: ["student", "operator", "mentor", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "learning",
+  },
+  {
+    href: "/artifacts",
+    label: "산출물",
+    roles: ["student", "operator", "mentor", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "learning",
+  },
+  {
+    href: "/outcomes",
+    label: "성과",
+    roles: ["operator", "mentor", "pi", "admin"],
+    targetScopeType: "program",
+    targetScopeId: "program-ps-track",
+    navGroup: "learning",
+  },
+  {
+    href: "/pi/dashboard",
+    label: "PI",
+    roles: ["pi", "admin"],
+    targetScopeType: "program",
+    targetScopeId: "program-ps-track",
+    navGroup: "core",
+  },
+  {
+    href: "/mentoring/sessions",
+    label: "멘토링",
+    roles: ["student", "operator", "mentor", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "learning",
+  },
+  {
+    href: "/cohorts/2026",
+    label: "운영",
+    roles: ["operator", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "operations",
+  },
+  {
+    href: "/templates",
+    label: "템플릿",
+    roles: ["operator", "admin"],
+    targetScopeType: "program",
+    targetScopeId: "program-ps-track",
+    navGroup: "operations",
+  },
+  {
+    href: "/surveys",
+    label: "설문",
+    roles: ["operator", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "operations",
+  },
+  {
+    href: "/reports",
+    label: "리포트",
+    roles: ["operator", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "operations",
+  },
+  {
+    href: "/notices",
+    label: "공지",
+    roles: ["student", "operator", "mentor", "pi", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "operations",
+  },
+  {
+    href: "/admin/users",
+    label: "사용자",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+  {
+    href: "/admin/roles",
+    label: "권한",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+  {
+    href: "/admin/audit-logs",
+    label: "감사 로그",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+  {
+    href: "/admin/access-logs",
+    label: "접속 로그",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+  {
+    href: "/admin/pwa",
+    label: "PWA",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+  {
+    href: "/admin/settings",
+    label: "설정",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+];
+
 export const auditLogs: LogEvent[] = [
   {
     id: "audit-001",
@@ -1308,6 +1472,31 @@ export function canAccess(
 
 export function getDefaultAssignment(role: Role) {
   return roleAssignments.find((assignment) => assignment.role === role) ?? roleAssignments[0];
+}
+
+export function canAccessRoute(role: Role, href: string) {
+  const policy = routeAccessPolicies.find((item) => item.href === href);
+  const assignment = getDefaultAssignment(role);
+
+  if (!policy || !policy.roles.includes(role)) return false;
+  if (assignment.status !== "active") return false;
+  if (policy.targetScopeType === "system") {
+    return canAccess(assignment, "read", policy.targetScopeType, policy.targetScopeId);
+  }
+  if (["operator", "pi", "admin"].includes(role)) {
+    return canAccess(assignment, "read", policy.targetScopeType, policy.targetScopeId);
+  }
+  if (role === "student") {
+    return ["program", "cohort", "student"].includes(policy.targetScopeType);
+  }
+  if (role === "mentor") {
+    return ["program", "cohort", "team", "student"].includes(policy.targetScopeType);
+  }
+  return false;
+}
+
+export function getAccessibleNavItems(role: Role) {
+  return routeAccessPolicies.filter((policy) => canAccessRoute(role, policy.href));
 }
 
 export const pwaSettings = {
