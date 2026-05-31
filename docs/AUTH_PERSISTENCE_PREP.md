@@ -23,6 +23,7 @@
 | --- | --- |
 | `src/lib/session-contract.ts` | 실제 session provider가 만족해야 하는 `AppSession`, `SessionProvider`, access target/decision 정의 |
 | `src/lib/repository-contracts.ts` | mock data와 DB repository가 공유할 읽기/쓰기 contract 정의 |
+| `src/lib/mock-repositories.ts` | persistence 전환 전 화면/서버 액션이 먼저 의존할 mock repository implementation |
 
 ## Session Contract
 
@@ -85,7 +86,7 @@
 
 ## 다음 PR 제안
 
-1. mock repository implementation 추가
-2. session helper를 `SessionProvider` contract에 맞게 보강
-3. 학생 여정 읽기 화면 1개를 repository 경유로 전환
-4. 학습피스 상태 변경 server action 설계
+1. session helper를 `SessionProvider` contract에 맞게 보강
+2. 학생 여정 읽기 화면 1개를 repository 경유로 전환
+3. 학습피스 상태 변경 server action 설계
+4. 산출물 제출 mock action 연결
