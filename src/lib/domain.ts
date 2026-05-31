@@ -286,6 +286,59 @@ export type OutcomeEvidence = {
   recordedAt: string;
 };
 
+export type ProgramTemplate = {
+  id: string;
+  title: string;
+  version: string;
+  cloneableObjectTypes: Array<"module" | "content" | "learning_piece" | "rubric" | "learning_outcome" | "schedule_template">;
+  excludedObjectTypes: Array<"participant" | "team_assignment" | "submission" | "feedback" | "evaluation">;
+};
+
+export type ScheduleTemplate = {
+  id: string;
+  templateId: string;
+  objectType: "module" | "content" | "learning_piece" | "survey";
+  objectId: string;
+  relativeStartDay: number;
+  relativeDueDay: number;
+};
+
+export type Survey = {
+  id: string;
+  cohortId: string;
+  title: string;
+  surveyType: "pre" | "post" | "pulse";
+  externalUrl: string;
+  targetScopeType: ScopeType;
+  targetScopeId: string;
+  dueAt: string;
+  linkedOutcomeIds: string[];
+};
+
+export type SurveyResponse = {
+  id: string;
+  surveyId: string;
+  respondentId: string;
+  responseStatus: "not_sent" | "sent" | "responded";
+  respondedAt?: string;
+};
+
+export type ReportExport = {
+  id: string;
+  reportType: "participation" | "artifact_status" | "outcome_summary";
+  title: string;
+  format: "csv";
+  generatedAt: string;
+  rowCount: number;
+};
+
+export type PwaQualityCheck = {
+  id: string;
+  label: string;
+  status: "pass" | "warning" | "fail";
+  detail: string;
+};
+
 export const cohort2026: Cohort = {
   id: "cohort-2026-1",
   name: "2026년 1기",
@@ -1035,6 +1088,163 @@ export const notices: Notice[] = [
   },
 ];
 
+export const programTemplates: ProgramTemplate[] = [
+  {
+    id: "template-ps-track-v1",
+    title: "미래 의사과학자 챌린지 트랙 기본 템플릿",
+    version: "2026.1",
+    cloneableObjectTypes: [
+      "module",
+      "content",
+      "learning_piece",
+      "rubric",
+      "learning_outcome",
+      "schedule_template",
+    ],
+    excludedObjectTypes: ["participant", "team_assignment", "submission", "feedback", "evaluation"],
+  },
+];
+
+export const scheduleTemplates: ScheduleTemplate[] = [
+  {
+    id: "schedule-template-001",
+    templateId: "template-ps-track-v1",
+    objectType: "module",
+    objectId: "module-001",
+    relativeStartDay: 0,
+    relativeDueDay: 7,
+  },
+  {
+    id: "schedule-template-002",
+    templateId: "template-ps-track-v1",
+    objectType: "learning_piece",
+    objectId: "lp-002",
+    relativeStartDay: 0,
+    relativeDueDay: 7,
+  },
+  {
+    id: "schedule-template-003",
+    templateId: "template-ps-track-v1",
+    objectType: "learning_piece",
+    objectId: "lp-004",
+    relativeStartDay: 15,
+    relativeDueDay: 23,
+  },
+  {
+    id: "schedule-template-004",
+    templateId: "template-ps-track-v1",
+    objectType: "learning_piece",
+    objectId: "lp-005",
+    relativeStartDay: 31,
+    relativeDueDay: 42,
+  },
+  {
+    id: "schedule-template-005",
+    templateId: "template-ps-track-v1",
+    objectType: "survey",
+    objectId: "survey-001",
+    relativeStartDay: 0,
+    relativeDueDay: 5,
+  },
+  {
+    id: "schedule-template-006",
+    templateId: "template-ps-track-v1",
+    objectType: "survey",
+    objectId: "survey-002",
+    relativeStartDay: 110,
+    relativeDueDay: 122,
+  },
+];
+
+export const surveys: Survey[] = [
+  {
+    id: "survey-001",
+    cohortId: cohort2026.id,
+    title: "사전 진로·역량 설문",
+    surveyType: "pre",
+    externalUrl: "https://forms.example.com/ps-track-pre",
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    dueAt: "2026-07-06",
+    linkedOutcomeIds: ["outcome-005"],
+  },
+  {
+    id: "survey-002",
+    cohortId: cohort2026.id,
+    title: "사후 성과 체감 설문",
+    surveyType: "post",
+    externalUrl: "https://forms.example.com/ps-track-post",
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    dueAt: "2026-10-31",
+    linkedOutcomeIds: ["outcome-001", "outcome-003", "outcome-005"],
+  },
+];
+
+export const surveyResponses: SurveyResponse[] = [
+  {
+    id: "survey-response-001",
+    surveyId: "survey-001",
+    respondentId: "student-001",
+    responseStatus: "responded",
+    respondedAt: "2026-07-04 19:30",
+  },
+  {
+    id: "survey-response-002",
+    surveyId: "survey-002",
+    respondentId: "student-001",
+    responseStatus: "sent",
+  },
+];
+
+export const reportExports: ReportExport[] = [
+  {
+    id: "report-export-001",
+    reportType: "participation",
+    title: "참여율 / 완료율 리포트",
+    format: "csv",
+    generatedAt: "2026-08-15 09:00",
+    rowCount: studentLearningPieceStatuses.length,
+  },
+  {
+    id: "report-export-002",
+    reportType: "artifact_status",
+    title: "산출물 현황 리포트",
+    format: "csv",
+    generatedAt: "2026-08-15 09:05",
+    rowCount: artifacts.length,
+  },
+  {
+    id: "report-export-003",
+    reportType: "outcome_summary",
+    title: "학습성과 요약 리포트",
+    format: "csv",
+    generatedAt: "2026-08-15 09:10",
+    rowCount: learningOutcomes.length,
+  },
+];
+
+export const pwaQualityChecks: PwaQualityCheck[] = [
+  {
+    id: "pwa-check-001",
+    label: "Manifest",
+    status: "pass",
+    detail: "앱 이름, short name, theme color, standalone display 설정 완료",
+  },
+  {
+    id: "pwa-check-002",
+    label: "모바일 내비게이션",
+    status: "pass",
+    detail: "상단 내비게이션은 작은 화면에서 가로 스크롤로 접근 가능",
+  },
+  {
+    id: "pwa-check-003",
+    label: "오프라인 캐시",
+    status: "warning",
+    detail: "서비스 워커와 오프라인 캐시는 별도 고도화 단계에서 연결",
+  },
+];
+
 export const auditLogs: LogEvent[] = [
   {
     id: "audit-001",
@@ -1174,6 +1384,92 @@ export function getStatusLabel(status: LearningPieceStatus) {
   };
 
   return labels[status];
+}
+
+function addDays(dateString: string, days: number) {
+  const date = new Date(`${dateString}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function getProgramTemplateById(templateId: string) {
+  return programTemplates.find((template) => template.id === templateId);
+}
+
+export function getScheduleTemplatePreview(templateId: string, cohortStartDate: string) {
+  return scheduleTemplates
+    .filter((template) => template.templateId === templateId)
+    .map((template) => ({
+      ...template,
+      plannedStartAt: addDays(cohortStartDate, template.relativeStartDay),
+      plannedDueAt: addDays(cohortStartDate, template.relativeDueDay),
+      objectTitle:
+        getLearningPieceById(template.objectId)?.title ??
+        getModuleById(template.objectId)?.title ??
+        surveys.find((survey) => survey.id === template.objectId)?.title ??
+        template.objectId,
+    }));
+}
+
+export function getSurveyResponses(surveyId: string) {
+  return surveyResponses.filter((response) => response.surveyId === surveyId);
+}
+
+export function getSurveyResponseSummary(surveyId: string) {
+  const responses = getSurveyResponses(surveyId);
+  const responded = responses.filter((response) => response.responseStatus === "responded").length;
+
+  return {
+    total: responses.length,
+    responded,
+    pending: responses.length - responded,
+    responseRate: responses.length ? Math.round((responded / responses.length) * 100) : 0,
+  };
+}
+
+export function getParticipationReportRows() {
+  return studentLearningPieceStatuses.map((status) => {
+    const piece = getLearningPieceById(status.learningPieceId);
+    return {
+      student: getStudentById(status.studentId)?.name ?? status.studentId,
+      learningPiece: piece?.title ?? status.learningPieceId,
+      status: getStatusLabel(status.status),
+      updatedAt: status.updatedAt,
+    };
+  });
+}
+
+export function getArtifactReportRows() {
+  return artifacts.map((artifact) => ({
+    artifact: artifact.title,
+    owner: getArtifactOwnerName(artifact),
+    status: getArtifactStatusLabel(artifact.status),
+    dueAt: artifact.dueAt,
+    finalConfirmed: artifact.finalConfirmed ? "Y" : "N",
+  }));
+}
+
+export function getCsvPreview(reportType: ReportExport["reportType"]) {
+  if (reportType === "participation") {
+    const rows = getParticipationReportRows();
+    return ["student,learning_piece,status,updated_at", ...rows.map((row) =>
+      [row.student, row.learningPiece, row.status, row.updatedAt].join(","),
+    )].join("\n");
+  }
+  if (reportType === "artifact_status") {
+    const rows = getArtifactReportRows();
+    return ["artifact,owner,status,due_at,final_confirmed", ...rows.map((row) =>
+      [row.artifact, row.owner, row.status, row.dueAt, row.finalConfirmed].join(","),
+    )].join("\n");
+  }
+
+  return [
+    "outcome,average_rate,evidence_count",
+    ...learningOutcomes.map((outcome) => {
+      const summary = getOutcomeScoreSummary(outcome.id);
+      return [outcome.title, `${summary.averageRate}%`, summary.evidenceCount].join(",");
+    }),
+  ].join("\n");
 }
 
 export function getUserById(userId: string) {

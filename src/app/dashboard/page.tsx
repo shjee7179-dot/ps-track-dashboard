@@ -83,6 +83,9 @@ export default async function DashboardPage({
             {[
               ["/pi/dashboard", "PI 성과·품질 대시보드"],
               ["/outcomes", "학습성과"],
+              ["/templates", "프로그램 템플릿"],
+              ["/surveys", "설문 링크 관리"],
+              ["/reports", "운영 리포트"],
               ["/admin/users", "사용자 관리"],
               ["/admin/roles", "역할 / 접근 범위"],
               ["/admin/audit-logs", "감사 로그"],
