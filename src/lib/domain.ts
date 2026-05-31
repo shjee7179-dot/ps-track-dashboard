@@ -1449,25 +1449,41 @@ export function getArtifactReportRows() {
   }));
 }
 
+function toCsvRow(values: Array<string | number>) {
+  return values
+    .map((value) => {
+      const text = String(value);
+      if (/[",\n\r]/.test(text)) {
+        return `"${text.replaceAll('"', '""')}"`;
+      }
+      return text;
+    })
+    .join(",");
+}
+
 export function getCsvPreview(reportType: ReportExport["reportType"]) {
   if (reportType === "participation") {
     const rows = getParticipationReportRows();
-    return ["student,learning_piece,status,updated_at", ...rows.map((row) =>
-      [row.student, row.learningPiece, row.status, row.updatedAt].join(","),
-    )].join("\n");
+    return [
+      toCsvRow(["student", "learning_piece", "status", "updated_at"]),
+      ...rows.map((row) => toCsvRow([row.student, row.learningPiece, row.status, row.updatedAt])),
+    ].join("\n");
   }
   if (reportType === "artifact_status") {
     const rows = getArtifactReportRows();
-    return ["artifact,owner,status,due_at,final_confirmed", ...rows.map((row) =>
-      [row.artifact, row.owner, row.status, row.dueAt, row.finalConfirmed].join(","),
-    )].join("\n");
+    return [
+      toCsvRow(["artifact", "owner", "status", "due_at", "final_confirmed"]),
+      ...rows.map((row) =>
+        toCsvRow([row.artifact, row.owner, row.status, row.dueAt, row.finalConfirmed]),
+      ),
+    ].join("\n");
   }
 
   return [
-    "outcome,average_rate,evidence_count",
+    toCsvRow(["outcome", "average_rate", "evidence_count"]),
     ...learningOutcomes.map((outcome) => {
       const summary = getOutcomeScoreSummary(outcome.id);
-      return [outcome.title, `${summary.averageRate}%`, summary.evidenceCount].join(",");
+      return toCsvRow([outcome.title, `${summary.averageRate}%`, summary.evidenceCount]);
     }),
   ].join("\n");
 }

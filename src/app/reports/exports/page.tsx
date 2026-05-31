@@ -15,7 +15,7 @@ export default function ReportExportsPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat label="내보내기 유형" value={`${reportExports.length}종`} tone="teal" />
         <Stat label="형식" value="CSV" />
-        <Stat label="저장 방식" value="mock preview" tone="amber" />
+        <Stat label="저장 방식" value="다운로드" tone="amber" />
       </div>
 
       <div className="space-y-6">
@@ -25,6 +25,14 @@ export default function ReportExportsPage() {
               <StatusBadge>{reportTypeLabels[report.reportType]}</StatusBadge>
               <StatusBadge>{report.format.toUpperCase()}</StatusBadge>
               <StatusBadge>{report.rowCount} rows</StatusBadge>
+            </div>
+            <div className="mb-4">
+              <a
+                href={`/api/reports/exports/${report.reportType}`}
+                className="inline-flex rounded-md border border-teal-700 bg-teal-700 px-3 py-2 text-sm font-medium text-white"
+              >
+                CSV 다운로드
+              </a>
             </div>
             <pre className="overflow-x-auto rounded-lg bg-stone-950 p-4 text-xs leading-6 text-stone-50">
               {getCsvPreview(report.reportType)}
