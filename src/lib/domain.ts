@@ -231,6 +231,61 @@ export type Notice = {
   readCount: number;
 };
 
+export type LearningOutcome = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  category: "research_foundation" | "research_design" | "communication" | "career";
+};
+
+export type Rubric = {
+  id: string;
+  artifactType: Artifact["artifactType"];
+  title: string;
+  maxScore: number;
+  status: "draft" | "active" | "archived";
+};
+
+export type RubricItem = {
+  id: string;
+  rubricId: string;
+  title: string;
+  description: string;
+  maxScore: number;
+  outcomeIds: string[];
+};
+
+export type Evaluation = {
+  id: string;
+  artifactId: string;
+  rubricId: string;
+  evaluatorId: string;
+  evaluatedAt: string;
+  totalScore: number;
+  maxScore: number;
+  overallComment: string;
+  status: "draft" | "submitted";
+};
+
+export type EvaluationItemScore = {
+  id: string;
+  evaluationId: string;
+  rubricItemId: string;
+  score: number;
+  comment: string;
+};
+
+export type OutcomeEvidence = {
+  id: string;
+  outcomeId: string;
+  studentId: string;
+  sourceType: "learning_piece" | "artifact" | "evaluation" | "feedback";
+  sourceId: string;
+  evidenceLabel: string;
+  recordedAt: string;
+};
+
 export const cohort2026: Cohort = {
   id: "cohort-2026-1",
   name: "2026년 1기",
@@ -652,6 +707,236 @@ export const feedback: Feedback[] = [
   },
 ];
 
+export const learningOutcomes: LearningOutcome[] = [
+  {
+    id: "outcome-001",
+    code: "LO-01",
+    title: "문제 인식과 연구 질문",
+    description: "임상 또는 바이오메디컬 맥락의 문제를 연구 가능한 질문으로 전환한다.",
+    category: "research_foundation",
+  },
+  {
+    id: "outcome-002",
+    code: "LO-02",
+    title: "문헌 탐색과 근거 해석",
+    description: "핵심 문헌을 탐색하고 연구 질문과 연결되는 근거를 정리한다.",
+    category: "research_foundation",
+  },
+  {
+    id: "outcome-003",
+    code: "LO-03",
+    title: "연구 설계",
+    description: "대상, 변수, 방법을 포함한 실행 가능한 연구계획을 구성한다.",
+    category: "research_design",
+  },
+  {
+    id: "outcome-004",
+    code: "LO-04",
+    title: "과학 커뮤니케이션",
+    description: "연구 아이디어와 산출물을 명확한 글과 발표 구조로 전달한다.",
+    category: "communication",
+  },
+  {
+    id: "outcome-005",
+    code: "LO-05",
+    title: "의사과학자 진로 성찰",
+    description: "개인의 관심, 역량, 진로 동기를 의사과학자 성장 경로와 연결한다.",
+    category: "career",
+  },
+];
+
+export const rubrics: Rubric[] = [
+  {
+    id: "rubric-001",
+    artifactType: "profile",
+    title: "연구 관심사 자기소개 루브릭",
+    maxScore: 15,
+    status: "active",
+  },
+  {
+    id: "rubric-002",
+    artifactType: "research_plan",
+    title: "연구계획서 초안 루브릭",
+    maxScore: 20,
+    status: "active",
+  },
+];
+
+export const rubricItems: RubricItem[] = [
+  {
+    id: "rubric-item-001",
+    rubricId: "rubric-001",
+    title: "문제 맥락",
+    description: "관심 주제의 배경과 문제 상황을 구체적으로 설명한다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-001"],
+  },
+  {
+    id: "rubric-item-002",
+    rubricId: "rubric-001",
+    title: "진로 성찰",
+    description: "개인의 관심과 의사과학자 진로 동기를 연결한다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-005"],
+  },
+  {
+    id: "rubric-item-003",
+    rubricId: "rubric-001",
+    title: "표현 명료성",
+    description: "핵심 메시지를 읽기 쉬운 구조로 전달한다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-004"],
+  },
+  {
+    id: "rubric-item-004",
+    rubricId: "rubric-002",
+    title: "연구 질문의 초점",
+    description: "연구 질문이 측정 가능하고 범위가 적절하다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-001", "outcome-003"],
+  },
+  {
+    id: "rubric-item-005",
+    rubricId: "rubric-002",
+    title: "근거와 문헌 연결",
+    description: "선행 근거가 연구 필요성과 자연스럽게 연결된다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-002"],
+  },
+  {
+    id: "rubric-item-006",
+    rubricId: "rubric-002",
+    title: "방법 설계",
+    description: "대상, 변수, 분석 방향이 실행 가능한 수준으로 제시된다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-003"],
+  },
+  {
+    id: "rubric-item-007",
+    rubricId: "rubric-002",
+    title: "계획서 구성",
+    description: "연구계획서의 구조와 표현이 명확하다.",
+    maxScore: 5,
+    outcomeIds: ["outcome-004"],
+  },
+];
+
+export const evaluations: Evaluation[] = [
+  {
+    id: "evaluation-001",
+    artifactId: "artifact-001",
+    rubricId: "rubric-001",
+    evaluatorId: "mentor-001",
+    evaluatedAt: "2026-07-19 10:30",
+    totalScore: 12,
+    maxScore: 15,
+    overallComment: "관심 주제와 진로 동기는 잘 드러나며, 연구 질문 형태로 더 좁히면 좋겠습니다.",
+    status: "submitted",
+  },
+  {
+    id: "evaluation-002",
+    artifactId: "artifact-003",
+    rubricId: "rubric-002",
+    evaluatorId: "pi-001",
+    evaluatedAt: "2026-08-13 14:00",
+    totalScore: 15,
+    maxScore: 20,
+    overallComment: "연구 질문의 방향은 좋고, 변수 정의와 방법 설계 보완이 필요합니다.",
+    status: "submitted",
+  },
+];
+
+export const evaluationItemScores: EvaluationItemScore[] = [
+  {
+    id: "score-001",
+    evaluationId: "evaluation-001",
+    rubricItemId: "rubric-item-001",
+    score: 4,
+    comment: "문제 상황은 구체적이나 연구 질문으로 더 정제해야 합니다.",
+  },
+  {
+    id: "score-002",
+    evaluationId: "evaluation-001",
+    rubricItemId: "rubric-item-002",
+    score: 5,
+    comment: "진로 동기와 개인 경험 연결이 좋습니다.",
+  },
+  {
+    id: "score-003",
+    evaluationId: "evaluation-001",
+    rubricItemId: "rubric-item-003",
+    score: 3,
+    comment: "문단 구조를 조금 더 명확히 다듬으면 좋겠습니다.",
+  },
+  {
+    id: "score-004",
+    evaluationId: "evaluation-002",
+    rubricItemId: "rubric-item-004",
+    score: 4,
+    comment: "질문 방향은 적절하며 대상 범위를 좁힐 필요가 있습니다.",
+  },
+  {
+    id: "score-005",
+    evaluationId: "evaluation-002",
+    rubricItemId: "rubric-item-005",
+    score: 3,
+    comment: "핵심 문헌과 연구 필요성의 연결을 보강해야 합니다.",
+  },
+  {
+    id: "score-006",
+    evaluationId: "evaluation-002",
+    rubricItemId: "rubric-item-006",
+    score: 4,
+    comment: "변수 정의가 일부 필요하지만 실행 방향은 보입니다.",
+  },
+  {
+    id: "score-007",
+    evaluationId: "evaluation-002",
+    rubricItemId: "rubric-item-007",
+    score: 4,
+    comment: "계획서 흐름은 읽기 좋습니다.",
+  },
+];
+
+export const outcomeEvidence: OutcomeEvidence[] = [
+  {
+    id: "evidence-001",
+    outcomeId: "outcome-005",
+    studentId: "student-001",
+    sourceType: "artifact",
+    sourceId: "artifact-001",
+    evidenceLabel: "연구 관심사 자기소개 제출",
+    recordedAt: "2026-07-07 21:10",
+  },
+  {
+    id: "evidence-002",
+    outcomeId: "outcome-001",
+    studentId: "student-001",
+    sourceType: "evaluation",
+    sourceId: "evaluation-001",
+    evidenceLabel: "문제 맥락 루브릭 점수 4/5",
+    recordedAt: "2026-07-19 10:30",
+  },
+  {
+    id: "evidence-003",
+    outcomeId: "outcome-004",
+    studentId: "student-001",
+    sourceType: "feedback",
+    sourceId: "feedback-001",
+    evidenceLabel: "관심 주제 설명에 대한 멘토 피드백",
+    recordedAt: "2026-07-18 20:05",
+  },
+  {
+    id: "evidence-004",
+    outcomeId: "outcome-003",
+    studentId: "student-001",
+    sourceType: "evaluation",
+    sourceId: "evaluation-002",
+    evidenceLabel: "연구계획서 방법 설계 점수 4/5",
+    recordedAt: "2026-08-13 14:00",
+  },
+];
+
 export const riskSignals: RiskSignal[] = [
   {
     id: "risk-001",
@@ -931,6 +1216,80 @@ export function getArtifactSubmissions(artifactId: string) {
 
 export function getArtifactFeedback(artifactId: string) {
   return feedback.filter((item) => item.artifactId === artifactId);
+}
+
+export function getRubricById(rubricId: string) {
+  return rubrics.find((rubric) => rubric.id === rubricId);
+}
+
+export function getRubricForArtifact(artifact: Artifact) {
+  return rubrics.find(
+    (rubric) => rubric.artifactType === artifact.artifactType && rubric.status === "active",
+  );
+}
+
+export function getRubricItems(rubricId: string) {
+  return rubricItems.filter((item) => item.rubricId === rubricId);
+}
+
+export function getArtifactEvaluations(artifactId: string) {
+  return evaluations.filter((evaluation) => evaluation.artifactId === artifactId);
+}
+
+export function getEvaluationById(evaluationId: string) {
+  return evaluations.find((evaluation) => evaluation.id === evaluationId);
+}
+
+export function getEvaluationItemScores(evaluationId: string) {
+  return evaluationItemScores.filter((score) => score.evaluationId === evaluationId);
+}
+
+export function getLearningOutcomeById(outcomeId: string) {
+  return learningOutcomes.find((outcome) => outcome.id === outcomeId);
+}
+
+export function getOutcomeEvidence(outcomeId: string) {
+  return outcomeEvidence.filter((evidence) => evidence.outcomeId === outcomeId);
+}
+
+export function getStudentOutcomeEvidence(studentId: string) {
+  return outcomeEvidence.filter((evidence) => evidence.studentId === studentId);
+}
+
+export function getOutcomeScoreSummary(outcomeId: string) {
+  const relatedItemIds = rubricItems
+    .filter((item) => item.outcomeIds.includes(outcomeId))
+    .map((item) => item.id);
+  const scores = evaluationItemScores.filter((score) =>
+    relatedItemIds.includes(score.rubricItemId),
+  );
+  const maxScore = scores.reduce((sum, score) => {
+    const item = rubricItems.find((rubricItem) => rubricItem.id === score.rubricItemId);
+    return sum + (item?.maxScore ?? 0);
+  }, 0);
+  const totalScore = scores.reduce((sum, score) => sum + score.score, 0);
+
+  return {
+    totalScore,
+    maxScore,
+    averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
+    evidenceCount: getOutcomeEvidence(outcomeId).length,
+  };
+}
+
+export function getProgramEvaluationSummary() {
+  const submittedEvaluations = evaluations.filter((evaluation) => evaluation.status === "submitted");
+  const totalScore = submittedEvaluations.reduce((sum, evaluation) => sum + evaluation.totalScore, 0);
+  const maxScore = submittedEvaluations.reduce((sum, evaluation) => sum + evaluation.maxScore, 0);
+  const evaluatedArtifactIds = new Set(submittedEvaluations.map((evaluation) => evaluation.artifactId));
+  const pendingArtifacts = artifacts.filter((artifact) => !evaluatedArtifactIds.has(artifact.id));
+
+  return {
+    evaluationCount: submittedEvaluations.length,
+    averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
+    pendingEvaluationCount: pendingArtifacts.length,
+    outcomeCount: learningOutcomes.length,
+  };
 }
 
 export function getMentoringSessionById(sessionId: string) {

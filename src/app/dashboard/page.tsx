@@ -22,7 +22,7 @@ const roleCopy: Record<Role, { title: string; focus: string; stats: string[] }> 
   pi: {
     title: "PI 대시보드",
     focus: "산출물 품질과 학습성과 요약을 확인한다.",
-    stats: ["평가 완료 0건", "성과 지표 5개", "고위험 요약 3건"],
+    stats: ["평가 완료 2건", "성과 지표 5개", "고위험 요약 3건"],
   },
   admin: {
     title: "총괄 관리자 대시보드",
@@ -81,6 +81,8 @@ export default async function DashboardPage({
         <Card title="Sprint 0 관리 화면">
           <div className="grid gap-2">
             {[
+              ["/pi/dashboard", "PI 성과·품질 대시보드"],
+              ["/outcomes", "학습성과"],
               ["/admin/users", "사용자 관리"],
               ["/admin/roles", "역할 / 접근 범위"],
               ["/admin/audit-logs", "감사 로그"],

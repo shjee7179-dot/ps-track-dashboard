@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import {
   getArtifactById,
+  getArtifactEvaluations,
   getArtifactFeedback,
   getArtifactOwnerName,
   getArtifactStatusLabel,
@@ -23,6 +24,7 @@ export default async function ArtifactDetailPage({
 
   const submissions = getArtifactSubmissions(artifact.id);
   const feedback = getArtifactFeedback(artifact.id);
+  const evaluations = getArtifactEvaluations(artifact.id);
   const learningPiece = artifact.learningPieceId
     ? getLearningPieceById(artifact.learningPieceId)
     : undefined;
@@ -33,7 +35,7 @@ export default async function ArtifactDetailPage({
         <Stat label="소유" value={getArtifactOwnerName(artifact)} tone="teal" />
         <Stat label="상태" value={getArtifactStatusLabel(artifact.status)} />
         <Stat label="제출 버전" value={`${submissions.length}개`} />
-        <Stat label="피드백" value={`${feedback.length}건`} tone="amber" />
+        <Stat label="평가" value={`${evaluations.length}건`} tone="amber" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -94,6 +96,12 @@ export default async function ArtifactDetailPage({
           className="rounded-md border border-teal-700 bg-teal-700 px-3 py-2 text-sm font-medium text-white"
         >
           산출물 리뷰
+        </Link>
+        <Link
+          href={`/artifacts/${artifact.id}/evaluation`}
+          className="rounded-md border border-stone-900 bg-stone-900 px-3 py-2 text-sm font-medium text-white"
+        >
+          루브릭 평가
         </Link>
         <Link
           href="/artifacts"
