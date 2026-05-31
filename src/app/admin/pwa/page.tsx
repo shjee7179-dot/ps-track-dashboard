@@ -1,6 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { pwaSettings } from "@/lib/domain";
+import { pwaQualityChecks, pwaSettings } from "@/lib/domain";
+
+const pwaStatusLabels = {
+  pass: "통과",
+  warning: "확인 필요",
+  fail: "실패",
+};
 
 export default function PwaPage() {
   return (
@@ -35,6 +41,23 @@ export default function PwaPage() {
           </div>
         </dl>
       </Card>
+      <div className="mt-6">
+        <Card title="PWA 품질 체크" subtitle="설치 가능성과 모바일웹앱 품질을 점검">
+          <div className="space-y-3">
+            {pwaQualityChecks.map((check) => (
+              <div key={check.id} className="rounded-lg border border-stone-200 p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-medium text-stone-950">{check.label}</p>
+                    <p className="mt-1 text-sm text-stone-600">{check.detail}</p>
+                  </div>
+                  <StatusBadge>{pwaStatusLabels[check.status]}</StatusBadge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </AppShell>
   );
 }
