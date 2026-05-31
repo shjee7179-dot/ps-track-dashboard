@@ -1,0 +1,268 @@
+import {
+  accessLogs,
+  activityLogs,
+  artifacts,
+  auditLogs,
+  cohort2026,
+  contents,
+  evaluationItemScores,
+  evaluations,
+  feedback,
+  learningOutcomes,
+  learningPieces,
+  mentoringSessions,
+  modules,
+  notices,
+  reminderCandidates,
+  riskSignals,
+  roleAssignments,
+  rubrics,
+  rubricItems,
+  studentLearningPieceStatuses,
+  submissions,
+  surveyResponses,
+  surveys,
+  teams,
+  users,
+} from "@/lib/mock-data";
+import type { AppRepositories, ListQuery, MutationResult } from "@/lib/repository-contracts";
+import type {
+  Feedback,
+  RiskSignal,
+  StudentLearningPieceStatus,
+  Submission,
+} from "@/lib/types";
+
+function applyLimit<T>(items: T[], query?: ListQuery) {
+  return typeof query?.limit === "number" ? items.slice(0, query.limit) : items;
+}
+
+function nextMockId(prefix: string) {
+  return `${prefix}-mock-${Date.now()}`;
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function withAudit<T>(data: T): MutationResult<T> {
+  return {
+    data,
+    auditLogId: nextMockId("audit"),
+  };
+}
+
+export const mockRepositories: AppRepositories = {
+  users: {
+    async listUsers(query) {
+      return applyLimit(users, query);
+    },
+    async getUserById(userId) {
+      return users.find((user) => user.id === userId);
+    },
+    async listRoleAssignments(userId) {
+      return userId
+        ? roleAssignments.filter((assignment) => assignment.userId === userId)
+        : roleAssignments;
+    },
+  },
+  learning: {
+    async listModules(query) {
+      return applyLimit(modules, query);
+    },
+    async listContents(query) {
+      return applyLimit(contents, query);
+    },
+    async listLearningPieces(query) {
+      return applyLimit(learningPieces, query);
+    },
+    async getLearningPieceById(learningPieceId) {
+      return learningPieces.find((piece) => piece.id === learningPieceId);
+    },
+    async listStudentLearningPieceStatuses(query) {
+      const rows = studentLearningPieceStatuses.filter((status) =>
+        query?.studentId ? status.studentId === query.studentId : true,
+      );
+      return applyLimit(rows, query);
+    },
+    async updateStudentLearningPieceStatus(statusId, status) {
+      const existing = studentLearningPieceStatuses.find((item) => item.id === statusId);
+      const updated: StudentLearningPieceStatus = {
+        id: statusId,
+        studentId: existing?.studentId ?? "student-001",
+        learningPieceId: existing?.learningPieceId ?? "lp-001",
+        status,
+        updatedAt: today(),
+        completedAt: status === "completed" ? today() : existing?.completedAt,
+        note: existing?.note,
+      };
+      return withAudit(updated);
+    },
+  },
+  cohorts: {
+    async getActiveCohort() {
+      return cohort2026;
+    },
+    async listTeams(query) {
+      const rows = teams.filter((team) => (query?.cohortId ? team.cohortId === query.cohortId : true));
+      return applyLimit(rows, query);
+    },
+    async getTeamById(teamId) {
+      return teams.find((team) => team.id === teamId);
+    },
+  },
+  artifacts: {
+    async listArtifacts(query) {
+      const rows = artifacts.filter((artifact) => {
+        if (query?.cohortId && artifact.cohortId !== query.cohortId) return false;
+        if (query?.studentId && artifact.ownerType === "student") {
+          return artifact.ownerId === query.studentId;
+        }
+        if (query?.teamId && artifact.ownerType === "team") {
+          return artifact.ownerId === query.teamId;
+        }
+        return true;
+      });
+      return applyLimit(rows, query);
+    },
+    async getArtifactById(artifactId) {
+      return artifacts.find((artifact) => artifact.id === artifactId);
+    },
+    async listSubmissions(artifactId) {
+      return submissions.filter((submission) => submission.artifactId === artifactId);
+    },
+    async listFeedback(artifactId) {
+      return feedback.filter((item) => item.artifactId === artifactId);
+    },
+    async createSubmission(input) {
+      const currentVersions = submissions
+        .filter((submission) => submission.artifactId === input.artifactId)
+        .map((submission) => submission.version);
+      const nextVersion = currentVersions.length ? Math.max(...currentVersions) + 1 : 1;
+      const submission: Submission = {
+        id: nextMockId("submission"),
+        artifactId: input.artifactId,
+        submittedBy: input.submittedBy,
+        version: nextVersion,
+        submittedAt: today(),
+        fileName: input.fileName,
+        externalUrl: input.externalUrl,
+        note: input.note,
+      };
+      return withAudit(submission);
+    },
+    async createFeedback(input) {
+      const item: Feedback = {
+        id: nextMockId("feedback"),
+        artifactId: input.artifactId,
+        mentoringSessionId: input.mentoringSessionId,
+        authorId: input.authorId,
+        targetUserId: input.targetUserId,
+        targetTeamId: input.targetTeamId,
+        body: input.body,
+        status: "open",
+        createdAt: today(),
+      };
+      return withAudit(item);
+    },
+  },
+  evaluations: {
+    async listRubrics() {
+      return rubrics;
+    },
+    async listRubricItems(rubricId) {
+      return rubricItems.filter((item) => item.rubricId === rubricId);
+    },
+    async listEvaluations(artifactId) {
+      return artifactId
+        ? evaluations.filter((evaluation) => evaluation.artifactId === artifactId)
+        : evaluations;
+    },
+    async getEvaluationById(evaluationId) {
+      return evaluations.find((evaluation) => evaluation.id === evaluationId);
+    },
+    async listEvaluationItemScores(evaluationId) {
+      return evaluationItemScores.filter((score) => score.evaluationId === evaluationId);
+    },
+    async listLearningOutcomes() {
+      return learningOutcomes;
+    },
+  },
+  operations: {
+    async listMentoringSessions(query) {
+      const rows = mentoringSessions.filter((session) => {
+        if (query?.cohortId && session.cohortId !== query.cohortId) return false;
+        if (query?.studentId && session.targetType === "student") {
+          return session.targetId === query.studentId;
+        }
+        if (query?.teamId && session.targetType === "team") {
+          return session.targetId === query.teamId;
+        }
+        return true;
+      });
+      return applyLimit(rows, query);
+    },
+    async listRiskSignals(query) {
+      const rows = riskSignals.filter((risk) => {
+        if (query?.cohortId && risk.cohortId !== query.cohortId) return false;
+        if (query?.studentId && risk.targetType === "student") return risk.targetId === query.studentId;
+        if (query?.teamId && risk.targetType === "team") return risk.targetId === query.teamId;
+        return true;
+      });
+      return applyLimit(rows, query);
+    },
+    async listReminderCandidates(query) {
+      const rows = reminderCandidates.filter((reminder) => {
+        if (query?.studentId && reminder.targetType === "student") {
+          return reminder.targetId === query.studentId;
+        }
+        if (query?.teamId && reminder.targetType === "team") {
+          return reminder.targetId === query.teamId;
+        }
+        return true;
+      });
+      return applyLimit(rows, query);
+    },
+    async updateRiskSignalStatus(riskSignalId, status) {
+      const existing = riskSignals.find((risk) => risk.id === riskSignalId);
+      const updated: RiskSignal = {
+        id: riskSignalId,
+        cohortId: existing?.cohortId ?? cohort2026.id,
+        targetType: existing?.targetType ?? "student",
+        targetId: existing?.targetId ?? "student-001",
+        riskType: existing?.riskType ?? "learning_piece_delay",
+        severity: existing?.severity ?? "medium",
+        relatedObjectType: existing?.relatedObjectType ?? "learning_piece",
+        relatedObjectId: existing?.relatedObjectId ?? "lp-001",
+        actionStatus: status,
+        actionNote: existing?.actionNote ?? "mock repository status update",
+      };
+      return withAudit(updated);
+    },
+  },
+  surveys: {
+    async listSurveys(query) {
+      const rows = surveys.filter((survey) => (query?.cohortId ? survey.cohortId === query.cohortId : true));
+      return applyLimit(rows, query);
+    },
+    async listSurveyResponses(surveyId) {
+      return surveyResponses.filter((response) => response.surveyId === surveyId);
+    },
+  },
+  admin: {
+    async listActivityLogs(query) {
+      const rows = activityLogs.filter((log) => (query?.studentId ? log.studentId === query.studentId : true));
+      return applyLimit(rows, query);
+    },
+    async listAuditLogs(query) {
+      return applyLimit(auditLogs, query);
+    },
+    async listAccessLogs(query) {
+      return applyLimit(accessLogs, query);
+    },
+    async listNotices(query) {
+      const rows = notices.filter((notice) => (query?.cohortId ? notice.cohortId === query.cohortId : true));
+      return applyLimit(rows, query);
+    },
+  },
+};
