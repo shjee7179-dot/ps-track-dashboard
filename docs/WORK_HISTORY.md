@@ -82,21 +82,22 @@
 - PR #13: mock data 분리
 - PR #14: permission helper 분리
 - PR #15: report/export helper 분리
+- PR #16: mentoring helper 분리와 작업 히스토리 문서 생성
 
 ## 현재 진행 흐름
 
-### Mentoring helper 분리
+### Risk/Reminder helper 분리
 
-- 목적: `domain.ts`에 남아 있던 멘토링 조회/라벨 헬퍼를 `src/lib/mentoring.ts`로 분리
+- 목적: `domain.ts`에 남아 있던 운영 리스크와 리마인더 조회/라벨 헬퍼를 `src/lib/risks.ts`로 분리
 - 유지 전략: 기존 화면 import가 깨지지 않도록 `domain.ts`에서 re-export
-- 검증:
-  - `npm run lint`
-  - `npm run typecheck`
-  - `npm run build`
+- 대상 함수:
+  - `getRiskSignalById`
+  - `getRiskTargetName`
+  - `getRiskTypeLabel`
+  - `getReminderStatusLabel`
 
 ### 다음 예정 작업
 
-- Risk/Reminder helper 분리
 - Journey helper 분리
 - Artifact/Evaluation/Outcome helper 분리
 - 이후 `MVP_COMPLETION_LEDGER.md` 작성
