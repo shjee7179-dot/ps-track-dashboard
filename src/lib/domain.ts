@@ -194,6 +194,43 @@ export type MentoringSession = {
   nextActions: string[];
 };
 
+export type RiskSignal = {
+  id: string;
+  cohortId: string;
+  targetType: "student" | "team";
+  targetId: string;
+  riskType: "learning_piece_delay" | "artifact_missing" | "mentoring_issue";
+  severity: "low" | "medium" | "high";
+  relatedObjectType: "learning_piece" | "artifact" | "mentoring_session";
+  relatedObjectId: string;
+  actionStatus: "open" | "in_progress" | "resolved";
+  actionNote: string;
+};
+
+export type ReminderCandidate = {
+  id: string;
+  riskSignalId: string;
+  targetType: "student" | "team";
+  targetId: string;
+  reason: string;
+  channel: "email" | "sms" | "kakao" | "manual";
+  sendStatus: "pending" | "sent" | "skipped";
+  recommendedAt: string;
+  sentAt?: string;
+};
+
+export type Notice = {
+  id: string;
+  cohortId: string;
+  title: string;
+  body: string;
+  targetScopeType: ScopeType;
+  targetScopeId: string;
+  publishedAt: string;
+  createdBy: string;
+  readCount: number;
+};
+
 export const cohort2026: Cohort = {
   id: "cohort-2026-1",
   name: "2026년 1기",
@@ -615,6 +652,104 @@ export const feedback: Feedback[] = [
   },
 ];
 
+export const riskSignals: RiskSignal[] = [
+  {
+    id: "risk-001",
+    cohortId: cohort2026.id,
+    targetType: "student",
+    targetId: "student-001",
+    riskType: "artifact_missing",
+    severity: "medium",
+    relatedObjectType: "artifact",
+    relatedObjectId: "artifact-002",
+    actionStatus: "open",
+    actionNote: "문헌 탐색 기록 제출 마감 전 리마인드 필요",
+  },
+  {
+    id: "risk-002",
+    cohortId: cohort2026.id,
+    targetType: "team",
+    targetId: "team-001",
+    riskType: "mentoring_issue",
+    severity: "low",
+    relatedObjectType: "mentoring_session",
+    relatedObjectId: "mentoring-001",
+    actionStatus: "in_progress",
+    actionNote: "첫 멘토링 외부 링크 확인 필요",
+  },
+  {
+    id: "risk-003",
+    cohortId: cohort2026.id,
+    targetType: "student",
+    targetId: "student-001",
+    riskType: "learning_piece_delay",
+    severity: "low",
+    relatedObjectType: "learning_piece",
+    relatedObjectId: "lp-003",
+    actionStatus: "open",
+    actionNote: "영상 학습 진행 중 상태가 3일 이상 유지됨",
+  },
+];
+
+export const reminderCandidates: ReminderCandidate[] = [
+  {
+    id: "reminder-001",
+    riskSignalId: "risk-001",
+    targetType: "student",
+    targetId: "student-001",
+    reason: "산출물 제출 마감이 임박했습니다.",
+    channel: "email",
+    sendStatus: "pending",
+    recommendedAt: "2026-07-22 09:00",
+  },
+  {
+    id: "reminder-002",
+    riskSignalId: "risk-003",
+    targetType: "student",
+    targetId: "student-001",
+    reason: "학습피스 진행 상태 확인이 필요합니다.",
+    channel: "manual",
+    sendStatus: "pending",
+    recommendedAt: "2026-07-13 09:00",
+  },
+  {
+    id: "reminder-003",
+    riskSignalId: "risk-002",
+    targetType: "team",
+    targetId: "team-001",
+    reason: "멘토링 참석 링크를 확인해야 합니다.",
+    channel: "kakao",
+    sendStatus: "sent",
+    recommendedAt: "2026-07-17 09:00",
+    sentAt: "2026-07-17 10:10",
+  },
+];
+
+export const notices: Notice[] = [
+  {
+    id: "notice-001",
+    cohortId: cohort2026.id,
+    title: "7월 학습피스 진행 안내",
+    body: "오리엔테이션 이후 연구 관심사 자기소개와 연구 질문 강의를 순서대로 진행해 주세요.",
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    publishedAt: "2026-07-01 10:00",
+    createdBy: "operator-001",
+    readCount: 43,
+  },
+  {
+    id: "notice-002",
+    cohortId: cohort2026.id,
+    title: "멘토링 외부 회의 링크 확인",
+    body: "멘토링 전 외부 회의 링크와 접속 환경을 미리 확인해 주세요.",
+    targetScopeType: "team",
+    targetScopeId: "team-001",
+    publishedAt: "2026-07-17 11:00",
+    createdBy: "operator-001",
+    readCount: 4,
+  },
+];
+
 export const auditLogs: LogEvent[] = [
   {
     id: "audit-001",
@@ -815,6 +950,37 @@ export function getMentoringStatusLabel(status: MentoringSession["status"]) {
     completed: "완료",
     absent: "불참",
     cancelled: "취소",
+  };
+
+  return labels[status];
+}
+
+export function getRiskSignalById(riskSignalId: string) {
+  return riskSignals.find((risk) => risk.id === riskSignalId);
+}
+
+export function getRiskTargetName(risk: RiskSignal | ReminderCandidate) {
+  if (risk.targetType === "student") {
+    return getUserById(risk.targetId)?.name ?? risk.targetId;
+  }
+  return getTeamById(risk.targetId)?.name ?? risk.targetId;
+}
+
+export function getRiskTypeLabel(type: RiskSignal["riskType"]) {
+  const labels: Record<RiskSignal["riskType"], string> = {
+    learning_piece_delay: "학습피스 지연",
+    artifact_missing: "산출물 미제출",
+    mentoring_issue: "멘토링 이슈",
+  };
+
+  return labels[type];
+}
+
+export function getReminderStatusLabel(status: ReminderCandidate["sendStatus"]) {
+  const labels: Record<ReminderCandidate["sendStatus"], string> = {
+    pending: "발송 대기",
+    sent: "발송 완료",
+    skipped: "보류",
   };
 
   return labels[status];
