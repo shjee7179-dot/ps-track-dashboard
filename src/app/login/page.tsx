@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, StatusBadge } from "@/components/ui";
 import { roleAssignments, users } from "@/lib/domain";
+import { withRoleQuery } from "@/lib/session";
 
 export default function LoginPage() {
   return (
@@ -23,7 +24,7 @@ export default function LoginPage() {
               return (
                 <Link
                   key={user.id}
-                  href={`/dashboard?role=${user.defaultRole}`}
+                  href={withRoleQuery("/dashboard", user.defaultRole)}
                   className="block rounded-lg border border-stone-200 p-4 transition hover:border-teal-700 hover:bg-teal-50"
                 >
                   <div className="flex items-start justify-between gap-3">

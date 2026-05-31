@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { canAccessPath, getAccessibleNavItems, type Role } from "@/lib/domain";
+import { getMockSession, withRoleQuery } from "@/lib/session";
 
 export function AppShell({
   children,
@@ -44,13 +45,12 @@ function AppShellWithSearchParams({
 }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const queryRole = searchParams.get("role") as Role | null;
-  const activeRole = queryRole ?? role;
-  const canReadPage = canAccessPath(activeRole, pathname);
+  const session = getMockSession(searchParams.get("role"), role);
+  const canReadPage = canAccessPath(session.role, pathname);
 
   return (
-    <AppShellFrame title={title} eyebrow={eyebrow} role={activeRole} canReadPage={canReadPage}>
-      {canReadPage ? children : <AccessDenied role={activeRole} />}
+    <AppShellFrame title={title} eyebrow={eyebrow} role={session.role} canReadPage={canReadPage}>
+      {canReadPage ? children : <AccessDenied role={session.role} />}
     </AppShellFrame>
   );
 }
@@ -70,7 +70,7 @@ function AppShellFrame({
 }) {
   const activeRole = role;
   const navItems = getAccessibleNavItems(activeRole);
-  const roleHref = (href: string) => `${href}${href.includes("?") ? "&" : "?"}role=${activeRole}`;
+  const roleHref = (href: string) => withRoleQuery(href, activeRole);
 
   return (
     <div className="min-h-screen">
@@ -127,7 +127,7 @@ function AccessDenied({ role }: { role: Role }) {
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
-          href={`/dashboard?role=${role}`}
+          href={withRoleQuery("/dashboard", role)}
           className="rounded-md border border-rose-700 bg-rose-700 px-3 py-2 text-sm font-medium text-white"
         >
           내 대시보드로
