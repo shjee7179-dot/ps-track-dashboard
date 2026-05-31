@@ -99,9 +99,11 @@
 - 산출물:
   - `mockSessionProvider`
   - `getMockAppSession`
-  - `docs/AUTH_PERSISTENCE_PREP.md` 갱신
-  - `docs/MVP_COMPLETION_LEDGER.md` 갱신
-- 활용 방식: 다음 PR부터 server action guard 또는 repository 경유 화면에서 동일한 session interface 사용
+  - `docs/AUTH_PERSISTENCE_PREP.md`
+  - `docs/13-lms-db-integration-proposal.md` (Future Integration Track으로 분리 보관)
+  - `src/lib/session-contract.ts`
+  - `src/lib/repository-contracts.ts`
+- 활용 방식: 현재 본선은 PS Track 독립형 MVP를 완수하고, LMS 연동은 환경 준비 후 별도 integration branch에서 추진
 
 ### 다음 예정 작업
 

@@ -2,19 +2,51 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { JourneyTimeline, LearningPieceCard } from "@/components/journey";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import {
-  activityLogs,
-  getJourneySummary,
-  getStudentById,
-  getStudentJourney,
-} from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { LearningPiece, StudentLearningPieceStatus } from "@/lib/domain";
 
 const studentId = "student-001";
 
-export default function StudentDashboardPage() {
-  const student = getStudentById(studentId);
-  const journey = getStudentJourney(studentId);
-  const summary = getJourneySummary(studentId);
+function getJourneyItems(
+  statuses: StudentLearningPieceStatus[],
+  learningPieces: LearningPiece[],
+) {
+  return statuses
+    .map((status) => ({
+      status,
+      learningPiece: learningPieces.find((piece) => piece.id === status.learningPieceId),
+    }))
+    .filter(
+      (item): item is { status: StudentLearningPieceStatus; learningPiece: LearningPiece } =>
+        Boolean(item.learningPiece),
+    );
+}
+
+function getJourneySummary(items: Array<{ status: StudentLearningPieceStatus }>) {
+  const completed = items.filter((item) => item.status.status === "completed").length;
+  const delayed = items.filter((item) => item.status.status === "delayed").length;
+  const needsAction = items.filter((item) =>
+    ["needs_submission", "pending_review", "revising", "in_progress"].includes(item.status.status),
+  ).length;
+
+  return {
+    total: items.length,
+    completed,
+    delayed,
+    needsAction,
+    completionRate: items.length ? Math.round((completed / items.length) * 100) : 0,
+  };
+}
+
+export default async function StudentDashboardPage() {
+  const [student, learningPieces, statuses, activityLogs] = await Promise.all([
+    mockRepositories.users.getUserById(studentId),
+    mockRepositories.learning.listLearningPieces(),
+    mockRepositories.learning.listStudentLearningPieceStatuses({ studentId }),
+    mockRepositories.admin.listActivityLogs({ studentId }),
+  ]);
+  const journey = getJourneyItems(statuses, learningPieces);
+  const summary = getJourneySummary(journey);
   const currentItems = journey.filter((item) =>
     ["in_progress", "needs_submission", "pending_review"].includes(item.status.status),
   );
@@ -57,15 +89,13 @@ export default function StudentDashboardPage() {
           </Card>
           <Card title="최근 활동">
             <div className="space-y-3">
-              {activityLogs
-                .filter((log) => log.studentId === studentId)
-                .map((log) => (
-                  <div key={log.id} className="border-b border-stone-100 pb-3 last:border-0">
-                    <p className="text-sm font-medium text-stone-950">{log.target}</p>
-                    <p className="mt-1 text-xs text-stone-500">{log.occurredAt}</p>
-                    <p className="mt-1 text-sm text-stone-600">{log.detail}</p>
-                  </div>
-                ))}
+              {activityLogs.map((log) => (
+                <div key={log.id} className="border-b border-stone-100 pb-3 last:border-0">
+                  <p className="text-sm font-medium text-stone-950">{log.target}</p>
+                  <p className="mt-1 text-xs text-stone-500">{log.occurredAt}</p>
+                  <p className="mt-1 text-sm text-stone-600">{log.detail}</p>
+                </div>
+              ))}
             </div>
           </Card>
         </section>
