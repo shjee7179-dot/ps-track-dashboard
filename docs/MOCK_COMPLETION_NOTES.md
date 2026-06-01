@@ -62,4 +62,5 @@
 - `SessionProvider` contract는 `mockSessionProvider` 기준선이 있다.
 - `AppRepositories` contract는 핵심 학습 여정, 산출물, 평가, 운영, 공지 흐름을 포함한다.
 - Supabase 전환 시 우선순위는 Auth provider, DB-backed repository, Storage 연결 순서가 자연스럽다.
+- `.env.example`과 `src/lib/supabase/` adapter skeleton으로 Supabase/Auth 전환 자리를 확보한다.
 - LMS/Keycloak/외부 DB 연동은 `docs/13-lms-db-integration-proposal.md`의 Future Integration Track으로 분리 유지한다.
