@@ -34,6 +34,8 @@
 | `src/lib/supabase/server.ts` | server/admin Supabase client factory, service role server-only 경계 |
 | `src/lib/supabase/database.ts` | generated DB type 도입 전 placeholder |
 | `src/lib/supabase/session-provider.ts` | Supabase Auth user와 role assignments를 `AppSession`으로 조립하는 provider 초안 |
+| `src/lib/supabase/repositories.ts` | users / role assignments Supabase-backed repository 초안 |
+| `src/lib/repositories.ts` | `REPOSITORY_PROVIDER=mock|supabase` repository selector |
 
 ## Session Contract
 
@@ -105,7 +107,10 @@
 - `src/lib/supabase/server.ts`는 `server-only` 경계 안에서 request cookie 기반 server client와 service role admin client를 생성한다.
 - `src/lib/supabase/session-provider.ts`는 `supabase.auth.getUser()`로 검증된 Auth user를 읽고, `users.auth_user_id`와 `role_assignments`를 통해 `AppSession`을 만든다.
 - `src/lib/session-provider.ts`는 `AUTH_PROVIDER=mock|supabase` 값에 따라 session provider를 선택한다.
-- `AUTH_PROVIDER` 기본값은 `mock`이며, `REPOSITORY_PROVIDER=mock`은 아직 유지한다.
+- `src/lib/supabase/repositories.ts`는 users / role assignments 영역을 DB-backed repository로 제공한다.
+- `src/lib/repositories.ts`는 `REPOSITORY_PROVIDER=mock|supabase` 값에 따라 repository set을 선택한다.
+- `AUTH_PROVIDER`와 `REPOSITORY_PROVIDER` 기본값은 모두 `mock`이다.
+- `REPOSITORY_PROVIDER=supabase`일 때도 현재는 `users` domain만 Supabase-backed이고 나머지 domain은 mock fallback이다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 server-only 영역에서만 사용한다.
 
 ## Audit notes
@@ -118,8 +123,8 @@
 
 ## 다음 PR 제안
 
-1. DB-backed users / role assignments repository 구현
-2. core schema seed/RLS 초안 작성
+1. core schema seed/RLS 초안 작성
+2. read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 3. Storage 연결 설계
 
 ## Mock completion reference
