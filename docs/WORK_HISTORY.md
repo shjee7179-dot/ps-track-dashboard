@@ -112,27 +112,33 @@
 - PR #43: `AUTH_PROVIDER=mock|supabase` switch 구현
 - PR #44: users / role assignments DB-backed repository 구현
 - PR #45: core seed/RLS SQL 초안 작성
+- PR #46: AlphaCampus 인증 연동 독립 MSA 최종 목적지 문서화
 
 ## 현재 진행 흐름
 
-### AlphaCampus MSA Target Architecture 정렬
+### Container 실행 가능성 확보
 
-- 목적: 현재 MVP를 폐기하지 않고, 최종 운영 목적지를 AlphaCampus 인증 연동 + 독립 PostgreSQL + container 기반 MSA로 명확히 정렬
+- 목적: 현재 MVP를 독립 MSA container로 빌드/실행할 수 있는 1차 배포 단위로 정리
 - 산출물:
-  - `docs/15-alphacampus-msa-boundary.md`
-  - `docs/SUPABASE_TRANSITION_PLAN.md`
-  - `docs/13-lms-db-integration-proposal.md`
+  - `Dockerfile`
+  - `.dockerignore`
+  - `docker-compose.yml`
+  - `src/app/api/health/route.ts`
+  - `docs/16-container-deployment.md`
+  - `next.config.ts`
 - 주요 결정:
-  - 현재 MVP는 도메인/화면/데이터 모델 검증 산출물로 유지한다.
-  - 최종 운영은 AlphaCampus/Keycloak 인증, 독립 private PostgreSQL, Docker/container 기반 MSA를 목표로 한다.
-  - Supabase 코드는 최종 운영 인프라가 아니라 PostgreSQL/Auth adapter validation track으로 격하한다.
-  - AlphaCampus 연동은 인증과 최소 사용자/참여 자격 조회로 제한한다.
-  - LMS DB 깊은 연동은 Future Integration Track으로 유지한다.
-- 활용 방식: 이후 Docker, Keycloak provider, private PostgreSQL migration 작업의 기준 문서로 사용한다.
+  - Next.js `output: "standalone"`을 사용한다.
+  - container 기본 provider는 `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=mock`이다.
+  - `/api/health`를 container health check endpoint로 둔다.
+  - PostgreSQL/Keycloak 연결은 후속 runtime profile/provider 작업으로 분리한다.
+- 검증:
+  - `npm run lint`, `npm run typecheck`, `npm run build` 통과
+  - `.next/standalone/server.js`를 포트 3001에서 실행하고 `/api/health` 응답 확인
+  - Docker CLI는 확인됐지만 Docker daemon socket이 없어 `docker build`는 현 세션에서 완료하지 못함
+- 활용 방식: NHN Cloud 공공 환경 또는 AlphaCampus 컨테이너 운영 방식에 맞춘 배포 검증의 출발점으로 사용한다.
 
 ### 다음 예정 작업
 
-- Container 실행 가능성 확보
 - AlphaCampus/Keycloak provider 설계
 - private PostgreSQL migration 형태 정리
 - read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
