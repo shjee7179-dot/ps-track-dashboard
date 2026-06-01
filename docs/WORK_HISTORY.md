@@ -101,23 +101,21 @@
 
 ## 현재 진행 흐름
 
-### 남은 mock completion pass
+### route/page read path repository 전환 확대
 
-- 목적: 공지 생성 action, 주요 읽기 화면 repository 전환, mock mutation 한계와 전환 준비 기록을 한 번에 정리
+- 목적: DB-backed repository 전환 전에 주요 화면의 직접 mock-data/domain 목록 읽기를 repository 경유로 단계적으로 전환
 - 산출물:
-  - `src/app/notices/new/actions.ts`
-  - `/notices/new` 공지 생성 form
-  - `/artifacts`, `/mentoring/sessions`, `/operations/risks`, `/notices` repository read path 전환
-  - `src/lib/repository-contracts.ts`
-  - `src/lib/mock-repositories.ts`
+  - `/journeys/status` repository read path 전환
+  - `/objects/learning-pieces` repository read path 전환
+  - `/cohorts/2026` repository read path 전환
+  - `/pi/dashboard` repository read path 전환
+  - `/journeys/status` route access policy 누락 보정
   - `docs/MOCK_COMPLETION_NOTES.md`
-  - `docs/AUTH_PERSISTENCE_PREP.md`
-  - `docs/MVP_COMPLETION_LEDGER.md`
-- 활용 방식: 남은 mock write/read 기준선을 정리하고 Supabase/DB-backed repository 전환 전 상태를 명확화
+- 활용 방식: 화면은 점진적으로 `mockRepositories`를 바라보고, 표시용 helper는 필요한 곳에만 유지
 
 ### 다음 예정 작업
 
-- route/page read path repository 전환 확대 또는 Supabase session provider 설계
+- 추가 route/page read path 전환 또는 Supabase session provider 설계
 
 ## 열린 판단
 

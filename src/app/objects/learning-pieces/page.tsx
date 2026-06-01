@@ -1,11 +1,16 @@
 import { AppShell } from "@/components/app-shell";
 import { LearningPieceCard } from "@/components/journey";
 import { Stat } from "@/components/ui";
-import { learningPieces, studentLearningPieceStatuses } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
 const studentId = "student-001";
 
-export default function LearningPiecesPage() {
+export default async function LearningPiecesPage() {
+  const [learningPieces, studentLearningPieceStatuses] = await Promise.all([
+    mockRepositories.learning.listLearningPieces(),
+    mockRepositories.learning.listStudentLearningPieceStatuses({ studentId }),
+  ]);
+
   return (
     <AppShell title="학습피스 목록" eyebrow="Learning Objects / Learning Pieces">
       <div className="mb-6 grid gap-4 sm:grid-cols-4">

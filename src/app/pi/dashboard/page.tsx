@@ -3,17 +3,20 @@ import { AppShell } from "@/components/app-shell";
 import { EvaluationSummaryCard } from "@/components/evaluation";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import {
-  artifacts,
-  evaluations,
-  getArtifactById,
   getArtifactOwnerName,
   getOutcomeScoreSummary,
   getProgramEvaluationSummary,
   learningOutcomes,
-  riskSignals,
 } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
-export default function PiDashboardPage() {
+export default async function PiDashboardPage() {
+  const [artifacts, evaluations, riskSignals] = await Promise.all([
+    mockRepositories.artifacts.listArtifacts(),
+    mockRepositories.evaluations.listEvaluations(),
+    mockRepositories.operations.listRiskSignals(),
+  ]);
+  const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
   const summary = getProgramEvaluationSummary();
   const highestRisks = riskSignals.filter((risk) => risk.actionStatus !== "resolved");
 
@@ -89,7 +92,7 @@ export default function PiDashboardPage() {
             {evaluations.map((evaluation) => (
               <div key={evaluation.id}>
                 <p className="mb-2 text-sm font-medium text-stone-950">
-                  {getArtifactById(evaluation.artifactId)?.title}
+                  {artifactById.get(evaluation.artifactId)?.title}
                 </p>
                 <EvaluationSummaryCard evaluation={evaluation} />
               </div>

@@ -2,12 +2,10 @@ import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { updateLearningPieceStatusAction } from "@/app/journeys/status/actions";
 import {
-  getLearningPieceById,
   getStatusLabel,
-  getStudentById,
-  studentLearningPieceStatuses,
-  type LearningPieceStatus,
 } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { LearningPieceStatus } from "@/lib/types";
 
 const editableStatuses: LearningPieceStatus[] = [
   "locked",
@@ -34,6 +32,13 @@ export default async function JourneyStatusPage({
   searchParams: Promise<{ role?: string; update?: string; audit?: string }>;
 }) {
   const params = await searchParams;
+  const [studentLearningPieceStatuses, learningPieces, users] = await Promise.all([
+    mockRepositories.learning.listStudentLearningPieceStatuses(),
+    mockRepositories.learning.listLearningPieces(),
+    mockRepositories.users.listUsers(),
+  ]);
+  const learningPieceById = new Map(learningPieces.map((piece) => [piece.id, piece]));
+  const userById = new Map(users.map((user) => [user.id, user]));
   const actionItems = studentLearningPieceStatuses.filter((item) =>
     ["in_progress", "needs_submission", "pending_review", "delayed"].includes(item.status),
   );
@@ -69,10 +74,10 @@ export default async function JourneyStatusPage({
               {studentLearningPieceStatuses.map((item) => (
                 <tr key={item.id} className="border-b border-stone-100">
                   <td className="py-3 pr-4 font-medium text-stone-950">
-                    {getStudentById(item.studentId)?.name ?? item.studentId}
+                    {userById.get(item.studentId)?.name ?? item.studentId}
                   </td>
                   <td className="py-3 pr-4 text-stone-600">
-                    {getLearningPieceById(item.learningPieceId)?.title ?? item.learningPieceId}
+                    {learningPieceById.get(item.learningPieceId)?.title ?? item.learningPieceId}
                   </td>
                   <td className="py-3 pr-4">
                     <StatusBadge>{getStatusLabel(item.status)}</StatusBadge>

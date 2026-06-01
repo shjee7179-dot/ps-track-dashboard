@@ -2,18 +2,28 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { RiskCard, ReminderRow } from "@/components/operations";
 import { Card, Stat } from "@/components/ui";
-import {
-  artifacts,
-  cohort2026,
-  learningPieces,
-  mentoringSessions,
-  reminderCandidates,
-  riskSignals,
-  teams,
-  users,
-} from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
-export default function CohortDashboardPage() {
+export default async function CohortDashboardPage() {
+  const [
+    cohort,
+    users,
+    teams,
+    learningPieces,
+    riskSignals,
+    reminderCandidates,
+    artifacts,
+    mentoringSessions,
+  ] = await Promise.all([
+    mockRepositories.cohorts.getActiveCohort(),
+    mockRepositories.users.listUsers(),
+    mockRepositories.cohorts.listTeams(),
+    mockRepositories.learning.listLearningPieces(),
+    mockRepositories.operations.listRiskSignals(),
+    mockRepositories.operations.listReminderCandidates(),
+    mockRepositories.artifacts.listArtifacts(),
+    mockRepositories.operations.listMentoringSessions(),
+  ]);
   const students = users.filter((user) => user.defaultRole === "student");
 
   return (
@@ -43,12 +53,12 @@ export default function CohortDashboardPage() {
               <div>
                 <dt className="text-stone-500">운영 기간</dt>
                 <dd className="font-medium text-stone-950">
-                  {cohort2026.startsAt} - {cohort2026.endsAt}
+                  {cohort?.startsAt ?? "-"} - {cohort?.endsAt ?? "-"}
                 </dd>
               </div>
               <div>
                 <dt className="text-stone-500">협약</dt>
-                <dd className="font-medium text-stone-950">{cohort2026.agreementDate}</dd>
+                <dd className="font-medium text-stone-950">{cohort?.agreementDate ?? "-"}</dd>
               </div>
             </dl>
             <Link href="/cohorts/2026/detail" className="mt-4 inline-flex text-sm font-medium text-teal-800">

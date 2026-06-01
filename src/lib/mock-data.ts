@@ -980,6 +980,14 @@ export const routeAccessPolicies: RouteAccessPolicy[] = [
     navGroup: "learning",
   },
   {
+    href: "/journeys/status",
+    label: "상태",
+    roles: ["operator", "mentor"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "learning",
+  },
+  {
     href: "/objects/learning-pieces",
     label: "학습피스",
     roles: ["student", "operator", "mentor", "pi", "admin"],
