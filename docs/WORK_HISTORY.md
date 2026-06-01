@@ -110,29 +110,29 @@
 - PR #41: Supabase SDK 설치와 client factory 구현
 - PR #42: Supabase session provider 초안 구현
 - PR #43: `AUTH_PROVIDER=mock|supabase` switch 구현
+- PR #44: users / role assignments DB-backed repository 구현
 
 ## 현재 진행 흐름
 
-### Users / Role Assignments DB-backed Repository
+### Core Seed / RLS SQL 초안
 
-- 목적: Auth/session의 기준 데이터인 users와 role assignments를 Supabase/Postgres에서 읽을 수 있는 첫 DB-backed repository 구현
+- 목적: 실제 Supabase 환경에서 core auth/scope schema를 검증할 수 있도록 최소 seed와 read RLS policy 초안을 작성
 - 산출물:
-  - `src/lib/supabase/repositories.ts`
-  - `src/lib/repositories.ts`
-  - `src/lib/supabase/session-provider.ts`
+  - `db/seed/001_core_auth_scope_seed.sql`
+  - `db/policies/001_core_auth_scope_rls.sql`
+  - `docs/11-database-schema-draft.md`
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/SUPABASE_TRANSITION_PLAN.md`
 - 주요 결정:
-  - `supabaseUserRepository`가 `listUsers`, `getUserById`, `listRoleAssignments`를 구현한다.
-  - `REPOSITORY_PROVIDER=mock|supabase` selector를 추가한다.
-  - 기본값은 여전히 mock이다.
-  - `REPOSITORY_PROVIDER=supabase`일 때 현재는 users domain만 DB-backed이고 나머지는 mock fallback이다.
-  - `supabaseSessionProvider`는 role assignment 조회 로직을 새 users repository로 위임한다.
-- 활용 방식: 후속 PR에서 read page imports를 `mockRepositories`에서 `repositories`로 점진 전환하고, 실제 Supabase seed/RLS 검증을 진행
+  - seed는 mock MVP의 2026년 1기 core 사용자/역할/기수/팀 데이터를 DB UUID row로 만든다.
+  - `users.auth_user_id`는 seed 단계에서 비워두고 실제 Auth 계정 생성 후 연결한다.
+  - RLS는 read policy부터 제안한다.
+  - write policy는 server action, permission guard, audit log의 실제 DB write path가 붙은 뒤 확장한다.
+- 활용 방식: Supabase local 또는 preview 환경에서 schema, seed, RLS를 순서대로 적용해 users repository와 session provider를 검증한다.
 
 ### 다음 예정 작업
 
-- core schema seed/RLS 초안 작성
+- Supabase local/preview 환경에서 schema + seed + RLS 적용 검증
 - read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 
 ## 열린 판단

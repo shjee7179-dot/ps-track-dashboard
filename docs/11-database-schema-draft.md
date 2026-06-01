@@ -12,9 +12,18 @@
 - 1차 SQL 초안은 `db/schema/001_core_auth_scope.sql`에 둔다.
 - 이 파일은 Auth/session provider와 users/role assignments repository를 흔들리지 않게 만들기 위한 기준안이다.
 - 아직 Supabase 프로젝트에 적용한 실행 migration은 아니며, 실제 적용 전 seed, RLS, migration ordering을 별도 PR에서 검증한다.
+- 최소 검증 seed 초안은 `db/seed/001_core_auth_scope_seed.sql`에 둔다.
+- 첫 RLS policy 초안은 `db/policies/001_core_auth_scope_rls.sql`에 둔다.
 - `users.id`는 앱 도메인 id로 유지하고, Supabase Auth 연결은 `users.auth_user_id`로 분리한다.
 - `users.external_subject`는 LMS/Keycloak Future Integration Track을 위한 연결값으로 남긴다.
 - `role_assignments.scope_id`는 uuid가 아니라 text로 둔다. `system`, `program`, `cohort`, `track`, `team`, `student` scope가 서로 다른 대상 테이블 또는 상수값을 가질 수 있기 때문이다.
+
+## Seed / RLS Draft
+
+- seed는 mock MVP의 2026년 1기 사용자, 프로그램, 기수, 팀, 팀원, 역할 배정을 실제 UUID 기반 row로 변환한다.
+- seed 사용자는 `auth_user_id`를 비워두고, 실제 Supabase Auth 계정 생성 후 이메일 또는 운영 절차로 연결한다.
+- RLS 초안은 read policy부터 둔다. write policy는 server action, permission check, audit log 흐름이 구체화된 뒤 추가한다.
+- `service_role` 기반 server-side mutation은 RLS보다 application guard를 우선 검증한다.
 
 ## Core Tables
 

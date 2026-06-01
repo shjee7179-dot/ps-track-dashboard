@@ -36,6 +36,8 @@
 | `src/lib/supabase/session-provider.ts` | Supabase Auth user와 role assignments를 `AppSession`으로 조립하는 provider 초안 |
 | `src/lib/supabase/repositories.ts` | users / role assignments Supabase-backed repository 초안 |
 | `src/lib/repositories.ts` | `REPOSITORY_PROVIDER=mock|supabase` repository selector |
+| `db/seed/001_core_auth_scope_seed.sql` | core auth/scope 테이블 검증을 위한 최소 seed 초안 |
+| `db/policies/001_core_auth_scope_rls.sql` | core auth/scope 테이블 read RLS policy 초안 |
 
 ## Session Contract
 
@@ -111,6 +113,8 @@
 - `src/lib/repositories.ts`는 `REPOSITORY_PROVIDER=mock|supabase` 값에 따라 repository set을 선택한다.
 - `AUTH_PROVIDER`와 `REPOSITORY_PROVIDER` 기본값은 모두 `mock`이다.
 - `REPOSITORY_PROVIDER=supabase`일 때도 현재는 `users` domain만 Supabase-backed이고 나머지 domain은 mock fallback이다.
+- `db/seed/001_core_auth_scope_seed.sql`는 실제 Auth 계정 연결 전에도 core table shape를 검증할 수 있게 한다.
+- `db/policies/001_core_auth_scope_rls.sql`는 authenticated read policy를 먼저 제안하고, write policy는 후속으로 둔다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 server-only 영역에서만 사용한다.
 
 ## Audit notes
@@ -123,7 +127,7 @@
 
 ## 다음 PR 제안
 
-1. core schema seed/RLS 초안 작성
+1. Supabase local/preview 환경에서 schema + seed + RLS 적용 검증
 2. read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 3. Storage 연결 설계
 
