@@ -2,13 +2,16 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { createArtifactFeedbackAction } from "@/app/artifacts/[artifactId]/review/actions";
-import {
-  getArtifactById,
-  getArtifactFeedback,
-  getArtifactOwnerName,
-  getArtifactStatusLabel,
-  getUserById,
-} from "@/lib/domain";
+import { getArtifactStatusLabel } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { Artifact, Team, User } from "@/lib/types";
+
+function getArtifactOwnerName(artifact: Artifact, users: User[], teams: Team[]) {
+  if (artifact.ownerType === "student") {
+    return users.find((user) => user.id === artifact.ownerId)?.name ?? artifact.ownerId;
+  }
+  return teams.find((team) => team.id === artifact.ownerId)?.name ?? artifact.ownerId;
+}
 
 export default async function ArtifactReviewPage({
   params,
@@ -19,9 +22,15 @@ export default async function ArtifactReviewPage({
 }) {
   const { artifactId } = await params;
   const query = await searchParams;
-  const artifact = getArtifactById(artifactId);
+  const [artifact, feedback, users, teams] = await Promise.all([
+    mockRepositories.artifacts.getArtifactById(artifactId),
+    mockRepositories.artifacts.listFeedback(artifactId),
+    mockRepositories.users.listUsers(),
+    mockRepositories.cohorts.listTeams(),
+  ]);
   if (!artifact) notFound();
-  const feedback = getArtifactFeedback(artifact.id);
+  const userById = new Map(users.map((user) => [user.id, user]));
+  const ownerName = getArtifactOwnerName(artifact, users, teams);
   const updateMessages: Record<string, string> = {
     created: "피드백 생성 요청이 mock repository를 통해 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 산출물에 피드백을 남길 수 없습니다.",
@@ -34,7 +43,7 @@ export default async function ArtifactReviewPage({
   return (
     <AppShell title={`${artifact.title} 리뷰`} eyebrow="Artifact Review">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Stat label="소유자" value={getArtifactOwnerName(artifact)} tone="teal" />
+        <Stat label="소유자" value={ownerName} tone="teal" />
         <Stat label="상태" value={getArtifactStatusLabel(artifact.status)} />
         <Stat label="피드백" value={`${feedback.length}건`} tone="amber" />
       </div>
@@ -56,7 +65,7 @@ export default async function ArtifactReviewPage({
                   <StatusBadge>{item.status === "open" ? "열림" : "해결"}</StatusBadge>
                 </div>
                 <p className="mt-2 text-xs text-stone-500">
-                  {getUserById(item.authorId)?.name} / {item.createdAt}
+                  {userById.get(item.authorId)?.name} / {item.createdAt}
                 </p>
               </div>
             ))}

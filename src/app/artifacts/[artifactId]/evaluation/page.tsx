@@ -4,14 +4,16 @@ import { AppShell } from "@/components/app-shell";
 import { EvaluationItemScores, EvaluationSummaryCard, RubricPreview } from "@/components/evaluation";
 import { Card, Stat } from "@/components/ui";
 import { submitArtifactEvaluationAction } from "@/app/artifacts/[artifactId]/evaluation/actions";
-import {
-  getArtifactById,
-  getArtifactEvaluations,
-  getArtifactOwnerName,
-  getArtifactStatusLabel,
-  getRubricForArtifact,
-  getRubricItems,
-} from "@/lib/domain";
+import { getArtifactStatusLabel } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { Artifact, Team, User } from "@/lib/types";
+
+function getArtifactOwnerName(artifact: Artifact, users: User[], teams: Team[]) {
+  if (artifact.ownerType === "student") {
+    return users.find((user) => user.id === artifact.ownerId)?.name ?? artifact.ownerId;
+  }
+  return teams.find((team) => team.id === artifact.ownerId)?.name ?? artifact.ownerId;
+}
 
 export default async function ArtifactEvaluationPage({
   params,
@@ -22,13 +24,26 @@ export default async function ArtifactEvaluationPage({
 }) {
   const { artifactId } = await params;
   const query = await searchParams;
-  const artifact = getArtifactById(artifactId);
+  const [artifact, evaluations, rubrics, users, teams, outcomes] = await Promise.all([
+    mockRepositories.artifacts.getArtifactById(artifactId),
+    mockRepositories.evaluations.listEvaluations(artifactId),
+    mockRepositories.evaluations.listRubrics(),
+    mockRepositories.users.listUsers(),
+    mockRepositories.cohorts.listTeams(),
+    mockRepositories.evaluations.listLearningOutcomes(),
+  ]);
   if (!artifact) notFound();
 
-  const rubric = getRubricForArtifact(artifact);
-  const rubricItems = rubric ? getRubricItems(rubric.id) : [];
-  const evaluations = getArtifactEvaluations(artifact.id);
+  const rubric = rubrics.find(
+    (candidate) => candidate.artifactType === artifact.artifactType && candidate.status === "active",
+  );
+  const rubricItems = rubric ? await mockRepositories.evaluations.listRubricItems(rubric.id) : [];
   const latestEvaluation = evaluations.at(-1);
+  const latestEvaluationScores = latestEvaluation
+    ? await mockRepositories.evaluations.listEvaluationItemScores(latestEvaluation.id)
+    : [];
+  const userById = new Map(users.map((user) => [user.id, user]));
+  const ownerName = getArtifactOwnerName(artifact, users, teams);
   const updateMessages: Record<string, string> = {
     submitted: "평가 제출 요청이 mock repository를 통해 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 산출물을 평가할 수 없습니다.",
@@ -42,7 +57,7 @@ export default async function ArtifactEvaluationPage({
   return (
     <AppShell title={`${artifact.title} 루브릭 평가`} eyebrow="Rubric Evaluation">
       <div className="mb-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="소유자" value={getArtifactOwnerName(artifact)} tone="teal" />
+        <Stat label="소유자" value={ownerName} tone="teal" />
         <Stat label="산출물 상태" value={getArtifactStatusLabel(artifact.status)} />
         <Stat label="평가 수" value={`${evaluations.length}건`} tone="amber" />
         <Stat label="적용 루브릭" value={rubric ? "활성" : "미지정"} />
@@ -57,7 +72,7 @@ export default async function ArtifactEvaluationPage({
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         {rubric ? (
-          <RubricPreview rubric={rubric} />
+          <RubricPreview rubric={rubric} items={rubricItems} outcomes={outcomes} />
         ) : (
           <Card title="적용 루브릭 없음">
             <p className="text-sm text-stone-600">산출물 유형에 연결된 활성 루브릭이 없습니다.</p>
@@ -65,8 +80,16 @@ export default async function ArtifactEvaluationPage({
         )}
         {latestEvaluation ? (
           <div className="space-y-6">
-            <EvaluationSummaryCard evaluation={latestEvaluation} />
-            <EvaluationItemScores evaluation={latestEvaluation} />
+            <EvaluationSummaryCard
+              evaluation={latestEvaluation}
+              evaluatorName={userById.get(latestEvaluation.evaluatorId)?.name}
+              rubric={rubric}
+            />
+            <EvaluationItemScores
+              evaluation={latestEvaluation}
+              items={rubricItems}
+              scores={latestEvaluationScores}
+            />
           </div>
         ) : (
           <Card title="평가 결과" subtitle="아직 제출된 평가가 없습니다.">

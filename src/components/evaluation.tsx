@@ -7,20 +7,31 @@ import {
   getRubricItems,
   getUserById,
   type Evaluation,
+  type EvaluationItemScore,
+  type LearningOutcome,
   type Rubric,
+  type RubricItem,
 } from "@/lib/domain";
 
-export function EvaluationSummaryCard({ evaluation }: { evaluation: Evaluation }) {
-  const rubric = getRubricById(evaluation.rubricId);
+export function EvaluationSummaryCard({
+  evaluation,
+  evaluatorName,
+  rubric,
+}: {
+  evaluation: Evaluation;
+  evaluatorName?: string;
+  rubric?: Rubric;
+}) {
+  const fallbackRubric = rubric ?? getRubricById(evaluation.rubricId);
   const scoreRate = Math.round((evaluation.totalScore / evaluation.maxScore) * 100);
 
   return (
-    <Card title="평가 결과" subtitle={rubric?.title ?? evaluation.rubricId}>
+    <Card title="평가 결과" subtitle={fallbackRubric?.title ?? evaluation.rubricId}>
       <div className="grid gap-4 text-sm sm:grid-cols-3">
         <div>
           <p className="text-stone-500">평가자</p>
           <p className="mt-1 font-medium text-stone-950">
-            {getUserById(evaluation.evaluatorId)?.name ?? evaluation.evaluatorId}
+            {evaluatorName ?? getUserById(evaluation.evaluatorId)?.name ?? evaluation.evaluatorId}
           </p>
         </div>
         <div>
@@ -43,13 +54,22 @@ export function EvaluationSummaryCard({ evaluation }: { evaluation: Evaluation }
   );
 }
 
-export function RubricPreview({ rubric }: { rubric: Rubric }) {
-  const items = getRubricItems(rubric.id);
+export function RubricPreview({
+  rubric,
+  items,
+  outcomes,
+}: {
+  rubric: Rubric;
+  items?: RubricItem[];
+  outcomes?: LearningOutcome[];
+}) {
+  const rubricItems = items ?? getRubricItems(rubric.id);
+  const outcomeById = new Map(outcomes?.map((outcome) => [outcome.id, outcome]) ?? []);
 
   return (
     <Card title="적용 루브릭" subtitle={`${rubric.title} / 최대 ${rubric.maxScore}점`}>
       <div className="space-y-3">
-        {items.map((item) => (
+        {rubricItems.map((item) => (
           <div key={item.id} className="rounded-lg border border-stone-200 p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -60,7 +80,7 @@ export function RubricPreview({ rubric }: { rubric: Rubric }) {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {item.outcomeIds.map((outcomeId) => {
-                const outcome = getLearningOutcomeById(outcomeId);
+                const outcome = outcomeById.get(outcomeId) ?? getLearningOutcomeById(outcomeId);
                 return (
                   <Link key={outcomeId} href={`/outcomes/${outcomeId}`}>
                     <StatusBadge>{outcome?.code ?? outcomeId}</StatusBadge>
@@ -75,15 +95,23 @@ export function RubricPreview({ rubric }: { rubric: Rubric }) {
   );
 }
 
-export function EvaluationItemScores({ evaluation }: { evaluation: Evaluation }) {
-  const rubricItems = getRubricItems(evaluation.rubricId);
-  const scores = getEvaluationItemScores(evaluation.id);
+export function EvaluationItemScores({
+  evaluation,
+  items,
+  scores,
+}: {
+  evaluation: Evaluation;
+  items?: RubricItem[];
+  scores?: EvaluationItemScore[];
+}) {
+  const rubricItems = items ?? getRubricItems(evaluation.rubricId);
+  const itemScores = scores ?? getEvaluationItemScores(evaluation.id);
 
   return (
     <Card title="항목별 점수">
       <div className="space-y-3">
         {rubricItems.map((item) => {
-          const score = scores.find((candidate) => candidate.rubricItemId === item.id);
+          const score = itemScores.find((candidate) => candidate.rubricItemId === item.id);
           return (
             <div key={item.id} className="rounded-lg border border-stone-200 p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
