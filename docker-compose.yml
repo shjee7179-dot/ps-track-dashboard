@@ -1,0 +1,20 @@
+services:
+  ps-track-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ps-track-dashboard:local
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      AUTH_PROVIDER: mock
+      REPOSITORY_PROVIDER: mock
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
