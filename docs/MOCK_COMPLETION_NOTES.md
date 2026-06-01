@@ -20,6 +20,14 @@
 - `/operations/risks`: 리스크/리마인더 목록 repository 경유
 - `/notices`: 공지 목록 repository 경유
 - `/notices/new`: 활성 기수 조회 repository 경유
+- `/journeys/status`: 학습피스 상태 목록 repository 경유
+- `/objects/learning-pieces`: 학습피스/학생 상태 목록 repository 경유
+- `/cohorts/2026`: 기수 운영 요약의 주요 목록 repository 경유
+- `/pi/dashboard`: 산출물/평가/리스크 목록 repository 경유
+
+## route access 보정
+
+- `/journeys/status`: 문서와 화면은 존재했지만 route access policy가 없어 AppShell에서 차단되던 항목을 운영자/멘토 접근 화면으로 보정
 
 ## 현재 mock mutation의 한계
 
