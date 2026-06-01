@@ -7,6 +7,7 @@ import type { Role, RoleAssignment, ScopeType, User } from "@/lib/types";
 
 type UserRow = {
   id: string;
+  external_subject: string | null;
   email: string;
   name: string;
   affiliation: string;
@@ -44,6 +45,7 @@ export function mapSupabaseUser(row: UserRow): User | null {
 
   return {
     id: row.id,
+    externalSubject: row.external_subject ?? undefined,
     name: row.name,
     email: row.email,
     affiliation: row.affiliation,
@@ -75,7 +77,7 @@ export const supabaseUserRepository: UserRepository = {
     const supabase = await createSupabaseServerClient();
     let request = supabase
       .from("users")
-      .select("id,email,name,affiliation,default_role,status")
+      .select("id,external_subject,email,name,affiliation,default_role,status")
       .order("name", { ascending: true });
 
     if (query?.limit) {
@@ -95,8 +97,22 @@ export const supabaseUserRepository: UserRepository = {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from("users")
-      .select("id,email,name,affiliation,default_role,status")
+      .select("id,external_subject,email,name,affiliation,default_role,status")
       .eq("id", userId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return undefined;
+    }
+
+    return mapSupabaseUser(data) ?? undefined;
+  },
+  async getUserByExternalSubject(externalSubject) {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("users")
+      .select("id,external_subject,email,name,affiliation,default_role,status")
+      .eq("external_subject", externalSubject)
       .maybeSingle();
 
     if (error || !data) {

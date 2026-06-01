@@ -33,6 +33,9 @@ export const repositories: AppRepositories = {
     getUserById(userId) {
       return getRepositories().users.getUserById(userId);
     },
+    getUserByExternalSubject(externalSubject) {
+      return getRepositories().users.getUserByExternalSubject(externalSubject);
+    },
     listRoleAssignments(userId) {
       return getRepositories().users.listRoleAssignments(userId);
     },

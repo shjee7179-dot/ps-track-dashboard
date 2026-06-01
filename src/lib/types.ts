@@ -21,6 +21,7 @@ export type RoleAssignment = {
 
 export type User = {
   id: string;
+  externalSubject?: string;
   name: string;
   email: string;
   affiliation: string;

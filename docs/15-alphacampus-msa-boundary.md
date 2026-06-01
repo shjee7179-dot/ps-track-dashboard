@@ -84,6 +84,26 @@ REPOSITORY_PROVIDER=mock | supabase | postgres
 
 Supabase 관련 코드는 최종 운영 목적지가 아니라 PostgreSQL/Auth adapter 검증 자산으로 유지한다.
 
+## Keycloak Provider Contract
+
+`AUTH_PROVIDER=keycloak`은 AlphaCampus/Keycloak 인증이 앞단에서 완료된 뒤, PS Track WAS가 검증된 사용자 식별자를 받는 것을 전제로 한다.
+
+1차 provider는 토큰 검증기를 직접 내장하지 않고 trusted header contract를 사용한다. 운영 환경에서는 ingress, API gateway, reverse proxy, 또는 AlphaCampus 연계 WAS가 Keycloak token을 검증한 뒤 아래 header를 주입해야 한다.
+
+| env | default header | purpose |
+| --- | --- | --- |
+| `KEYCLOAK_SUB_HEADER` | `x-keycloak-sub` | `users.external_subject`와 매핑되는 Keycloak subject |
+| `KEYCLOAK_USERNAME_HEADER` | `x-keycloak-preferred-username` | 운영 진단/감사 확장을 위한 로그인 식별자 |
+| `KEYCLOAK_EMAIL_HEADER` | `x-keycloak-email` | 운영 진단/감사 확장을 위한 이메일 |
+
+PS Track은 header의 `subject`를 `users.external_subject`와 매핑한 뒤, 자체 `role_assignments`로 역할과 scope를 결정한다. Keycloak realm/client role만으로 PS Track 내부 권한을 대체하지 않는다.
+
+후속 운영 구현에서는 다음 중 하나로 강화한다.
+
+- reverse proxy 검증 + trusted header 유지
+- WAS 내부 OIDC/JWT 검증
+- AlphaCampus 인증 gateway의 signed header 검증
+
 ## Migration Value of Current MVP
 
 현재까지의 MVP 산출물은 유지한다.
@@ -102,8 +122,8 @@ Supabase 관련 코드는 최종 운영 목적지가 아니라 PostgreSQL/Auth a
 ## Near-Term Work Order
 
 1. Container 실행 가능성 확보
-2. private PostgreSQL migration 형태 정리
-3. AlphaCampus/Keycloak provider 설계
+2. AlphaCampus/Keycloak provider 설계
+3. private PostgreSQL migration 형태 정리
 4. 최소 사용자/참여 자격 조회 adapter 설계
 5. read page의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 6. API/OpenAPI contract 정리
