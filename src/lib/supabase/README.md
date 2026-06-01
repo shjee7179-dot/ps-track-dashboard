@@ -17,7 +17,7 @@ Current status:
 | `database.ts` | Placeholder for generated Supabase database types |
 | `clients.ts` | Create browser client from public URL and anon key |
 | `server.ts` | Create server and admin clients in server-only context |
-| `session-provider.ts` | Implement `SessionProvider` using Supabase Auth |
+| `session-provider.ts` | Implement `SessionProvider` using Supabase Auth and `role_assignments` |
 | `repositories.ts` | Implement `AppRepositories` using Supabase/Postgres |
 | `storage.ts` | Encapsulate artifact submission storage bucket operations |
 
@@ -39,9 +39,21 @@ The real implementation must satisfy these existing contracts:
 
 Pages and server actions should continue to depend on those contracts instead of importing Supabase clients directly.
 
+## Session provider draft
+
+`supabaseSessionProvider` currently:
+
+1. Reads the verified Supabase Auth user through `supabase.auth.getUser()`.
+2. Resolves the app user by `users.auth_user_id`.
+3. Loads role assignments from `role_assignments`.
+4. Selects the active assignment by requested role, default role, then first active assignment.
+5. Returns the existing `AppSession` contract.
+
+It is not wired as the default provider yet. The app still runs through mock session and mock repositories until provider switching is introduced.
+
 ## First implementation sequence
 
-1. Implement `supabaseSessionProvider`.
+1. Add provider switching for `AUTH_PROVIDER=mock|supabase`.
 2. Implement users and role assignments repository first.
 3. Generate typed `Database` definitions from the Supabase schema.
 4. Add seed/RLS SQL for the core auth/scope tables.

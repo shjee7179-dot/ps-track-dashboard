@@ -23,10 +23,10 @@ export const supabaseAuthAdapterPlan: SupabaseAuthAdapterPlan = {
   providerName: "supabase",
   satisfies: "SessionProvider",
   notes: [
-    "Resolve the Supabase authenticated user from server cookies.",
-    "Map auth.users.id to the app users table through users.auth_user_id.",
-    "Load active role assignments from the database.",
-    "Return the same AppSession shape used by mockSessionProvider.",
+    "supabaseSessionProvider resolves the Supabase authenticated user from server cookies.",
+    "auth.users.id maps to the app users table through users.auth_user_id.",
+    "Active role assignments are loaded from role_assignments.",
+    "The provider returns the same AppSession shape used by mockSessionProvider.",
   ],
 };
 
