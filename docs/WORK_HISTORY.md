@@ -114,6 +114,8 @@
 - PR #45: core seed/RLS SQL 초안 작성
 - PR #46: AlphaCampus 인증 연동 독립 MSA 최종 목적지 문서화
 - PR #47: Docker/container 실행 가능성 확보
+- PR #48: AlphaCampus/Keycloak provider contract 구현
+- PR #49: private PostgreSQL migration profile 추가
 
 ## 현재 진행 흐름
 
@@ -174,10 +176,31 @@
   - `docker compose --profile postgres config` 통과
   - 현재 로컬에는 `psql` CLI가 없고 Docker daemon socket이 없어 실제 PostgreSQL container 실행과 SQL 적용은 보류
 
+### PostgreSQL client/query helper
+
+- 목적: 최종 private PostgreSQL target을 위한 첫 repository adapter 구현 경로를 확보
+- 산출물:
+  - `pg`, `@types/pg` dependency
+  - `src/lib/postgres/env.ts`
+  - `src/lib/postgres/client.ts`
+  - `src/lib/postgres/repositories.ts`
+  - `REPOSITORY_PROVIDER=postgres` selector
+- 주요 결정:
+  - 1차 adapter는 ORM/Query Builder가 아니라 `pg` 기반 명시적 SQL helper를 사용한다.
+  - 이유는 SQL 가시성, 한국 공공/SI 유지보수 친화성, MyBatis/Spring 전환 가능성을 우선하기 때문이다.
+  - 현재 postgres-backed 범위는 `users`와 `role_assignments`다.
+  - 나머지 repository domain은 기존 `mockRepositories` fallback을 유지한다.
+- 보안/운영 메모:
+  - `DATABASE_URL`은 server-only runtime env로만 사용한다.
+  - `POSTGRES_SSL`은 관리형/private PostgreSQL TLS 요구 시 켠다.
+  - 실제 DB 연결 검증은 `psql` 또는 Docker daemon 준비 후 진행한다.
+- 취약점 메모:
+  - `npm audit --json` 기준 moderate 2건은 새 `pg`가 아니라 기존 `next` -> bundled `postcss <8.5.10` 경로에서 보고된다.
+  - `npm audit fix --force`는 Next major downgrade를 제안하므로 이번 PR에서는 적용하지 않는다.
+
 ### 다음 예정 작업
 
-- PostgreSQL client/query helper 선택
-- `REPOSITORY_PROVIDER=postgres` selector stub 또는 users repository 구현
+- PostgreSQL users / role_assignments repository 실제 DB 적용 검증
 - read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 
 ## 열린 판단
