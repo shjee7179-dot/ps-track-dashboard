@@ -75,6 +75,8 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 
 - 1차는 repository/server action 권한 검사로 보호
 - 이후 핵심 테이블부터 RLS를 점진 적용
+- 첫 RLS 초안은 `db/policies/001_core_auth_scope_rls.sql`에 둔다.
+- 첫 seed 초안은 `db/seed/001_core_auth_scope_seed.sql`에 둔다.
 - Audit log는 server action에서 먼저 기록하고, DB trigger는 후속 고도화로 둔다.
 
 ## 사용자 ID 전략
@@ -154,6 +156,19 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 현재 `supabaseRepositories`는 `users` domain만 DB-backed로 제공하고, 나머지 domain은 mock fallback을 사용한다. 이 방식은 앱 전체를 한 번에 DB로 전환하지 않고, `users` / `role_assignments`부터 실제 테이블 검증을 시작하기 위한 중간 단계다.
 
+## Seed / RLS 적용 순서 초안
+
+```text
+1. db/schema/001_core_auth_scope.sql
+2. db/seed/001_core_auth_scope_seed.sql
+3. Supabase Auth 계정 생성 또는 초대
+4. users.auth_user_id 연결
+5. db/policies/001_core_auth_scope_rls.sql
+6. AUTH_PROVIDER=supabase / REPOSITORY_PROVIDER=supabase preview 검증
+```
+
+RLS는 우선 read policy 중심이다. create/update/delete는 server action guard와 audit log가 실제 DB write path에 붙은 뒤 별도 policy로 확장한다.
+
 ## Session Provider 경계
 
 `src/lib/session-provider.ts`는 `AUTH_PROVIDER`에 따라 active session provider를 선택한다.
@@ -186,6 +201,6 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 ## 다음 PR 후보
 
-1. core schema seed/RLS 초안 작성
+1. Supabase local/preview 환경에서 schema + seed + RLS 적용 검증
 2. read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 3. submissions file metadata와 Storage bucket 설계
