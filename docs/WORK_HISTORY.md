@@ -92,22 +92,23 @@
 - PR #23: mock repository implementation 추가
 - PR #24: session helper를 SessionProvider contract에 맞게 보강
 - PR #25: 학생 대시보드를 repository 경유로 전환하고 LMS 연동을 Future Integration Track으로 분리
+- PR #26: 학습피스 상태 변경 server action guard 구현
 
 ## 현재 진행 흐름
 
-### 학습피스 상태 변경 server action 설계/구현
+### 산출물 제출 mock action 연결
 
-- 목적: 첫 mutation 후보인 학습피스 상태 변경을 server action guard 흐름으로 구현
+- 목적: 산출물 상세 화면에서 제출 버전을 생성하는 mock action guard 흐름을 구현
 - 산출물:
-  - `src/app/journeys/status/actions.ts`
-  - `/journeys/status` 상태 변경 form
+  - `src/app/artifacts/[artifactId]/actions.ts`
+  - `/artifacts/[artifactId]` 제출 등록 form
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/MVP_COMPLETION_LEDGER.md`
-- 활용 방식: `requireSession -> canAccess -> repository mutation -> revalidate` 흐름의 기준 구현
+- 활용 방식: `artifact lookup -> requireSession -> canAccess(owner scope) -> createSubmission -> revalidate` 흐름의 기준 구현
 
 ### 다음 예정 작업
 
-- 산출물 제출 mock action 연결
+- 피드백 생성 mock action 연결
 
 ## 열린 판단
 
