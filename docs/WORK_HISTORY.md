@@ -108,30 +108,31 @@
 - PR #39: Supabase/Auth 전환 경계와 환경 계약 준비
 - PR #40: Core Auth/Scope Schema SQL 초안 작성
 - PR #41: Supabase SDK 설치와 client factory 구현
+- PR #42: Supabase session provider 초안 구현
 
 ## 현재 진행 흐름
 
-### Supabase Session Provider 초안
+### AUTH_PROVIDER switch 구현
 
-- 목적: Supabase Auth user와 DB role assignments를 기존 `SessionProvider` contract의 `AppSession`으로 조립하는 초안 구현
+- 목적: server action의 session guard가 `AUTH_PROVIDER=mock|supabase` 설정에 따라 mock 또는 Supabase provider를 선택하도록 전환
 - 산출물:
-  - `src/lib/supabase/database.ts`
-  - `src/lib/supabase/session-provider.ts`
-  - `src/lib/supabase/contracts.ts`
-  - `src/lib/supabase/README.md`
+  - `src/lib/session-provider.ts`
+  - server action files under `src/app/**/actions.ts`
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/SUPABASE_TRANSITION_PLAN.md`
 - 주요 결정:
-  - `supabase.auth.getUser()`로 검증된 Auth user를 기준으로 세션을 만든다.
-  - 앱 user는 `users.auth_user_id`로 조회한다.
-  - role assignment는 `role_assignments.user_id`로 조회한다.
-  - active assignment는 `roleParam`, `defaultRole`, 첫 active assignment 순서로 선택한다.
-  - provider는 아직 기본값으로 연결하지 않고 초안 상태로 둔다.
-- 활용 방식: 후속 PR에서 `AUTH_PROVIDER=mock|supabase` switch를 붙이고, 실제 로그인 callback과 연결
+  - `AUTH_PROVIDER`가 비어 있거나 `mock`이면 기존 `mockSessionProvider`를 사용한다.
+  - `AUTH_PROVIDER=supabase`이면 `supabaseSessionProvider`를 사용한다.
+  - 알 수 없는 값은 조용히 fallback하지 않고 error를 던진다.
+  - UI의 역할 전환 helper는 mock demo UI를 위해 유지한다.
+  - `REPOSITORY_PROVIDER`는 아직 mock으로 유지한다.
+- Audit 확인:
+  - moderate 2건은 `postcss < 8.5.10` advisory와 이를 포함한 `next@16.2.6` 보고 건이다.
+  - 자동 fix는 Next 버전을 크게 흔들 수 있어 보류하고, 안정 패치 버전 확인 후 별도 PR로 처리한다.
+- 활용 방식: server action guard는 이제 provider switch를 통과하며, 다음 단계에서 users/role assignments DB repository를 붙일 수 있다.
 
 ### 다음 예정 작업
 
-- `AUTH_PROVIDER=mock|supabase` provider switch 구현
 - users/role assignments DB-backed repository 구현
 - core schema seed/RLS 초안 작성
 

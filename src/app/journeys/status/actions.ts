@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { mockRepositories } from "@/lib/mock-repositories";
-import { mockSessionProvider } from "@/lib/session";
+import { sessionProvider } from "@/lib/session-provider";
 import type { LearningPieceStatus } from "@/lib/domain";
 
 const allowedStatuses: LearningPieceStatus[] = [
@@ -37,10 +37,10 @@ export async function updateLearningPieceStatusAction(formData: FormData) {
     redirect("/journeys/status?update=missing");
   }
 
-  const session = await mockSessionProvider.requireSession({
+  const session = await sessionProvider.requireSession({
     roleParam: typeof roleParam === "string" ? roleParam : undefined,
   });
-  const decision = await mockSessionProvider.canAccess(session, {
+  const decision = await sessionProvider.canAccess(session, {
     scopeType: "student",
     scopeId: currentStatus.studentId,
     action: "update",

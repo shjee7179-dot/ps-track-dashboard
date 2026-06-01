@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { mockRepositories } from "@/lib/mock-repositories";
-import { mockSessionProvider } from "@/lib/session";
+import { sessionProvider } from "@/lib/session-provider";
 import type { ReminderCandidate, RiskSignal } from "@/lib/types";
 
 const riskStatuses: RiskSignal["actionStatus"][] = ["open", "in_progress", "resolved"];
@@ -38,10 +38,10 @@ export async function updateRiskStatusAction(formData: FormData) {
     redirect(buildRedirectPath("missing"));
   }
 
-  const session = await mockSessionProvider.requireSession({
+  const session = await sessionProvider.requireSession({
     roleParam: typeof roleParam === "string" ? roleParam : undefined,
   });
-  const decision = await mockSessionProvider.canAccess(session, {
+  const decision = await sessionProvider.canAccess(session, {
     scopeType: risk.targetType,
     scopeId: risk.targetId,
     action: "update",
@@ -71,10 +71,10 @@ export async function updateReminderStatusAction(formData: FormData) {
     redirect(buildRedirectPath("missing"));
   }
 
-  const session = await mockSessionProvider.requireSession({
+  const session = await sessionProvider.requireSession({
     roleParam: typeof roleParam === "string" ? roleParam : undefined,
   });
-  const decision = await mockSessionProvider.canAccess(session, {
+  const decision = await sessionProvider.canAccess(session, {
     scopeType: reminder.targetType,
     scopeId: reminder.targetId,
     action: "update",
