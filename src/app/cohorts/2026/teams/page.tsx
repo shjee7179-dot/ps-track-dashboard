@@ -1,14 +1,23 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { getUserById, teams } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
-export default function TeamsPage() {
+export default async function TeamsPage() {
+  const [teams, users] = await Promise.all([
+    mockRepositories.cohorts.listTeams(),
+    mockRepositories.users.listUsers(),
+  ]);
+  const userById = new Map(users.map((user) => [user.id, user]));
+
   return (
     <AppShell title="팀 관리" eyebrow="Cohort / Teams">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat label="팀" value={`${teams.length}개`} tone="teal" />
-        <Stat label="활성 팀" value={`${teams.filter((team) => team.status === "active").length}개`} />
+        <Stat
+          label="활성 팀"
+          value={`${teams.filter((team) => team.status === "active").length}개`}
+        />
         <Stat label="미배정" value="0개" />
       </div>
       <Card title="팀 목록">
@@ -27,7 +36,8 @@ export default function TeamsPage() {
                 <StatusBadge>{team.status}</StatusBadge>
               </div>
               <p className="mt-3 text-xs text-stone-500">
-                멘토 {getUserById(team.mentorId)?.name} / 구성원 {team.memberIds.length}명
+                멘토 {userById.get(team.mentorId)?.name ?? team.mentorId} / 구성원{" "}
+                {team.memberIds.length}명
               </p>
             </Link>
           ))}

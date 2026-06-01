@@ -31,6 +31,11 @@
 - `/outcomes`: 학습성과 목록, 성과 증거, 루브릭 매핑, 점수 요약 repository 경유
 - `/outcomes/[outcomeId]`: 학습성과 상세, 루브릭 항목, 학생별 증거, source label repository 경유
 - `/cohorts/2026`: 기수 운영 요약의 주요 목록 repository 경유
+- `/cohorts/2026/detail`: 기수 상세, 일정, 모듈, 공지 수 repository 경유
+- `/cohorts/2026/participants`: 참여자 목록과 학생 여정 요약 repository 경유
+- `/cohorts/2026/teams`: 팀 목록과 멘토명 repository 경유
+- `/cohorts/2026/teams/[teamId]`: 팀 상세, 구성원, 산출물, 멘토링 repository 경유
+- `/cohorts/2026/mentor-assignments`: 멘토/팀 배정 현황 repository 경유
 - `/pi/dashboard`: 산출물/평가/리스크 목록 repository 경유
 
 ## route access 보정
