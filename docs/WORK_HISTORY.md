@@ -107,32 +107,31 @@
 - PR #38: 기수/팀 상세 repository 전환
 - PR #39: Supabase/Auth 전환 경계와 환경 계약 준비
 - PR #40: Core Auth/Scope Schema SQL 초안 작성
+- PR #41: Supabase SDK 설치와 client factory 구현
 
 ## 현재 진행 흐름
 
-### Supabase SDK / Client Factory 구현
+### Supabase Session Provider 초안
 
-- 목적: Supabase Auth/session provider와 DB-backed repository 구현 전에 SDK와 client 생성 경계를 먼저 고정
+- 목적: Supabase Auth user와 DB role assignments를 기존 `SessionProvider` contract의 `AppSession`으로 조립하는 초안 구현
 - 산출물:
-  - `package.json`
-  - `package-lock.json`
-  - `src/lib/supabase/env.ts`
   - `src/lib/supabase/database.ts`
-  - `src/lib/supabase/clients.ts`
-  - `src/lib/supabase/server.ts`
+  - `src/lib/supabase/session-provider.ts`
+  - `src/lib/supabase/contracts.ts`
+  - `src/lib/supabase/README.md`
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/SUPABASE_TRANSITION_PLAN.md`
 - 주요 결정:
-  - `@supabase/supabase-js`, `@supabase/ssr`를 사용
-  - browser client는 public URL과 anon key만 사용
-  - server client는 Next cookies 기반으로 request마다 생성
-  - admin client는 `server-only` 파일에서 service role key로만 생성
-  - generated DB type은 아직 없으므로 `database.ts`는 placeholder로 둠
-- 활용 방식: 다음 PR에서 `supabaseSessionProvider`와 users/role assignments DB repository가 이 factory를 사용
+  - `supabase.auth.getUser()`로 검증된 Auth user를 기준으로 세션을 만든다.
+  - 앱 user는 `users.auth_user_id`로 조회한다.
+  - role assignment는 `role_assignments.user_id`로 조회한다.
+  - active assignment는 `roleParam`, `defaultRole`, 첫 active assignment 순서로 선택한다.
+  - provider는 아직 기본값으로 연결하지 않고 초안 상태로 둔다.
+- 활용 방식: 후속 PR에서 `AUTH_PROVIDER=mock|supabase` switch를 붙이고, 실제 로그인 callback과 연결
 
 ### 다음 예정 작업
 
-- `supabaseSessionProvider` 초안 구현
+- `AUTH_PROVIDER=mock|supabase` provider switch 구현
 - users/role assignments DB-backed repository 구현
 - core schema seed/RLS 초안 작성
 

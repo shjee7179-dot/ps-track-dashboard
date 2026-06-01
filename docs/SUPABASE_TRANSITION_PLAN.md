@@ -47,10 +47,11 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 
 ### Phase 2: Auth Provider 전환
 
-- `supabaseSessionProvider` 구현
+- `supabaseSessionProvider` 초안 구현
 - `users.auth_user_id` 또는 `users.id` 전략 확정 후 적용
 - 로그인 callback과 세션 유지 흐름 구현
 - `role_assignments` 조회 기반 active assignment 결정
+- 후속 PR에서 `AUTH_PROVIDER=mock|supabase` provider switch 적용
 
 ### Phase 3: DB-backed Repository 전환
 
@@ -142,6 +143,21 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 페이지와 server action은 가능한 한 이 client를 직접 쓰지 않고, `SessionProvider`와 `AppRepositories` adapter를 통해 접근한다.
 
+## Session Provider 경계
+
+`supabaseSessionProvider`는 다음 흐름을 따른다.
+
+```text
+1. createSupabaseServerClient()
+2. supabase.auth.getUser()
+3. users.auth_user_id = auth.users.id 로 app user 조회
+4. role_assignments.user_id = users.id 로 assignment 조회
+5. roleParam/defaultRole/first active 순서로 active assignment 선택
+6. AppSession 반환
+```
+
+이 provider는 아직 앱 기본값이 아니다. mock 기반 MVP를 유지하면서, 후속 PR에서 provider switch와 실제 로그인 callback을 연결한다.
+
 ## Future Integration Track과의 경계
 
 `docs/13-lms-db-integration-proposal.md`는 지금 본선에 섞지 않는다.
@@ -152,7 +168,7 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 ## 다음 PR 후보
 
-1. `supabaseSessionProvider` 초안 구현
+1. `AUTH_PROVIDER=mock|supabase` provider switch 구현
 2. users / role assignments DB-backed repository 구현
 3. core schema seed/RLS 초안 작성
 4. submissions file metadata와 Storage bucket 설계

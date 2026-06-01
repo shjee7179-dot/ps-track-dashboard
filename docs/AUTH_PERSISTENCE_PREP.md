@@ -33,6 +33,7 @@
 | `src/lib/supabase/clients.ts` | browser Supabase client factory |
 | `src/lib/supabase/server.ts` | server/admin Supabase client factory, service role server-only 경계 |
 | `src/lib/supabase/database.ts` | generated DB type 도입 전 placeholder |
+| `src/lib/supabase/session-provider.ts` | Supabase Auth user와 role assignments를 `AppSession`으로 조립하는 provider 초안 |
 
 ## Session Contract
 
@@ -102,12 +103,13 @@
 - `src/lib/supabase/contracts.ts`는 adapter가 만족해야 할 contract와 전환 순서를 기록한다.
 - `src/lib/supabase/clients.ts`는 browser client만 생성한다.
 - `src/lib/supabase/server.ts`는 `server-only` 경계 안에서 request cookie 기반 server client와 service role admin client를 생성한다.
+- `src/lib/supabase/session-provider.ts`는 `supabase.auth.getUser()`로 검증된 Auth user를 읽고, `users.auth_user_id`와 `role_assignments`를 통해 `AppSession`을 만든다.
 - `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=mock`을 기본값으로 두고, 후속 PR에서 provider switch를 검토한다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 server-only 영역에서만 사용한다.
 
 ## 다음 PR 제안
 
-1. Supabase session provider 초안 구현
+1. `AUTH_PROVIDER=mock|supabase` provider switch 구현
 2. DB-backed users / role assignments repository 구현
 3. core schema seed/RLS 초안 작성
 4. Storage 연결 설계
