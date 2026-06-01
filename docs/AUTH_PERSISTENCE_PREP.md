@@ -87,7 +87,7 @@
 
 ## 다음 PR 제안
 
-1. 리스크/리마인더 조치 mock action 연결
-2. 공지 생성 mock action 연결
+1. 공지 생성 mock action 연결
+2. route/page read path repository 전환 확대
 3. Supabase session provider 설계
 4. DB-backed repository 구현 후보 선정

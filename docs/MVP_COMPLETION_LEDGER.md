@@ -127,6 +127,7 @@
 | 피드백 생성 action guard | Functional Mock | 산출물 리뷰 피드백 등록 mock action |
 | 평가 제출 action guard | Functional Mock | 산출물 루브릭 평가 제출 mock action |
 | 멘토링 기록 action guard | Functional Mock | 멘토링 상세 기록 저장 mock action |
+| 리스크/리마인더 action guard | Functional Mock | 운영 리스크/리마인더 조치 상태 저장 mock action |
 
 ## 최근 검증 기준
 
