@@ -28,6 +28,8 @@
 - `/journeys/students/[studentId]`: 학생 상세, 여정 타임라인, 활동 로그 repository 경유
 - `/journeys/status`: 학습피스 상태 목록 repository 경유
 - `/objects/learning-pieces`: 학습피스/학생 상태 목록 repository 경유
+- `/outcomes`: 학습성과 목록, 성과 증거, 루브릭 매핑, 점수 요약 repository 경유
+- `/outcomes/[outcomeId]`: 학습성과 상세, 루브릭 항목, 학생별 증거, source label repository 경유
 - `/cohorts/2026`: 기수 운영 요약의 주요 목록 repository 경유
 - `/pi/dashboard`: 산출물/평가/리스크 목록 repository 경유
 
