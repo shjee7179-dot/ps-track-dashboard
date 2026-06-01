@@ -31,6 +31,7 @@ import type {
   EvaluationItemScore,
   Feedback,
   MentoringSession,
+  Notice,
   ReminderCandidate,
   RiskSignal,
   StudentLearningPieceStatus,
@@ -327,6 +328,20 @@ export const mockRepositories: AppRepositories = {
     async listNotices(query) {
       const rows = notices.filter((notice) => (query?.cohortId ? notice.cohortId === query.cohortId : true));
       return applyLimit(rows, query);
+    },
+    async createNotice(input) {
+      const notice: Notice = {
+        id: nextMockId("notice"),
+        cohortId: input.cohortId,
+        title: input.title,
+        body: input.body,
+        targetScopeType: input.targetScopeType,
+        targetScopeId: input.targetScopeId,
+        publishedAt: today(),
+        createdBy: input.createdBy,
+        readCount: 0,
+      };
+      return withAudit(notice);
     },
   },
 };
