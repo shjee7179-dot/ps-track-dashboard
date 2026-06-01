@@ -109,32 +109,31 @@
 - PR #40: Core Auth/Scope Schema SQL 초안 작성
 - PR #41: Supabase SDK 설치와 client factory 구현
 - PR #42: Supabase session provider 초안 구현
+- PR #43: `AUTH_PROVIDER=mock|supabase` switch 구현
 
 ## 현재 진행 흐름
 
-### AUTH_PROVIDER switch 구현
+### Users / Role Assignments DB-backed Repository
 
-- 목적: server action의 session guard가 `AUTH_PROVIDER=mock|supabase` 설정에 따라 mock 또는 Supabase provider를 선택하도록 전환
+- 목적: Auth/session의 기준 데이터인 users와 role assignments를 Supabase/Postgres에서 읽을 수 있는 첫 DB-backed repository 구현
 - 산출물:
-  - `src/lib/session-provider.ts`
-  - server action files under `src/app/**/actions.ts`
+  - `src/lib/supabase/repositories.ts`
+  - `src/lib/repositories.ts`
+  - `src/lib/supabase/session-provider.ts`
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/SUPABASE_TRANSITION_PLAN.md`
 - 주요 결정:
-  - `AUTH_PROVIDER`가 비어 있거나 `mock`이면 기존 `mockSessionProvider`를 사용한다.
-  - `AUTH_PROVIDER=supabase`이면 `supabaseSessionProvider`를 사용한다.
-  - 알 수 없는 값은 조용히 fallback하지 않고 error를 던진다.
-  - UI의 역할 전환 helper는 mock demo UI를 위해 유지한다.
-  - `REPOSITORY_PROVIDER`는 아직 mock으로 유지한다.
-- Audit 확인:
-  - moderate 2건은 `postcss < 8.5.10` advisory와 이를 포함한 `next@16.2.6` 보고 건이다.
-  - 자동 fix는 Next 버전을 크게 흔들 수 있어 보류하고, 안정 패치 버전 확인 후 별도 PR로 처리한다.
-- 활용 방식: server action guard는 이제 provider switch를 통과하며, 다음 단계에서 users/role assignments DB repository를 붙일 수 있다.
+  - `supabaseUserRepository`가 `listUsers`, `getUserById`, `listRoleAssignments`를 구현한다.
+  - `REPOSITORY_PROVIDER=mock|supabase` selector를 추가한다.
+  - 기본값은 여전히 mock이다.
+  - `REPOSITORY_PROVIDER=supabase`일 때 현재는 users domain만 DB-backed이고 나머지는 mock fallback이다.
+  - `supabaseSessionProvider`는 role assignment 조회 로직을 새 users repository로 위임한다.
+- 활용 방식: 후속 PR에서 read page imports를 `mockRepositories`에서 `repositories`로 점진 전환하고, 실제 Supabase seed/RLS 검증을 진행
 
 ### 다음 예정 작업
 
-- users/role assignments DB-backed repository 구현
 - core schema seed/RLS 초안 작성
+- read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 
 ## 열린 판단
 

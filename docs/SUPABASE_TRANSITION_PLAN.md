@@ -56,7 +56,7 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 ### Phase 3: DB-backed Repository 전환
 
 - 우선순위는 다음 순서로 둔다.
-  1. users / role assignments
+  1. users / role assignments: implemented as first Supabase-backed repository draft
   2. cohorts / teams
   3. learning objects / learning piece statuses
   4. artifacts / submissions / feedback
@@ -143,6 +143,17 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 페이지와 server action은 가능한 한 이 client를 직접 쓰지 않고, `SessionProvider`와 `AppRepositories` adapter를 통해 접근한다.
 
+## Repository Provider 경계
+
+`src/lib/repositories.ts`는 `REPOSITORY_PROVIDER`에 따라 active repository set을 선택한다.
+
+| value | provider |
+| --- | --- |
+| unset/mock | `mockRepositories` |
+| supabase | `supabaseRepositories` |
+
+현재 `supabaseRepositories`는 `users` domain만 DB-backed로 제공하고, 나머지 domain은 mock fallback을 사용한다. 이 방식은 앱 전체를 한 번에 DB로 전환하지 않고, `users` / `role_assignments`부터 실제 테이블 검증을 시작하기 위한 중간 단계다.
+
 ## Session Provider 경계
 
 `src/lib/session-provider.ts`는 `AUTH_PROVIDER`에 따라 active session provider를 선택한다.
@@ -175,6 +186,6 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 ## 다음 PR 후보
 
-1. users / role assignments DB-backed repository 구현
-2. core schema seed/RLS 초안 작성
+1. core schema seed/RLS 초안 작성
+2. read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 3. submissions file metadata와 Storage bucket 설계
