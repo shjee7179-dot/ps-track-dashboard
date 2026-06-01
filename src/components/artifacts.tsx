@@ -7,7 +7,15 @@ import {
   type Artifact,
 } from "@/lib/domain";
 
-export function ArtifactCard({ artifact }: { artifact: Artifact }) {
+export function ArtifactCard({
+  artifact,
+  ownerName,
+  learningPieceTitle,
+}: {
+  artifact: Artifact;
+  ownerName?: string;
+  learningPieceTitle?: string;
+}) {
   const learningPiece = artifact.learningPieceId
     ? getLearningPieceById(artifact.learningPieceId)
     : undefined;
@@ -21,11 +29,11 @@ export function ArtifactCard({ artifact }: { artifact: Artifact }) {
         <div>
           <p className="text-xs font-medium text-teal-800">
             {artifact.ownerType === "student" ? "개인 산출물" : "팀 산출물"} /{" "}
-            {getArtifactOwnerName(artifact)}
+            {ownerName ?? getArtifactOwnerName(artifact)}
           </p>
           <h2 className="mt-1 text-base font-semibold text-stone-950">{artifact.title}</h2>
           <p className="mt-2 text-sm text-stone-600">
-            연결 학습피스: {learningPiece?.title ?? "없음"}
+            연결 학습피스: {learningPieceTitle ?? learningPiece?.title ?? "없음"}
           </p>
         </div>
         <StatusBadge>{getArtifactStatusLabel(artifact.status)}</StatusBadge>

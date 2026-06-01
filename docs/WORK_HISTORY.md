@@ -103,22 +103,26 @@
 - PR #34: 학생별 여정 목록/상세 repository 전환
 - PR #35: 산출물 상세/리뷰/평가 repository 전환
 - PR #36: 멘토링 상세 repository 전환
+- PR #37: 학습성과 목록/상세 repository 전환
 
 ## 현재 진행 흐름
 
-### outcome read path repository 전환
+### cohort/team read path repository 전환
 
-- 목적: 학습성과 목록/상세 화면의 직접 mock-data/domain 읽기를 repository 경유로 전환
+- 목적: 기수 상세, 참여자, 팀, 멘토 배정 화면의 직접 mock-data/domain 읽기를 repository 경유로 전환
 - 산출물:
-  - `EvaluationRepository` outcome evidence/score summary 메서드 보강
-  - `/outcomes` repository read path 전환
-  - `/outcomes/[outcomeId]` repository read path 전환
+  - `/cohorts/2026/detail` repository read path 전환
+  - `/cohorts/2026/participants` repository read path 전환
+  - `/cohorts/2026/teams` repository read path 전환
+  - `/cohorts/2026/teams/[teamId]` repository read path 전환
+  - `/cohorts/2026/mentor-assignments` repository read path 전환
+  - `ArtifactCard`, `MentoringSessionCard` repository-fed label props 확장
   - `docs/MOCK_COMPLETION_NOTES.md`
 - 활용 방식: 화면은 점진적으로 `mockRepositories`를 바라보고, 표시용 helper는 필요한 곳에만 유지
 
 ### 다음 예정 작업
 
-- team/cohort detail read path repository 전환 또는 Supabase/Auth 전환 준비
+- Supabase/Auth 전환 준비 또는 admin/settings write action 전환
 
 ## 열린 판단
 

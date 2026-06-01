@@ -8,7 +8,17 @@ import {
   type MentoringSession,
 } from "@/lib/domain";
 
-export function MentoringSessionCard({ session }: { session: MentoringSession }) {
+export function MentoringSessionCard({
+  session,
+  targetName,
+  mentorName,
+  artifactTitle,
+}: {
+  session: MentoringSession;
+  targetName?: string;
+  mentorName?: string;
+  artifactTitle?: string;
+}) {
   const artifact = session.linkedArtifactId ? getArtifactById(session.linkedArtifactId) : undefined;
   const mentor = getUserById(session.mentorId);
 
@@ -21,7 +31,7 @@ export function MentoringSessionCard({ session }: { session: MentoringSession })
         <div>
           <p className="text-xs font-medium text-teal-800">
             {session.targetType === "student" ? "개인 멘토링" : "팀 멘토링"} /{" "}
-            {getMentoringTargetName(session)}
+            {targetName ?? getMentoringTargetName(session)}
           </p>
           <h2 className="mt-1 text-base font-semibold text-stone-950">{session.scheduledAt}</h2>
           <p className="mt-2 text-sm text-stone-600">{session.notes}</p>
@@ -29,8 +39,8 @@ export function MentoringSessionCard({ session }: { session: MentoringSession })
         <StatusBadge>{getMentoringStatusLabel(session.status)}</StatusBadge>
       </div>
       <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-500">
-        <span>멘토 {mentor?.name ?? session.mentorId}</span>
-        <span>연결 산출물 {artifact?.title ?? "없음"}</span>
+        <span>멘토 {mentorName ?? mentor?.name ?? session.mentorId}</span>
+        <span>연결 산출물 {artifactTitle ?? artifact?.title ?? "없음"}</span>
       </div>
     </Link>
   );
