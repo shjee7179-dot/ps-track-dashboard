@@ -7,6 +7,15 @@
 - 생성/수정 시각은 `created_at`, `updated_at`을 사용한다.
 - 상태값은 초기에는 text enum으로 시작하고 안정화 후 DB enum으로 고정할 수 있다.
 
+## Core Auth/Scope SQL Draft
+
+- 1차 SQL 초안은 `db/schema/001_core_auth_scope.sql`에 둔다.
+- 이 파일은 Auth/session provider와 users/role assignments repository를 흔들리지 않게 만들기 위한 기준안이다.
+- 아직 Supabase 프로젝트에 적용한 실행 migration은 아니며, 실제 적용 전 seed, RLS, migration ordering을 별도 PR에서 검증한다.
+- `users.id`는 앱 도메인 id로 유지하고, Supabase Auth 연결은 `users.auth_user_id`로 분리한다.
+- `users.external_subject`는 LMS/Keycloak Future Integration Track을 위한 연결값으로 남긴다.
+- `role_assignments.scope_id`는 uuid가 아니라 text로 둔다. `system`, `program`, `cohort`, `track`, `team`, `student` scope가 서로 다른 대상 테이블 또는 상수값을 가질 수 있기 때문이다.
+
 ## Core Tables
 
 ### users
@@ -15,7 +24,9 @@ Supabase Auth 사용 시 `auth.users`와 별도의 프로필 테이블로 둔다
 
 | column | type | note |
 | --- | --- | --- |
-| id | uuid | auth user id |
+| id | uuid | 앱 도메인 user id |
+| auth_user_id | uuid | Supabase `auth.users.id`, nullable |
+| external_subject | text | 향후 LMS/Keycloak subject |
 | name | text | 사용자 이름 |
 | email | text | 이메일 |
 | affiliation | text | 소속 |
@@ -30,7 +41,7 @@ Supabase Auth 사용 시 `auth.users`와 별도의 프로필 테이블로 둔다
 | user_id | uuid | users.id |
 | role | text | student/operator/pi/mentor/admin |
 | scope_type | text | system/program/cohort/track/team/student |
-| scope_id | uuid | scope 대상 id |
+| scope_id | text | scope 대상 id 또는 system 상수 |
 | starts_at | timestamptz | 시작 |
 | ends_at | timestamptz | 종료 |
 | status | text | active/inactive |
@@ -40,6 +51,7 @@ Supabase Auth 사용 시 `auth.users`와 별도의 프로필 테이블로 둔다
 | column | type | note |
 | --- | --- | --- |
 | id | uuid | PK |
+| code | text | 프로그램 코드 |
 | name | text | 프로그램명 |
 | description | text | 설명 |
 | status | text | 상태 |
@@ -50,6 +62,7 @@ Supabase Auth 사용 시 `auth.users`와 별도의 프로필 테이블로 둔다
 | --- | --- | --- |
 | id | uuid | PK |
 | program_id | uuid | programs.id |
+| code | text | 기수 코드 |
 | name | text | 2026년 1기 등 |
 | year | int | 운영 연도 |
 | agreement_date | date | 협약일 |
@@ -65,6 +78,7 @@ Supabase Auth 사용 시 `auth.users`와 별도의 프로필 테이블로 둔다
 | cohort_id | uuid | cohorts.id |
 | name | text | 팀명 |
 | topic | text | 프로젝트 주제 |
+| mentor_id | uuid | 담당 멘토 users.id nullable |
 | status | text | 상태 |
 
 ### team_members
@@ -75,6 +89,7 @@ Supabase Auth 사용 시 `auth.users`와 별도의 프로필 테이블로 둔다
 | team_id | uuid | teams.id |
 | user_id | uuid | users.id |
 | role | text | member/leader |
+| status | text | active/inactive |
 
 ## Learning Object Tables
 
