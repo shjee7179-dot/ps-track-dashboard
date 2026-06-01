@@ -3,16 +3,16 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { createArtifactSubmissionAction } from "@/app/artifacts/[artifactId]/actions";
-import {
-  getArtifactById,
-  getArtifactEvaluations,
-  getArtifactFeedback,
-  getArtifactOwnerName,
-  getArtifactStatusLabel,
-  getArtifactSubmissions,
-  getLearningPieceById,
-  getUserById,
-} from "@/lib/domain";
+import { getArtifactStatusLabel } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { Artifact, Team, User } from "@/lib/types";
+
+function getArtifactOwnerName(artifact: Artifact, users: User[], teams: Team[]) {
+  if (artifact.ownerType === "student") {
+    return users.find((user) => user.id === artifact.ownerId)?.name ?? artifact.ownerId;
+  }
+  return teams.find((team) => team.id === artifact.ownerId)?.name ?? artifact.ownerId;
+}
 
 export default async function ArtifactDetailPage({
   params,
@@ -23,15 +23,21 @@ export default async function ArtifactDetailPage({
 }) {
   const { artifactId } = await params;
   const query = await searchParams;
-  const artifact = getArtifactById(artifactId);
+  const [artifact, submissions, feedback, evaluations, users, teams] = await Promise.all([
+    mockRepositories.artifacts.getArtifactById(artifactId),
+    mockRepositories.artifacts.listSubmissions(artifactId),
+    mockRepositories.artifacts.listFeedback(artifactId),
+    mockRepositories.evaluations.listEvaluations(artifactId),
+    mockRepositories.users.listUsers(),
+    mockRepositories.cohorts.listTeams(),
+  ]);
   if (!artifact) notFound();
 
-  const submissions = getArtifactSubmissions(artifact.id);
-  const feedback = getArtifactFeedback(artifact.id);
-  const evaluations = getArtifactEvaluations(artifact.id);
   const learningPiece = artifact.learningPieceId
-    ? getLearningPieceById(artifact.learningPieceId)
+    ? await mockRepositories.learning.getLearningPieceById(artifact.learningPieceId)
     : undefined;
+  const userById = new Map(users.map((user) => [user.id, user]));
+  const ownerName = getArtifactOwnerName(artifact, users, teams);
   const updateMessages: Record<string, string> = {
     submitted: "산출물 제출 요청이 mock repository를 통해 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 산출물을 제출할 수 없습니다.",
@@ -43,7 +49,7 @@ export default async function ArtifactDetailPage({
   return (
     <AppShell title={artifact.title} eyebrow="Artifact Detail">
       <div className="mb-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="소유" value={getArtifactOwnerName(artifact)} tone="teal" />
+        <Stat label="소유" value={ownerName} tone="teal" />
         <Stat label="상태" value={getArtifactStatusLabel(artifact.status)} />
         <Stat label="제출 버전" value={`${submissions.length}개`} />
         <Stat label="평가" value={`${evaluations.length}건`} tone="amber" />
@@ -64,7 +70,7 @@ export default async function ArtifactDetailPage({
                 <p className="font-medium text-stone-950">v{submission.version}</p>
                 <p className="mt-1 text-sm text-stone-600">{submission.note}</p>
                 <p className="mt-1 text-xs text-stone-500">
-                  {submission.submittedAt} / {getUserById(submission.submittedBy)?.name}
+                  {submission.submittedAt} / {userById.get(submission.submittedBy)?.name}
                 </p>
               </div>
             ))}
@@ -141,7 +147,7 @@ export default async function ArtifactDetailPage({
               <div key={item.id} className="border-b border-stone-100 pb-3 last:border-0">
                 <p className="text-sm text-stone-700">{item.body}</p>
                 <p className="mt-1 text-xs text-stone-500">
-                  {getUserById(item.authorId)?.name} / {item.createdAt}
+                  {userById.get(item.authorId)?.name} / {item.createdAt}
                 </p>
               </div>
             ))}
