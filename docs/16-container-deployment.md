@@ -28,6 +28,7 @@
 | `KEYCLOAK_SUB_HEADER` | `x-keycloak-sub` | used when `AUTH_PROVIDER=keycloak` |
 | `KEYCLOAK_USERNAME_HEADER` | `x-keycloak-preferred-username` | diagnostic identity header |
 | `KEYCLOAK_EMAIL_HEADER` | `x-keycloak-email` | diagnostic identity header |
+| `DATABASE_URL` | empty in production image | future private PostgreSQL connection string |
 
 ## Local Commands
 
@@ -40,6 +41,14 @@ or:
 
 ```bash
 docker compose up --build
+```
+
+Optional local PostgreSQL profile:
+
+```bash
+docker compose --profile postgres up postgres
+psql "$DATABASE_URL" -f db/private-postgres/schema/001_core_auth_scope.sql
+psql "$DATABASE_URL" -f db/private-postgres/seed/001_core_auth_scope_seed.sql
 ```
 
 Health check:
@@ -59,6 +68,7 @@ curl http://localhost:3000/api/health
 
 - The image uses Next.js `output: "standalone"`.
 - The first container target does not require Supabase, PostgreSQL, or Keycloak.
+- The local `postgres` compose service is optional and is not started unless `--profile postgres` is used.
 - Public runtime config should be provided as environment variables.
 - Secrets must be injected by the deployment platform and never baked into the image.
 - NHN Cloud public deployment should place database access on a private network path.
