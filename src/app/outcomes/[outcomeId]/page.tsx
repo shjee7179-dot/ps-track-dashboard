@@ -2,15 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import {
-  getArtifactById,
-  getEvaluationById,
-  getLearningOutcomeById,
-  getOutcomeEvidence,
-  getOutcomeScoreSummary,
-  getStudentById,
-  rubricItems,
-} from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { Artifact, Evaluation, OutcomeEvidence } from "@/lib/types";
 
 const sourceLabels = {
   learning_piece: "학습피스",
@@ -19,13 +12,21 @@ const sourceLabels = {
   feedback: "피드백",
 };
 
-function getEvidenceSourceName(sourceType: keyof typeof sourceLabels, sourceId: string) {
-  if (sourceType === "artifact") return getArtifactById(sourceId)?.title ?? sourceId;
-  if (sourceType === "evaluation") {
-    const evaluation = getEvaluationById(sourceId);
-    return evaluation ? (getArtifactById(evaluation.artifactId)?.title ?? sourceId) : sourceId;
+function getEvidenceSourceName(
+  evidence: OutcomeEvidence,
+  artifactById: Map<string, Artifact>,
+  evaluationById: Map<string, Evaluation>,
+) {
+  if (evidence.sourceType === "artifact") {
+    return artifactById.get(evidence.sourceId)?.title ?? evidence.sourceId;
   }
-  return sourceId;
+  if (evidence.sourceType === "evaluation") {
+    const evaluation = evaluationById.get(evidence.sourceId);
+    return evaluation
+      ? (artifactById.get(evaluation.artifactId)?.title ?? evidence.sourceId)
+      : evidence.sourceId;
+  }
+  return evidence.sourceId;
 }
 
 export default async function OutcomeDetailPage({
@@ -34,12 +35,21 @@ export default async function OutcomeDetailPage({
   params: Promise<{ outcomeId: string }>;
 }) {
   const { outcomeId } = await params;
-  const outcome = getLearningOutcomeById(outcomeId);
+  const [outcome, rubricItems, evidence, summary, artifacts, evaluations, users] = await Promise.all([
+    mockRepositories.evaluations.getLearningOutcomeById(outcomeId),
+    mockRepositories.evaluations.listRubricItems(),
+    mockRepositories.evaluations.listOutcomeEvidence(outcomeId),
+    mockRepositories.evaluations.getOutcomeScoreSummary(outcomeId),
+    mockRepositories.artifacts.listArtifacts(),
+    mockRepositories.evaluations.listEvaluations(),
+    mockRepositories.users.listUsers(),
+  ]);
   if (!outcome) notFound();
 
   const mappedItems = rubricItems.filter((item) => item.outcomeIds.includes(outcome.id));
-  const evidence = getOutcomeEvidence(outcome.id);
-  const summary = getOutcomeScoreSummary(outcome.id);
+  const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
+  const evaluationById = new Map(evaluations.map((evaluation) => [evaluation.id, evaluation]));
+  const userById = new Map(users.map((user) => [user.id, user]));
 
   return (
     <AppShell title={outcome.title} eyebrow={`${outcome.code} / Outcome Detail`}>
@@ -84,8 +94,8 @@ export default async function OutcomeDetailPage({
                   <div>
                     <p className="font-medium text-stone-950">{item.evidenceLabel}</p>
                     <p className="mt-1 text-sm text-stone-600">
-                      {getStudentById(item.studentId)?.name ?? item.studentId} /{" "}
-                      {getEvidenceSourceName(item.sourceType, item.sourceId)}
+                      {userById.get(item.studentId)?.name ?? item.studentId} /{" "}
+                      {getEvidenceSourceName(item, artifactById, evaluationById)}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">{item.recordedAt}</p>
                   </div>

@@ -13,6 +13,7 @@ import {
   mentoringSessions,
   modules,
   notices,
+  outcomeEvidence,
   reminderCandidates,
   riskSignals,
   roleAssignments,
@@ -30,6 +31,7 @@ import type {
   JourneySummary,
   ListQuery,
   MutationResult,
+  OutcomeScoreSummary,
   StudentJourneyItem,
 } from "@/lib/repository-contracts";
 import type {
@@ -86,6 +88,27 @@ function summarizeJourney(journey: StudentJourneyItem[]): JourneySummary {
     delayed,
     needsAction,
     completionRate: journey.length ? Math.round((completed / journey.length) * 100) : 0,
+  };
+}
+
+function summarizeOutcome(outcomeId: string): OutcomeScoreSummary {
+  const relatedItemIds = rubricItems
+    .filter((item) => item.outcomeIds.includes(outcomeId))
+    .map((item) => item.id);
+  const scores = evaluationItemScores.filter((score) =>
+    relatedItemIds.includes(score.rubricItemId),
+  );
+  const maxScore = scores.reduce((sum, score) => {
+    const item = rubricItems.find((rubricItem) => rubricItem.id === score.rubricItemId);
+    return sum + (item?.maxScore ?? 0);
+  }, 0);
+  const totalScore = scores.reduce((sum, score) => sum + score.score, 0);
+
+  return {
+    totalScore,
+    maxScore,
+    averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
+    evidenceCount: outcomeEvidence.filter((evidence) => evidence.outcomeId === outcomeId).length,
   };
 }
 
@@ -214,7 +237,7 @@ export const mockRepositories: AppRepositories = {
       return rubrics;
     },
     async listRubricItems(rubricId) {
-      return rubricItems.filter((item) => item.rubricId === rubricId);
+      return rubricId ? rubricItems.filter((item) => item.rubricId === rubricId) : rubricItems;
     },
     async listEvaluations(artifactId) {
       return artifactId
@@ -254,6 +277,20 @@ export const mockRepositories: AppRepositories = {
     },
     async listLearningOutcomes() {
       return learningOutcomes;
+    },
+    async getLearningOutcomeById(outcomeId) {
+      return learningOutcomes.find((outcome) => outcome.id === outcomeId);
+    },
+    async listOutcomeEvidence(outcomeId) {
+      return outcomeId
+        ? outcomeEvidence.filter((evidence) => evidence.outcomeId === outcomeId)
+        : outcomeEvidence;
+    },
+    async listStudentOutcomeEvidence(studentId) {
+      return outcomeEvidence.filter((evidence) => evidence.studentId === studentId);
+    },
+    async getOutcomeScoreSummary(outcomeId) {
+      return summarizeOutcome(outcomeId);
     },
   },
   operations: {

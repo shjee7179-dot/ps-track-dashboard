@@ -12,6 +12,7 @@ import type {
   MentoringSession,
   Module,
   Notice,
+  OutcomeEvidence,
   ReminderCandidate,
   RiskSignal,
   RoleAssignment,
@@ -51,6 +52,13 @@ export type JourneySummary = {
   delayed: number;
   needsAction: number;
   completionRate: number;
+};
+
+export type OutcomeScoreSummary = {
+  totalScore: number;
+  maxScore: number;
+  averageRate: number;
+  evidenceCount: number;
 };
 
 export type UserRepository = {
@@ -103,7 +111,7 @@ export type ArtifactRepository = {
 
 export type EvaluationRepository = {
   listRubrics(): RepositoryResult<Rubric[]>;
-  listRubricItems(rubricId: string): RepositoryResult<RubricItem[]>;
+  listRubricItems(rubricId?: string): RepositoryResult<RubricItem[]>;
   listEvaluations(artifactId?: string): RepositoryResult<Evaluation[]>;
   getEvaluationById(evaluationId: string): RepositoryResult<Evaluation | undefined>;
   listEvaluationItemScores(evaluationId: string): RepositoryResult<EvaluationItemScore[]>;
@@ -119,6 +127,10 @@ export type EvaluationRepository = {
     }>;
   }): RepositoryResult<MutationResult<Evaluation>>;
   listLearningOutcomes(): RepositoryResult<LearningOutcome[]>;
+  getLearningOutcomeById(outcomeId: string): RepositoryResult<LearningOutcome | undefined>;
+  listOutcomeEvidence(outcomeId?: string): RepositoryResult<OutcomeEvidence[]>;
+  listStudentOutcomeEvidence(studentId: string): RepositoryResult<OutcomeEvidence[]>;
+  getOutcomeScoreSummary(outcomeId: string): RepositoryResult<OutcomeScoreSummary>;
 };
 
 export type OperationsRepository = {
