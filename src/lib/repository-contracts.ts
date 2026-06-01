@@ -137,6 +137,14 @@ export type AdminRepository = {
   listAuditLogs(query?: ListQuery): RepositoryResult<LogEvent[]>;
   listAccessLogs(query?: ListQuery): RepositoryResult<LogEvent[]>;
   listNotices(query?: ListQuery): RepositoryResult<Notice[]>;
+  createNotice(input: {
+    cohortId: string;
+    title: string;
+    body: string;
+    targetScopeType: Notice["targetScopeType"];
+    targetScopeId: string;
+    createdBy: string;
+  }): RepositoryResult<MutationResult<Notice>>;
 };
 
 export type AppRepositories = {

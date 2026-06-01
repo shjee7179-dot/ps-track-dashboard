@@ -1,9 +1,22 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { getUserById, notices } from "@/lib/domain";
+import { getUserById } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
-export default function NoticesPage() {
+const updateMessages: Record<string, string> = {
+  created: "공지 생성 요청이 mock repository를 통해 접수되었습니다.",
+};
+
+export default async function NoticesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ update?: string; audit?: string }>;
+}) {
+  const query = await searchParams;
+  const notices = await mockRepositories.admin.listNotices();
+  const updateMessage = query.update ? updateMessages[query.update] : undefined;
+
   return (
     <AppShell title="공지사항" eyebrow="Communication / Notices">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -11,6 +24,12 @@ export default function NoticesPage() {
         <Stat label="읽음 합계" value={`${notices.reduce((sum, notice) => sum + notice.readCount, 0)}회`} />
         <Stat label="작성 방식" value="수동 작성" />
       </div>
+      {updateMessage ? (
+        <div className="mb-4 rounded-md border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700">
+          {updateMessage}
+          {query.audit ? <span className="ml-2 text-stone-500">audit: {query.audit}</span> : null}
+        </div>
+      ) : null}
       <div className="mb-4 flex justify-end">
         <Link href="/notices/new" className="rounded-md border border-teal-700 bg-teal-700 px-3 py-2 text-sm font-medium text-white">
           공지 작성

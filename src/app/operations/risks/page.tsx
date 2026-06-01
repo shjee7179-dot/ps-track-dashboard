@@ -5,9 +5,8 @@ import {
   getReminderStatusLabel,
   getRiskTargetName,
   getRiskTypeLabel,
-  reminderCandidates,
-  riskSignals,
 } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
 const riskStatusOptions = [
   { value: "open", label: "열림" },
@@ -35,6 +34,10 @@ export default async function RisksPage({
   searchParams: Promise<{ role?: string; update?: string; audit?: string }>;
 }) {
   const query = await searchParams;
+  const [riskSignals, reminderCandidates] = await Promise.all([
+    mockRepositories.operations.listRiskSignals(),
+    mockRepositories.operations.listReminderCandidates(),
+  ]);
   const updateMessage = query.update ? updateMessages[query.update] : undefined;
 
   return (

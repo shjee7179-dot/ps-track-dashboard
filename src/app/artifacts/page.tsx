@@ -1,9 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { ArtifactCard } from "@/components/artifacts";
 import { Stat } from "@/components/ui";
-import { artifacts } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
-export default function ArtifactsPage() {
+export default async function ArtifactsPage() {
+  const artifacts = await mockRepositories.artifacts.listArtifacts();
+
   return (
     <AppShell title="산출물 목록" eyebrow="Artifacts / Student + Team">
       <div className="mb-6 grid gap-4 sm:grid-cols-4">
