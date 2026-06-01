@@ -101,23 +101,22 @@
 - PR #32: 남은 mock action/read path completion pass
 - PR #33: 주요 read-heavy route repository 전환 확대
 - PR #34: 학생별 여정 목록/상세 repository 전환
+- PR #35: 산출물 상세/리뷰/평가 repository 전환
 
 ## 현재 진행 흐름
 
-### artifact detail read path repository 전환
+### mentoring detail read path repository 전환
 
-- 목적: 산출물 상세, 리뷰, 루브릭 평가 화면의 직접 mock-data/domain 읽기를 repository 경유로 전환
+- 목적: 멘토링 상세 기록 화면의 직접 mock-data/domain 읽기를 repository 경유로 전환
 - 산출물:
-  - `/artifacts/[artifactId]` repository read path 전환
-  - `/artifacts/[artifactId]/review` repository read path 전환
-  - `/artifacts/[artifactId]/evaluation` repository read path 전환
-  - `EvaluationSummaryCard`, `RubricPreview`, `EvaluationItemScores` repository-fed props 확장
+  - `/mentoring/sessions/[sessionId]` repository read path 전환
+  - 멘토, 대상 학생/팀, 연결 산출물 조회를 `mockRepositories` 경유로 조합
   - `docs/MOCK_COMPLETION_NOTES.md`
 - 활용 방식: 화면은 점진적으로 `mockRepositories`를 바라보고, 표시용 helper는 필요한 곳에만 유지
 
 ### 다음 예정 작업
 
-- mentoring/detail 또는 outcome/detail read path repository 전환
+- outcome/detail read path repository 전환 또는 멘토링 카드 컴포넌트 props 확장
 
 ## 열린 판단
 
