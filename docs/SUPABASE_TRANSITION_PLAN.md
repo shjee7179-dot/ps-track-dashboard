@@ -1,16 +1,16 @@
-# Supabase Auth / DB Transition Plan
+# Supabase Validation Track
 
-이 문서는 mock 기반 MVP를 실제 운영 가능한 Supabase Auth, Postgres, Storage 구조로 전환하기 위한 준비 계획이다. 현재 PR의 목표는 실제 Supabase 연결이 아니라, 전환 경계와 환경 계약을 고정하는 것이다.
+이 문서는 mock 기반 MVP에서 PostgreSQL/Auth adapter 경계를 검증하기 위한 Supabase validation track이다. 최종 운영 목적지는 `docs/15-alphacampus-msa-boundary.md`의 AlphaCampus 인증 연동 독립 MSA이며, Supabase는 최종 운영 인프라가 아니다.
 
 ## 결론
 
-- 기본 운영안은 Vercel + Supabase를 채택한다.
-- Supabase Auth는 1차 독립 MVP 인증 수단으로 둔다.
-- LMS/Keycloak/외부 DB 연동은 `docs/13-lms-db-integration-proposal.md`의 Future Integration Track으로 유지한다.
+- 최종 운영안은 AlphaCampus/Keycloak 인증 + 독립 private PostgreSQL + container 기반 MSA다.
+- Supabase Auth/Postgres 코드는 최종 운영 스택이 아니라 빠른 검증용 adapter 구현으로 유지한다.
+- LMS/DB 깊은 통합은 `docs/13-lms-db-integration-proposal.md`의 Future Integration Track으로 유지하되, 인증/최소 조회 경계는 `docs/15-alphacampus-msa-boundary.md`를 우선한다.
 - 화면은 `AppRepositories`와 `SessionProvider` contract를 계속 바라본다.
-- 실제 SDK 연결, DB migration, RLS 적용은 후속 PR에서 진행한다.
+- 실제 운영 전환 시 `supabase` provider는 `keycloak` / `postgres` provider로 대체 가능해야 한다.
 
-## 왜 Supabase인가
+## 왜 Supabase validation인가
 
 이 시스템은 단순 로그인 앱보다 관계형 운영 데이터가 중요하다.
 
@@ -22,7 +22,7 @@
 - 루브릭 평가와 학습성과 evidence
 - 감사 로그와 접속 로그
 
-Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가 더 자연스럽다. 특히 `role_assignments`, `learning_piece_statuses`, `artifacts`, `evaluations`, `outcome_evidence`는 관계형 조인과 트랜잭션의 이점이 크다.
+Firebase보다 PostgreSQL 기반 검증이 더 유효하다. 특히 `role_assignments`, `learning_piece_statuses`, `artifacts`, `evaluations`, `outcome_evidence`는 관계형 조인과 트랜잭션의 이점이 크다. Supabase는 이 PostgreSQL 구조를 빠르게 검증하기 위한 선택지이며, 최종 운영에서는 private PostgreSQL로 옮길 수 있어야 한다.
 
 ## 전환 단계
 
@@ -64,10 +64,10 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
   6. mentoring / risks / reminders
   7. notices / logs / settings
 
-### Phase 4: Storage 전환
+### Phase 4: Storage 검증
 
 - 첫 단계는 external URL과 file metadata 저장
-- 실제 파일 업로드는 Supabase Storage bucket 분리 후 적용
+- 실제 파일 업로드는 운영 인프라가 확정된 뒤 private object storage 또는 기관 승인 저장소와 연결한다.
 - `submissions.file_path`, `file_name`, `mime_type`, `file_size`를 DB에 저장
 - signed URL과 접근 권한은 server side에서 발급
 
@@ -165,6 +165,7 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 4. users.auth_user_id 연결
 5. db/policies/001_core_auth_scope_rls.sql
 6. AUTH_PROVIDER=supabase / REPOSITORY_PROVIDER=supabase preview 검증
+7. 운영 전환 시 AUTH_PROVIDER=keycloak / REPOSITORY_PROVIDER=postgres로 대체
 ```
 
 RLS는 우선 read policy 중심이다. create/update/delete는 server action guard와 audit log가 실제 DB write path에 붙은 뒤 별도 policy로 확장한다.
@@ -189,18 +190,18 @@ RLS는 우선 read policy 중심이다. create/update/delete는 server action gu
 6. AppSession 반환
 ```
 
-기본값은 여전히 mock이다. Supabase provider는 환경변수를 명시적으로 `AUTH_PROVIDER=supabase`로 바꿨을 때만 사용한다.
+기본값은 여전히 mock이다. Supabase provider는 환경변수를 명시적으로 `AUTH_PROVIDER=supabase`로 바꿨을 때만 사용한다. 최종 운영 provider는 `keycloak`으로 확장한다.
 
 ## Future Integration Track과의 경계
 
 `docs/13-lms-db-integration-proposal.md`는 지금 본선에 섞지 않는다.
 
-- Supabase Auth MVP는 독립 로그인으로 진행
-- Keycloak/LMS 연동은 별도 branch 또는 별도 버전
+- AlphaCampus/Keycloak 인증 연동은 최종 운영 목적지로 두되, 깊은 LMS DB 통합은 별도 branch 또는 후속 버전
+- 본선은 인증 subject와 최소 사용자/참여 자격 조회만 연동
 - 단, `users.external_subject`와 learning piece의 LMS mapping column은 future-compatible하게 설계 가능
 
 ## 다음 PR 후보
 
-1. Supabase local/preview 환경에서 schema + seed + RLS 적용 검증
-2. read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
-3. submissions file metadata와 Storage bucket 설계
+1. Container 실행 가능성 확보
+2. AlphaCampus/Keycloak provider 설계
+3. private PostgreSQL migration 형태 정리

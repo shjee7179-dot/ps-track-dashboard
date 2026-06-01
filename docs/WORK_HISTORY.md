@@ -111,28 +111,30 @@
 - PR #42: Supabase session provider 초안 구현
 - PR #43: `AUTH_PROVIDER=mock|supabase` switch 구현
 - PR #44: users / role assignments DB-backed repository 구현
+- PR #45: core seed/RLS SQL 초안 작성
 
 ## 현재 진행 흐름
 
-### Core Seed / RLS SQL 초안
+### AlphaCampus MSA Target Architecture 정렬
 
-- 목적: 실제 Supabase 환경에서 core auth/scope schema를 검증할 수 있도록 최소 seed와 read RLS policy 초안을 작성
+- 목적: 현재 MVP를 폐기하지 않고, 최종 운영 목적지를 AlphaCampus 인증 연동 + 독립 PostgreSQL + container 기반 MSA로 명확히 정렬
 - 산출물:
-  - `db/seed/001_core_auth_scope_seed.sql`
-  - `db/policies/001_core_auth_scope_rls.sql`
-  - `docs/11-database-schema-draft.md`
-  - `docs/AUTH_PERSISTENCE_PREP.md`
+  - `docs/15-alphacampus-msa-boundary.md`
   - `docs/SUPABASE_TRANSITION_PLAN.md`
+  - `docs/13-lms-db-integration-proposal.md`
 - 주요 결정:
-  - seed는 mock MVP의 2026년 1기 core 사용자/역할/기수/팀 데이터를 DB UUID row로 만든다.
-  - `users.auth_user_id`는 seed 단계에서 비워두고 실제 Auth 계정 생성 후 연결한다.
-  - RLS는 read policy부터 제안한다.
-  - write policy는 server action, permission guard, audit log의 실제 DB write path가 붙은 뒤 확장한다.
-- 활용 방식: Supabase local 또는 preview 환경에서 schema, seed, RLS를 순서대로 적용해 users repository와 session provider를 검증한다.
+  - 현재 MVP는 도메인/화면/데이터 모델 검증 산출물로 유지한다.
+  - 최종 운영은 AlphaCampus/Keycloak 인증, 독립 private PostgreSQL, Docker/container 기반 MSA를 목표로 한다.
+  - Supabase 코드는 최종 운영 인프라가 아니라 PostgreSQL/Auth adapter validation track으로 격하한다.
+  - AlphaCampus 연동은 인증과 최소 사용자/참여 자격 조회로 제한한다.
+  - LMS DB 깊은 연동은 Future Integration Track으로 유지한다.
+- 활용 방식: 이후 Docker, Keycloak provider, private PostgreSQL migration 작업의 기준 문서로 사용한다.
 
 ### 다음 예정 작업
 
-- Supabase local/preview 환경에서 schema + seed + RLS 적용 검증
+- Container 실행 가능성 확보
+- AlphaCampus/Keycloak provider 설계
+- private PostgreSQL migration 형태 정리
 - read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 
 ## 열린 판단

@@ -3,6 +3,8 @@
 > 현재 PS Track 독립형 MVP 본선에는 이 설계를 섞지 않는다.
 >
 > 이 문서는 LMS/Keycloak/DB 접근 환경이 실제로 준비된 뒤 별도 integration branch 또는 후속 버전에서 추진할 Future Integration Track이다. 현재 본선은 PS Track 자체 `learning_piece_statuses`, 산출물, 피드백, 평가, 성과, 리포트 흐름을 먼저 완수한다.
+>
+> 최종 운영 목적지는 `docs/15-alphacampus-msa-boundary.md`를 우선한다. 본선의 AlphaCampus 연동은 인증과 최소 사용자/참여 자격 조회로 제한하고, 이 문서의 LMS DB 읽기 전용 뷰 연동은 필요성이 확인된 뒤 별도 검토한다.
 
 이 문서는 기존 LMS 데이터베이스로부터 요청할 2개의 읽기 전용 뷰(수료 테이블, 콘텐츠 조회 테이블)를 PS Track 대시보드 시스템과 어떻게 안전하고 유기적으로 연동할 것인지에 대한 설계 및 기술 구현 계획을 담고 있습니다.
 
@@ -10,7 +12,7 @@
 
 ## 1. 연동 아키텍처 및 보안 설계
 
-기존 LMS와 PS Track이 동일한 NHN 공공클라우드 내의 VPC 공간에 위치하므로, 복잡한 API 개발 없이 데이터베이스 수준에서 안전하게 연동할 수 있습니다.
+기존 LMS와 PS Track이 동일한 NHN 공공클라우드 내의 VPC 공간에 위치하더라도, 본선에서는 DB 수준 깊은 연동을 기본값으로 두지 않습니다. 우선 인증과 최소 조회만 연동하고, 아래 DB 읽기 전용 뷰 방식은 Future Integration Track으로 둡니다.
 
 ### 인프라 구성도 (VPC 내부 연동)
 ```text
