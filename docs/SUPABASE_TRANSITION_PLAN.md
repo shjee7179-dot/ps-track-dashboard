@@ -51,7 +51,7 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 - `users.auth_user_id` 또는 `users.id` 전략 확정 후 적용
 - 로그인 callback과 세션 유지 흐름 구현
 - `role_assignments` 조회 기반 active assignment 결정
-- 후속 PR에서 `AUTH_PROVIDER=mock|supabase` provider switch 적용
+- `AUTH_PROVIDER=mock|supabase` provider switch 적용
 
 ### Phase 3: DB-backed Repository 전환
 
@@ -145,6 +145,13 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 ## Session Provider 경계
 
+`src/lib/session-provider.ts`는 `AUTH_PROVIDER`에 따라 active session provider를 선택한다.
+
+| value | provider |
+| --- | --- |
+| unset/mock | `mockSessionProvider` |
+| supabase | `supabaseSessionProvider` |
+
 `supabaseSessionProvider`는 다음 흐름을 따른다.
 
 ```text
@@ -156,7 +163,7 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 6. AppSession 반환
 ```
 
-이 provider는 아직 앱 기본값이 아니다. mock 기반 MVP를 유지하면서, 후속 PR에서 provider switch와 실제 로그인 callback을 연결한다.
+기본값은 여전히 mock이다. Supabase provider는 환경변수를 명시적으로 `AUTH_PROVIDER=supabase`로 바꿨을 때만 사용한다.
 
 ## Future Integration Track과의 경계
 
@@ -168,7 +175,6 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 ## 다음 PR 후보
 
-1. `AUTH_PROVIDER=mock|supabase` provider switch 구현
-2. users / role assignments DB-backed repository 구현
-3. core schema seed/RLS 초안 작성
-4. submissions file metadata와 Storage bucket 설계
+1. users / role assignments DB-backed repository 구현
+2. core schema seed/RLS 초안 작성
+3. submissions file metadata와 Storage bucket 설계

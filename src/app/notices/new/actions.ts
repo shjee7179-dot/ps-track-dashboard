@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { mockRepositories } from "@/lib/mock-repositories";
-import { mockSessionProvider } from "@/lib/session";
+import { sessionProvider } from "@/lib/session-provider";
 import type { ScopeType } from "@/lib/types";
 
 const noticeScopeTypes: ScopeType[] = ["program", "cohort", "track", "team", "student"];
@@ -35,10 +35,10 @@ export async function createNoticeAction(formData: FormData) {
     redirect(buildRedirectPath("invalid"));
   }
 
-  const session = await mockSessionProvider.requireSession({
+  const session = await sessionProvider.requireSession({
     roleParam: typeof roleParam === "string" ? roleParam : undefined,
   });
-  const decision = await mockSessionProvider.canAccess(session, {
+  const decision = await sessionProvider.canAccess(session, {
     scopeType: targetScopeType,
     scopeId: targetScopeId,
     action: "create",

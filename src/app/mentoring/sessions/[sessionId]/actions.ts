@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { mockRepositories } from "@/lib/mock-repositories";
-import { mockSessionProvider } from "@/lib/session";
+import { sessionProvider } from "@/lib/session-provider";
 import type { MentoringSession } from "@/lib/types";
 
 const allowedStatuses: MentoringSession["status"][] = [
@@ -45,10 +45,10 @@ export async function updateMentoringRecordAction(formData: FormData) {
     redirect("/mentoring/sessions?update=missing");
   }
 
-  const session = await mockSessionProvider.requireSession({
+  const session = await sessionProvider.requireSession({
     roleParam: typeof roleParam === "string" ? roleParam : undefined,
   });
-  const decision = await mockSessionProvider.canAccess(session, {
+  const decision = await sessionProvider.canAccess(session, {
     scopeType: sessionRecord.targetType,
     scopeId: sessionRecord.targetId,
     action: "update",

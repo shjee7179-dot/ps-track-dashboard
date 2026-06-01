@@ -104,15 +104,23 @@
 - `src/lib/supabase/clients.ts`는 browser client만 생성한다.
 - `src/lib/supabase/server.ts`는 `server-only` 경계 안에서 request cookie 기반 server client와 service role admin client를 생성한다.
 - `src/lib/supabase/session-provider.ts`는 `supabase.auth.getUser()`로 검증된 Auth user를 읽고, `users.auth_user_id`와 `role_assignments`를 통해 `AppSession`을 만든다.
-- `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=mock`을 기본값으로 두고, 후속 PR에서 provider switch를 검토한다.
+- `src/lib/session-provider.ts`는 `AUTH_PROVIDER=mock|supabase` 값에 따라 session provider를 선택한다.
+- `AUTH_PROVIDER` 기본값은 `mock`이며, `REPOSITORY_PROVIDER=mock`은 아직 유지한다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 server-only 영역에서만 사용한다.
+
+## Audit notes
+
+- `npm audit --json` 기준 moderate 2건이 보고된다.
+- 실제 advisory는 `postcss < 8.5.10`의 CSS stringify XSS 이슈(`GHSA-qx2v-qp2m-jg93`)다.
+- 현재 프로젝트에서는 `next@16.2.6` 내부 의존성인 `node_modules/next/node_modules/postcss`를 통해 보고된다.
+- npm은 direct package `next`도 affected로 함께 보고하지만, `npm audit fix --force`가 제안하는 자동 수정은 Next 버전을 크게 흔들 수 있어 이번 PR에서는 적용하지 않는다.
+- 보완은 Next가 해당 PostCSS 의존성을 올린 안정 패치 버전으로 업데이트 가능한 시점에 별도 PR로 처리한다.
 
 ## 다음 PR 제안
 
-1. `AUTH_PROVIDER=mock|supabase` provider switch 구현
-2. DB-backed users / role assignments repository 구현
-3. core schema seed/RLS 초안 작성
-4. Storage 연결 설계
+1. DB-backed users / role assignments repository 구현
+2. core schema seed/RLS 초안 작성
+3. Storage 연결 설계
 
 ## Mock completion reference
 

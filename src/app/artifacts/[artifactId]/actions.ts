@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { mockRepositories } from "@/lib/mock-repositories";
-import { mockSessionProvider } from "@/lib/session";
+import { sessionProvider } from "@/lib/session-provider";
 
 function normalizeOptionalText(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return undefined;
@@ -37,10 +37,10 @@ export async function createArtifactSubmissionAction(formData: FormData) {
     redirect(buildRedirectPath(artifact.id, "invalid"));
   }
 
-  const session = await mockSessionProvider.requireSession({
+  const session = await sessionProvider.requireSession({
     roleParam: typeof roleParam === "string" ? roleParam : undefined,
   });
-  const decision = await mockSessionProvider.canAccess(session, {
+  const decision = await sessionProvider.canAccess(session, {
     scopeType: artifact.ownerType,
     scopeId: artifact.ownerId,
     action: "create",
