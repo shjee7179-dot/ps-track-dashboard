@@ -113,6 +113,7 @@
 - PR #44: users / role assignments DB-backed repository 구현
 - PR #45: core seed/RLS SQL 초안 작성
 - PR #46: AlphaCampus 인증 연동 독립 MSA 최종 목적지 문서화
+- PR #47: Docker/container 실행 가능성 확보
 
 ## 현재 진행 흐름
 
@@ -137,9 +138,23 @@
   - Docker CLI는 확인됐지만 Docker daemon socket이 없어 `docker build`는 현 세션에서 완료하지 못함
 - 활용 방식: NHN Cloud 공공 환경 또는 AlphaCampus 컨테이너 운영 방식에 맞춘 배포 검증의 출발점으로 사용한다.
 
+### AlphaCampus/Keycloak provider contract
+
+- 목적: 최종 운영 목적지인 AlphaCampus/Keycloak 인증 연동을 현재 `SessionProvider` 구조 안에 끼울 수 있도록 1차 contract를 코드화
+- 산출물:
+  - `src/lib/keycloak/session-provider.ts`
+  - `AUTH_PROVIDER=keycloak` switch
+  - `User.externalSubject`
+  - `UserRepository.getUserByExternalSubject()`
+- 주요 결정:
+  - 1차 provider는 Keycloak token 검증기를 직접 내장하지 않고 trusted header contract를 사용한다.
+  - 운영 환경에서는 ingress, API gateway, reverse proxy, 또는 AlphaCampus 연계 WAS가 token 검증 후 `x-keycloak-sub`를 주입해야 한다.
+  - PS Track은 `users.external_subject`로 앱 사용자와 매핑하고, 실제 권한은 자체 `role_assignments`로 결정한다.
+  - Keycloak realm/client role만으로 PS Track의 role + scope 권한을 대체하지 않는다.
+- 활용 방식: private PostgreSQL repository가 붙으면 `external_subject` 기반 사용자 조회가 그대로 운영 인증 흐름의 연결점이 된다.
+
 ### 다음 예정 작업
 
-- AlphaCampus/Keycloak provider 설계
 - private PostgreSQL migration 형태 정리
 - read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 

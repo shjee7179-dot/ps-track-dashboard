@@ -120,6 +120,9 @@ export const mockRepositories: AppRepositories = {
     async getUserById(userId) {
       return users.find((user) => user.id === userId);
     },
+    async getUserByExternalSubject(externalSubject) {
+      return users.find((user) => user.externalSubject === externalSubject);
+    },
     async listRoleAssignments(userId) {
       return userId
         ? roleAssignments.filter((assignment) => assignment.userId === userId)

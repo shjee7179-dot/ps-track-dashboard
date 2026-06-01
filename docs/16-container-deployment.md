@@ -25,6 +25,9 @@
 | `REPOSITORY_PROVIDER` | `mock` | future: `postgres` |
 | `PORT` | `3000` | container listener |
 | `HOSTNAME` | `0.0.0.0` | required for container access |
+| `KEYCLOAK_SUB_HEADER` | `x-keycloak-sub` | used when `AUTH_PROVIDER=keycloak` |
+| `KEYCLOAK_USERNAME_HEADER` | `x-keycloak-preferred-username` | diagnostic identity header |
+| `KEYCLOAK_EMAIL_HEADER` | `x-keycloak-email` | diagnostic identity header |
 
 ## Local Commands
 
@@ -63,6 +66,6 @@ curl http://localhost:3000/api/health
 ## Follow-Up
 
 1. Add private PostgreSQL runtime profile.
-2. Add Keycloak provider environment contract.
+2. Add production-grade Keycloak token/header verification at the gateway or WAS boundary.
 3. Add structured application logs for container operation.
 4. Add OpenAPI/API contract for AlphaCampus integration boundary.

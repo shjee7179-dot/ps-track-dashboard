@@ -1,6 +1,6 @@
 import type { Action, Role, RoleAssignment, ScopeType, User } from "@/lib/types";
 
-export type SessionSource = "mock" | "supabase";
+export type SessionSource = "mock" | "supabase" | "keycloak";
 
 export type AppSession = {
   user: User;

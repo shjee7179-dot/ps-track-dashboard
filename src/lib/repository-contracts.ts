@@ -64,6 +64,7 @@ export type OutcomeScoreSummary = {
 export type UserRepository = {
   listUsers(query?: ListQuery): RepositoryResult<User[]>;
   getUserById(userId: string): RepositoryResult<User | undefined>;
+  getUserByExternalSubject(externalSubject: string): RepositoryResult<User | undefined>;
   listRoleAssignments(userId?: string): RepositoryResult<RoleAssignment[]>;
 };
 
