@@ -20,6 +20,7 @@
 - `/artifacts/[artifactId]/review`: 산출물 리뷰 큐와 피드백 작성 화면 repository 경유
 - `/artifacts/[artifactId]/evaluation`: 루브릭, 항목, 평가, 항목별 점수 repository 경유
 - `/mentoring/sessions`: 멘토링 목록 repository 경유
+- `/mentoring/sessions/[sessionId]`: 멘토링 상세, 멘토/대상/연결 산출물 repository 경유
 - `/operations/risks`: 리스크/리마인더 목록 repository 경유
 - `/notices`: 공지 목록 repository 경유
 - `/notices/new`: 활성 기수 조회 repository 경유

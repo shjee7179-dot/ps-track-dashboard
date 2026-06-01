@@ -3,13 +3,16 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { updateMentoringRecordAction } from "@/app/mentoring/sessions/[sessionId]/actions";
-import {
-  getArtifactById,
-  getMentoringSessionById,
-  getMentoringStatusLabel,
-  getMentoringTargetName,
-  getUserById,
-} from "@/lib/domain";
+import { getMentoringStatusLabel } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
+import type { MentoringSession, Team, User } from "@/lib/types";
+
+function getMentoringTargetName(session: MentoringSession, users: User[], teams: Team[]) {
+  if (session.targetType === "student") {
+    return users.find((user) => user.id === session.targetId)?.name ?? session.targetId;
+  }
+  return teams.find((team) => team.id === session.targetId)?.name ?? session.targetId;
+}
 
 export default async function MentoringSessionDetailPage({
   params,
@@ -20,11 +23,18 @@ export default async function MentoringSessionDetailPage({
 }) {
   const { sessionId } = await params;
   const query = await searchParams;
-  const session = getMentoringSessionById(sessionId);
+  const [session, users, teams] = await Promise.all([
+    mockRepositories.operations.getMentoringSessionById(sessionId),
+    mockRepositories.users.listUsers(),
+    mockRepositories.cohorts.listTeams(),
+  ]);
   if (!session) notFound();
 
-  const mentor = getUserById(session.mentorId);
-  const artifact = session.linkedArtifactId ? getArtifactById(session.linkedArtifactId) : undefined;
+  const mentor = users.find((user) => user.id === session.mentorId);
+  const artifact = session.linkedArtifactId
+    ? await mockRepositories.artifacts.getArtifactById(session.linkedArtifactId)
+    : undefined;
+  const targetName = getMentoringTargetName(session, users, teams);
   const updateMessages: Record<string, string> = {
     saved: "멘토링 기록 저장 요청이 mock repository를 통해 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 멘토링 기록을 수정할 수 없습니다.",
@@ -36,9 +46,9 @@ export default async function MentoringSessionDetailPage({
   const nextActionsText = session.nextActions.join("\n");
 
   return (
-    <AppShell title={`${getMentoringTargetName(session)} 멘토링`} eyebrow="Mentoring Record">
+    <AppShell title={`${targetName} 멘토링`} eyebrow="Mentoring Record">
       <div className="mb-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="대상" value={getMentoringTargetName(session)} tone="teal" />
+        <Stat label="대상" value={targetName} tone="teal" />
         <Stat label="멘토" value={mentor?.name ?? session.mentorId} />
         <Stat label="상태" value={getMentoringStatusLabel(session.status)} />
         <Stat label="일정" value={session.scheduledAt} tone="amber" />
