@@ -87,7 +87,7 @@
 
 ## 다음 PR 제안
 
-1. 피드백 생성 mock action 연결
-2. 평가 제출 mock action 연결
+1. 평가 제출 mock action 연결
+2. 멘토링 기록 mock action 연결
 3. Supabase session provider 설계
 4. DB-backed repository 구현 후보 선정
