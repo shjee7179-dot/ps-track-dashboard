@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { getJourneySummary, users } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
-export default function StudentJourneysPage() {
+export default async function StudentJourneysPage() {
+  const users = await mockRepositories.users.listUsers();
   const students = users.filter((user) => user.defaultRole === "student");
+  const summaries = await Promise.all(
+    students.map(async (student) => [
+      student.id,
+      await mockRepositories.learning.getJourneySummary(student.id),
+    ] as const),
+  );
+  const summaryByStudentId = new Map(summaries);
 
   return (
     <AppShell title="학생별 학습 여정" eyebrow="Journeys / Students">
@@ -16,7 +24,7 @@ export default function StudentJourneysPage() {
       <Card title="학생 목록" subtitle="학생 개인 기준으로 현재 위치와 조치 필요 항목을 확인">
         <div className="space-y-3">
           {students.map((student) => {
-            const summary = getJourneySummary(student.id);
+            const summary = summaryByStudentId.get(student.id);
             return (
               <Link
                 key={student.id}
@@ -28,9 +36,9 @@ export default function StudentJourneysPage() {
                   <p className="mt-1 text-sm text-stone-500">{student.email}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end">
-                  <StatusBadge>완료 {summary.completed}/{summary.total}</StatusBadge>
-                  <StatusBadge>조치 {summary.needsAction}</StatusBadge>
-                  <StatusBadge>{summary.completionRate}%</StatusBadge>
+                  <StatusBadge>완료 {summary?.completed ?? 0}/{summary?.total ?? 0}</StatusBadge>
+                  <StatusBadge>조치 {summary?.needsAction ?? 0}</StatusBadge>
+                  <StatusBadge>{summary?.completionRate ?? 0}%</StatusBadge>
                 </div>
               </Link>
             );

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { JourneyTimeline } from "@/components/journey";
 import { Card, Stat } from "@/components/ui";
-import { activityLogs, getJourneySummary, getStudentById, getStudentJourney } from "@/lib/domain";
+import { mockRepositories } from "@/lib/mock-repositories";
 
 export default async function StudentJourneyDetailPage({
   params,
@@ -10,11 +10,14 @@ export default async function StudentJourneyDetailPage({
   params: Promise<{ studentId: string }>;
 }) {
   const { studentId } = await params;
-  const student = getStudentById(studentId);
-  if (!student) notFound();
+  const [student, journey, summary, activityLogs] = await Promise.all([
+    mockRepositories.users.getUserById(studentId),
+    mockRepositories.learning.listStudentJourney(studentId),
+    mockRepositories.learning.getJourneySummary(studentId),
+    mockRepositories.admin.listActivityLogs({ studentId }),
+  ]);
 
-  const journey = getStudentJourney(studentId);
-  const summary = getJourneySummary(studentId);
+  if (!student || student.defaultRole !== "student") notFound();
 
   return (
     <AppShell title={`${student.name} 학습 여정`} eyebrow="Student Journey Detail">
@@ -28,17 +31,15 @@ export default async function StudentJourneyDetailPage({
         <JourneyTimeline items={journey} />
         <Card title="활동 로그" subtitle="1차는 핵심 이벤트 중심으로 기록">
           <div className="space-y-3">
-            {activityLogs
-              .filter((log) => log.studentId === studentId)
-              .map((log) => (
-                <div key={log.id} className="border-b border-stone-100 pb-3 last:border-0">
-                  <p className="text-sm font-medium text-stone-950">{log.target}</p>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {log.eventType} / {log.occurredAt}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-600">{log.detail}</p>
-                </div>
-              ))}
+            {activityLogs.map((log) => (
+              <div key={log.id} className="border-b border-stone-100 pb-3 last:border-0">
+                <p className="text-sm font-medium text-stone-950">{log.target}</p>
+                <p className="mt-1 text-xs text-stone-500">
+                  {log.eventType} / {log.occurredAt}
+                </p>
+                <p className="mt-1 text-sm text-stone-600">{log.detail}</p>
+              </div>
+            ))}
           </div>
         </Card>
       </div>

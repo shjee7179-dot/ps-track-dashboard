@@ -25,7 +25,13 @@ import {
   teams,
   users,
 } from "@/lib/mock-data";
-import type { AppRepositories, ListQuery, MutationResult } from "@/lib/repository-contracts";
+import type {
+  AppRepositories,
+  JourneySummary,
+  ListQuery,
+  MutationResult,
+  StudentJourneyItem,
+} from "@/lib/repository-contracts";
 import type {
   Evaluation,
   EvaluationItemScore,
@@ -54,6 +60,32 @@ function withAudit<T>(data: T): MutationResult<T> {
   return {
     data,
     auditLogId: nextMockId("audit"),
+  };
+}
+
+function listStudentJourneyRows(studentId: string): StudentJourneyItem[] {
+  return studentLearningPieceStatuses
+    .filter((status) => status.studentId === studentId)
+    .map((status) => ({
+      status,
+      learningPiece: learningPieces.find((piece) => piece.id === status.learningPieceId),
+    }))
+    .filter((item): item is StudentJourneyItem => Boolean(item.learningPiece));
+}
+
+function summarizeJourney(journey: StudentJourneyItem[]): JourneySummary {
+  const completed = journey.filter((item) => item.status.status === "completed").length;
+  const delayed = journey.filter((item) => item.status.status === "delayed").length;
+  const needsAction = journey.filter((item) =>
+    ["needs_submission", "pending_review", "revising", "in_progress"].includes(item.status.status),
+  ).length;
+
+  return {
+    total: journey.length,
+    completed,
+    delayed,
+    needsAction,
+    completionRate: journey.length ? Math.round((completed / journey.length) * 100) : 0,
   };
 }
 
@@ -89,6 +121,12 @@ export const mockRepositories: AppRepositories = {
         query?.studentId ? status.studentId === query.studentId : true,
       );
       return applyLimit(rows, query);
+    },
+    async listStudentJourney(studentId) {
+      return listStudentJourneyRows(studentId);
+    },
+    async getJourneySummary(studentId) {
+      return summarizeJourney(listStudentJourneyRows(studentId));
     },
     async updateStudentLearningPieceStatus(statusId, status) {
       const existing = studentLearningPieceStatuses.find((item) => item.id === statusId);

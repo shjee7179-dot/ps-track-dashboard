@@ -20,6 +20,8 @@
 - `/operations/risks`: 리스크/리마인더 목록 repository 경유
 - `/notices`: 공지 목록 repository 경유
 - `/notices/new`: 활성 기수 조회 repository 경유
+- `/journeys/students`: 학생 목록과 여정 요약 repository 경유
+- `/journeys/students/[studentId]`: 학생 상세, 여정 타임라인, 활동 로그 repository 경유
 - `/journeys/status`: 학습피스 상태 목록 repository 경유
 - `/objects/learning-pieces`: 학습피스/학생 상태 목록 repository 경유
 - `/cohorts/2026`: 기수 운영 요약의 주요 목록 repository 경유
