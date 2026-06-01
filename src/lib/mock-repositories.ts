@@ -30,6 +30,7 @@ import type {
   Evaluation,
   EvaluationItemScore,
   Feedback,
+  MentoringSession,
   RiskSignal,
   StudentLearningPieceStatus,
   Submission,
@@ -228,6 +229,26 @@ export const mockRepositories: AppRepositories = {
         return true;
       });
       return applyLimit(rows, query);
+    },
+    async getMentoringSessionById(sessionId) {
+      return mentoringSessions.find((session) => session.id === sessionId);
+    },
+    async updateMentoringSessionRecord(input) {
+      const existing = mentoringSessions.find((session) => session.id === input.sessionId);
+      const updated: MentoringSession = {
+        id: input.sessionId,
+        cohortId: existing?.cohortId ?? cohort2026.id,
+        targetType: existing?.targetType ?? "student",
+        targetId: existing?.targetId ?? "student-001",
+        mentorId: existing?.mentorId ?? "mentor-001",
+        scheduledAt: existing?.scheduledAt ?? today(),
+        status: input.status,
+        externalMeetingUrl: existing?.externalMeetingUrl,
+        notes: input.notes,
+        linkedArtifactId: existing?.linkedArtifactId,
+        nextActions: input.nextActions,
+      };
+      return withAudit(updated);
     },
     async listRiskSignals(query) {
       const rows = riskSignals.filter((risk) => {
