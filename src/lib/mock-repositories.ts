@@ -31,6 +31,7 @@ import type {
   EvaluationItemScore,
   Feedback,
   MentoringSession,
+  ReminderCandidate,
   RiskSignal,
   StudentLearningPieceStatus,
   Submission,
@@ -284,6 +285,21 @@ export const mockRepositories: AppRepositories = {
         relatedObjectId: existing?.relatedObjectId ?? "lp-001",
         actionStatus: status,
         actionNote: existing?.actionNote ?? "mock repository status update",
+      };
+      return withAudit(updated);
+    },
+    async updateReminderSendStatus(reminderId, status) {
+      const existing = reminderCandidates.find((reminder) => reminder.id === reminderId);
+      const updated: ReminderCandidate = {
+        id: reminderId,
+        riskSignalId: existing?.riskSignalId ?? "risk-001",
+        targetType: existing?.targetType ?? "student",
+        targetId: existing?.targetId ?? "student-001",
+        reason: existing?.reason ?? "mock repository reminder update",
+        channel: existing?.channel ?? "manual",
+        sendStatus: status,
+        recommendedAt: existing?.recommendedAt ?? today(),
+        sentAt: status === "sent" ? today() : existing?.sentAt,
       };
       return withAudit(updated);
     },

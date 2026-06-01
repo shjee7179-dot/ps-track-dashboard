@@ -121,6 +121,10 @@ export type OperationsRepository = {
     riskSignalId: string,
     status: RiskSignal["actionStatus"],
   ): RepositoryResult<MutationResult<RiskSignal>>;
+  updateReminderSendStatus(
+    reminderId: string,
+    status: ReminderCandidate["sendStatus"],
+  ): RepositoryResult<MutationResult<ReminderCandidate>>;
 };
 
 export type SurveyRepository = {
