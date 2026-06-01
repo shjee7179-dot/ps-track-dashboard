@@ -40,6 +40,7 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 - `src/lib/supabase/` 아래 adapter 자리 생성
 - Supabase session provider와 DB-backed repository가 만족해야 할 contract 명시
 - DB schema draft와 repository contract의 매핑표 확정
+- `db/schema/001_core_auth_scope.sql`로 users, role assignments, cohorts, teams 기준 SQL 초안 고정
 - 실제 SDK 설치와 연결은 보류
 
 ### Phase 2: Auth Provider 전환
@@ -86,6 +87,7 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 | `users.email` | 로그인/초대/알림 식별 |
 
 이 방식은 Supabase 독립 MVP와 향후 Keycloak/LMS 연동을 동시에 수용하기 쉽다.
+SQL 초안에서는 `users.auth_user_id`를 nullable unique column으로 두어 초대/운영 등록 이후 Auth 계정 연결이 가능하게 한다.
 
 ## 권한 모델
 
@@ -99,6 +101,8 @@ role_assignments
 - scope_id
 - status
 ```
+
+`scope_id`는 text로 둔다. `system`은 상수값이고, `program`, `cohort`, `team`, `student`는 각 대상의 id 또는 code를 참조할 수 있어서 초기에는 polymorphic foreign key 대신 application/repository layer에서 검증한다.
 
 권한 판단은 계속 다음 순서를 따른다.
 
@@ -139,6 +143,6 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 1. Supabase SDK 설치와 client factory 구현
 2. `supabaseSessionProvider` 초안 구현
-3. DB schema SQL 초안 작성
-4. users / role assignments DB-backed repository 구현
+3. users / role assignments DB-backed repository 구현
+4. core schema seed/RLS 초안 작성
 5. submissions file metadata와 Storage bucket 설계

@@ -28,6 +28,7 @@
 | `.env.example` | Vercel/Supabase 전환 시 필요한 환경변수 계약 |
 | `src/lib/supabase/` | Supabase Auth, Postgres, Storage adapter를 둘 future implementation 자리 |
 | `docs/SUPABASE_TRANSITION_PLAN.md` | Supabase/Auth/DB 전환 순서와 운영 판단 기준 |
+| `db/schema/001_core_auth_scope.sql` | Auth/session 전환 전 users, role assignments, cohorts, teams 실제 테이블 모양 초안 |
 
 ## Session Contract
 
@@ -84,7 +85,9 @@
 
 - `users.id`를 앱 도메인 id로 유지할지, Supabase `auth.users.id`와 맞출지 최종 결정한다.
 - 현재 권장안은 `users.id`와 `users.auth_user_id`를 분리하는 방식이다.
+- 첫 SQL 초안은 `db/schema/001_core_auth_scope.sql`에 두며, `users.id`는 앱 도메인 id, `users.auth_user_id`는 Supabase Auth 연결값으로 분리한다.
 - role assignment는 active row 기준으로 조회한다.
+- `role_assignments.scope_id`는 polymorphic scope를 수용하기 위해 text로 둔다.
 - RLS는 최소 read/write action과 scope 단위로 나눈다.
 - Storage는 artifacts/submissions와 먼저 연결한다.
 - audit log는 server action에서 우선 기록하고, DB trigger는 후속 고도화로 둔다.
@@ -98,10 +101,10 @@
 
 ## 다음 PR 제안
 
-1. route/page read path repository 전환 확대
-2. Supabase SDK 설치와 client factory 구현
-3. Supabase session provider 초안 구현
-4. DB-backed users / role assignments repository 구현
+1. Supabase SDK 설치와 client factory 구현
+2. Supabase session provider 초안 구현
+3. DB-backed users / role assignments repository 구현
+4. core schema seed/RLS 초안 작성
 5. Storage 연결 설계
 
 ## Mock completion reference

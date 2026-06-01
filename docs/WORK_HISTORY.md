@@ -105,24 +105,31 @@
 - PR #36: 멘토링 상세 repository 전환
 - PR #37: 학습성과 목록/상세 repository 전환
 - PR #38: 기수/팀 상세 repository 전환
+- PR #39: Supabase/Auth 전환 경계와 환경 계약 준비
 
 ## 현재 진행 흐름
 
-### Supabase/Auth 전환 준비
+### Core Auth/Scope Schema SQL 초안
 
-- 목적: mock 기반 MVP를 Supabase Auth, Postgres, Storage로 전환하기 전 adapter 경계와 환경 계약을 확정
+- 목적: Supabase Auth/session provider 구현 전에 users, role assignments, cohorts, teams의 실제 테이블 모양을 먼저 고정
 - 산출물:
-  - `docs/SUPABASE_TRANSITION_PLAN.md`
-  - `.env.example`
-  - `src/lib/supabase/README.md`
-  - `src/lib/supabase/contracts.ts`
+  - `db/schema/001_core_auth_scope.sql`
+  - `docs/11-database-schema-draft.md`
   - `docs/AUTH_PERSISTENCE_PREP.md`
-  - `docs/MOCK_COMPLETION_NOTES.md`
-- 활용 방식: 실제 Supabase SDK 설치와 DB 연결 전, `SessionProvider`와 `AppRepositories`를 만족할 adapter 위치를 먼저 고정
+  - `docs/SUPABASE_TRANSITION_PLAN.md`
+- 주요 결정:
+  - `users.id`는 앱 도메인 id로 유지
+  - Supabase Auth 연결은 `users.auth_user_id` nullable unique column으로 분리
+  - 향후 LMS/Keycloak 연동은 `users.external_subject`로 연결 가능하게 둠
+  - `role_assignments.scope_id`는 polymorphic scope 대응을 위해 text로 둠
+- 활용 방식: 실제 Supabase SDK 설치와 DB 연결 전, session provider와 DB-backed repository의 첫 기준 테이블을 고정
 
 ### 다음 예정 작업
 
-- Supabase SDK 설치와 client factory 구현 또는 users/role assignments DB schema 초안 작성
+- Supabase SDK 설치와 client factory 구현
+- `supabaseSessionProvider` 초안 구현
+- users/role assignments DB-backed repository 구현
+- core schema seed/RLS 초안 작성
 
 ## 열린 판단
 
