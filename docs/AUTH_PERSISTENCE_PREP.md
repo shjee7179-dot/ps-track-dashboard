@@ -29,6 +29,10 @@
 | `src/lib/supabase/` | Supabase Auth, Postgres, Storage adapter를 둘 future implementation 자리 |
 | `docs/SUPABASE_TRANSITION_PLAN.md` | Supabase/Auth/DB 전환 순서와 운영 판단 기준 |
 | `db/schema/001_core_auth_scope.sql` | Auth/session 전환 전 users, role assignments, cohorts, teams 실제 테이블 모양 초안 |
+| `src/lib/supabase/env.ts` | Supabase public/admin 환경변수 validation helper |
+| `src/lib/supabase/clients.ts` | browser Supabase client factory |
+| `src/lib/supabase/server.ts` | server/admin Supabase client factory, service role server-only 경계 |
+| `src/lib/supabase/database.ts` | generated DB type 도입 전 placeholder |
 
 ## Session Contract
 
@@ -94,18 +98,19 @@
 
 ## Supabase adapter 준비 상태
 
-- 실제 SDK는 아직 설치하지 않았다.
+- `@supabase/supabase-js`, `@supabase/ssr`를 설치했다.
 - `src/lib/supabase/contracts.ts`는 adapter가 만족해야 할 contract와 전환 순서를 기록한다.
+- `src/lib/supabase/clients.ts`는 browser client만 생성한다.
+- `src/lib/supabase/server.ts`는 `server-only` 경계 안에서 request cookie 기반 server client와 service role admin client를 생성한다.
 - `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=mock`을 기본값으로 두고, 후속 PR에서 provider switch를 검토한다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 server-only 영역에서만 사용한다.
 
 ## 다음 PR 제안
 
-1. Supabase SDK 설치와 client factory 구현
-2. Supabase session provider 초안 구현
-3. DB-backed users / role assignments repository 구현
-4. core schema seed/RLS 초안 작성
-5. Storage 연결 설계
+1. Supabase session provider 초안 구현
+2. DB-backed users / role assignments repository 구현
+3. core schema seed/RLS 초안 작성
+4. Storage 연결 설계
 
 ## Mock completion reference
 

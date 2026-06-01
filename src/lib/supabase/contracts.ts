@@ -19,7 +19,7 @@ export type SupabaseRepositoryAdapterPlan = {
 };
 
 export const supabaseAuthAdapterPlan: SupabaseAuthAdapterPlan = {
-  status: "planned",
+  status: "partial",
   providerName: "supabase",
   satisfies: "SessionProvider",
   notes: [
@@ -31,7 +31,7 @@ export const supabaseAuthAdapterPlan: SupabaseAuthAdapterPlan = {
 };
 
 export const supabaseRepositoryAdapterPlan: SupabaseRepositoryAdapterPlan = {
-  status: "planned",
+  status: "partial",
   providerName: "supabase",
   satisfies: "AppRepositories",
   firstDomains: ["users", "cohorts", "learning"],
