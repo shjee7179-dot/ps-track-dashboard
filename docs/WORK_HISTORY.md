@@ -98,24 +98,25 @@
 - PR #29: 산출물 루브릭 평가 제출 server action guard 구현
 - PR #30: 멘토링 기록 저장 server action guard 구현
 - PR #31: 리스크/리마인더 조치 상태 저장 server action guard 구현
+- PR #32: 남은 mock action/read path completion pass
+- PR #33: 주요 read-heavy route repository 전환 확대
 
 ## 현재 진행 흐름
 
-### route/page read path repository 전환 확대
+### journey read path repository 전환
 
-- 목적: DB-backed repository 전환 전에 주요 화면의 직접 mock-data/domain 목록 읽기를 repository 경유로 단계적으로 전환
+- 목적: 학생 개인 기준 여정 목록/상세 화면의 직접 mock-data/domain 읽기를 repository 경유로 전환
 - 산출물:
-  - `/journeys/status` repository read path 전환
-  - `/objects/learning-pieces` repository read path 전환
-  - `/cohorts/2026` repository read path 전환
-  - `/pi/dashboard` repository read path 전환
-  - `/journeys/status` route access policy 누락 보정
+  - `LearningRepository.listStudentJourney`
+  - `LearningRepository.getJourneySummary`
+  - `/journeys/students` repository read path 전환
+  - `/journeys/students/[studentId]` repository read path 전환
   - `docs/MOCK_COMPLETION_NOTES.md`
 - 활용 방식: 화면은 점진적으로 `mockRepositories`를 바라보고, 표시용 helper는 필요한 곳에만 유지
 
 ### 다음 예정 작업
 
-- 추가 route/page read path 전환 또는 Supabase session provider 설계
+- artifact/detail read path repository 전환 또는 Supabase session provider 설계
 
 ## 열린 판단
 

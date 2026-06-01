@@ -40,6 +40,19 @@ export type MutationResult<T> = {
   auditLogId?: string;
 };
 
+export type StudentJourneyItem = {
+  status: StudentLearningPieceStatus;
+  learningPiece: LearningPiece;
+};
+
+export type JourneySummary = {
+  total: number;
+  completed: number;
+  delayed: number;
+  needsAction: number;
+  completionRate: number;
+};
+
 export type UserRepository = {
   listUsers(query?: ListQuery): RepositoryResult<User[]>;
   getUserById(userId: string): RepositoryResult<User | undefined>;
@@ -52,6 +65,8 @@ export type LearningRepository = {
   listLearningPieces(query?: ListQuery): RepositoryResult<LearningPiece[]>;
   getLearningPieceById(learningPieceId: string): RepositoryResult<LearningPiece | undefined>;
   listStudentLearningPieceStatuses(query?: ListQuery): RepositoryResult<StudentLearningPieceStatus[]>;
+  listStudentJourney(studentId: string): RepositoryResult<StudentJourneyItem[]>;
+  getJourneySummary(studentId: string): RepositoryResult<JourneySummary>;
   updateStudentLearningPieceStatus(
     statusId: string,
     status: StudentLearningPieceStatus["status"],
