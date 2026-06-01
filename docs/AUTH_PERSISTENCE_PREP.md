@@ -25,6 +25,9 @@
 | `src/lib/repository-contracts.ts` | mock data와 DB repository가 공유할 읽기/쓰기 contract 정의 |
 | `src/lib/mock-repositories.ts` | persistence 전환 전 화면/서버 액션이 먼저 의존할 mock repository implementation |
 | `src/lib/session.ts` | 기존 mock session helper에 `mockSessionProvider`를 추가해 `SessionProvider` contract 충족 |
+| `.env.example` | Vercel/Supabase 전환 시 필요한 환경변수 계약 |
+| `src/lib/supabase/` | Supabase Auth, Postgres, Storage adapter를 둘 future implementation 자리 |
+| `docs/SUPABASE_TRANSITION_PLAN.md` | Supabase/Auth/DB 전환 순서와 운영 판단 기준 |
 
 ## Session Contract
 
@@ -79,18 +82,27 @@
 
 ## Supabase 전환 시 확인할 것
 
-- `users.id`는 Supabase `auth.users.id`와 맞춘다.
+- `users.id`를 앱 도메인 id로 유지할지, Supabase `auth.users.id`와 맞출지 최종 결정한다.
+- 현재 권장안은 `users.id`와 `users.auth_user_id`를 분리하는 방식이다.
 - role assignment는 active row 기준으로 조회한다.
 - RLS는 최소 read/write action과 scope 단위로 나눈다.
 - Storage는 artifacts/submissions와 먼저 연결한다.
 - audit log는 server action에서 우선 기록하고, DB trigger는 후속 고도화로 둔다.
 
+## Supabase adapter 준비 상태
+
+- 실제 SDK는 아직 설치하지 않았다.
+- `src/lib/supabase/contracts.ts`는 adapter가 만족해야 할 contract와 전환 순서를 기록한다.
+- `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=mock`을 기본값으로 두고, 후속 PR에서 provider switch를 검토한다.
+- `SUPABASE_SERVICE_ROLE_KEY`는 server-only 영역에서만 사용한다.
+
 ## 다음 PR 제안
 
 1. route/page read path repository 전환 확대
-2. Supabase session provider 설계
-3. DB-backed repository 구현 후보 선정
-4. Storage 연결 설계
+2. Supabase SDK 설치와 client factory 구현
+3. Supabase session provider 초안 구현
+4. DB-backed users / role assignments repository 구현
+5. Storage 연결 설계
 
 ## Mock completion reference
 

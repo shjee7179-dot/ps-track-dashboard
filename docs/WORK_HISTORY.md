@@ -104,25 +104,25 @@
 - PR #35: 산출물 상세/리뷰/평가 repository 전환
 - PR #36: 멘토링 상세 repository 전환
 - PR #37: 학습성과 목록/상세 repository 전환
+- PR #38: 기수/팀 상세 repository 전환
 
 ## 현재 진행 흐름
 
-### cohort/team read path repository 전환
+### Supabase/Auth 전환 준비
 
-- 목적: 기수 상세, 참여자, 팀, 멘토 배정 화면의 직접 mock-data/domain 읽기를 repository 경유로 전환
+- 목적: mock 기반 MVP를 Supabase Auth, Postgres, Storage로 전환하기 전 adapter 경계와 환경 계약을 확정
 - 산출물:
-  - `/cohorts/2026/detail` repository read path 전환
-  - `/cohorts/2026/participants` repository read path 전환
-  - `/cohorts/2026/teams` repository read path 전환
-  - `/cohorts/2026/teams/[teamId]` repository read path 전환
-  - `/cohorts/2026/mentor-assignments` repository read path 전환
-  - `ArtifactCard`, `MentoringSessionCard` repository-fed label props 확장
+  - `docs/SUPABASE_TRANSITION_PLAN.md`
+  - `.env.example`
+  - `src/lib/supabase/README.md`
+  - `src/lib/supabase/contracts.ts`
+  - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/MOCK_COMPLETION_NOTES.md`
-- 활용 방식: 화면은 점진적으로 `mockRepositories`를 바라보고, 표시용 helper는 필요한 곳에만 유지
+- 활용 방식: 실제 Supabase SDK 설치와 DB 연결 전, `SessionProvider`와 `AppRepositories`를 만족할 adapter 위치를 먼저 고정
 
 ### 다음 예정 작업
 
-- Supabase/Auth 전환 준비 또는 admin/settings write action 전환
+- Supabase SDK 설치와 client factory 구현 또는 users/role assignments DB schema 초안 작성
 
 ## 열린 판단
 
