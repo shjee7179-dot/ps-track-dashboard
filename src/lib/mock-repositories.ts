@@ -27,6 +27,8 @@ import {
 } from "@/lib/mock-data";
 import type { AppRepositories, ListQuery, MutationResult } from "@/lib/repository-contracts";
 import type {
+  Evaluation,
+  EvaluationItemScore,
   Feedback,
   RiskSignal,
   StudentLearningPieceStatus,
@@ -183,6 +185,31 @@ export const mockRepositories: AppRepositories = {
     },
     async listEvaluationItemScores(evaluationId) {
       return evaluationItemScores.filter((score) => score.evaluationId === evaluationId);
+    },
+    async createEvaluation(input) {
+      const items = rubricItems.filter((item) => item.rubricId === input.rubricId);
+      const maxScore = items.reduce((sum, item) => sum + item.maxScore, 0);
+      const totalScore = input.itemScores.reduce((sum, item) => sum + item.score, 0);
+      const evaluation: Evaluation = {
+        id: nextMockId("evaluation"),
+        artifactId: input.artifactId,
+        rubricId: input.rubricId,
+        evaluatorId: input.evaluatorId,
+        evaluatedAt: today(),
+        totalScore,
+        maxScore,
+        overallComment: input.overallComment,
+        status: "submitted",
+      };
+      const scores: EvaluationItemScore[] = input.itemScores.map((item) => ({
+        id: nextMockId("score"),
+        evaluationId: evaluation.id,
+        rubricItemId: item.rubricItemId,
+        score: item.score,
+        comment: item.comment,
+      }));
+      void scores;
+      return withAudit(evaluation);
     },
     async listLearningOutcomes() {
       return learningOutcomes;
