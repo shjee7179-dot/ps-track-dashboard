@@ -108,6 +108,13 @@ export type EvaluationRepository = {
 
 export type OperationsRepository = {
   listMentoringSessions(query?: ListQuery): RepositoryResult<MentoringSession[]>;
+  getMentoringSessionById(sessionId: string): RepositoryResult<MentoringSession | undefined>;
+  updateMentoringSessionRecord(input: {
+    sessionId: string;
+    status: MentoringSession["status"];
+    notes: string;
+    nextActions: string[];
+  }): RepositoryResult<MutationResult<MentoringSession>>;
   listRiskSignals(query?: ListQuery): RepositoryResult<RiskSignal[]>;
   listReminderCandidates(query?: ListQuery): RepositoryResult<ReminderCandidate[]>;
   updateRiskSignalStatus(
