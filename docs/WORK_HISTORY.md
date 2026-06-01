@@ -106,27 +106,32 @@
 - PR #37: 학습성과 목록/상세 repository 전환
 - PR #38: 기수/팀 상세 repository 전환
 - PR #39: Supabase/Auth 전환 경계와 환경 계약 준비
+- PR #40: Core Auth/Scope Schema SQL 초안 작성
 
 ## 현재 진행 흐름
 
-### Core Auth/Scope Schema SQL 초안
+### Supabase SDK / Client Factory 구현
 
-- 목적: Supabase Auth/session provider 구현 전에 users, role assignments, cohorts, teams의 실제 테이블 모양을 먼저 고정
+- 목적: Supabase Auth/session provider와 DB-backed repository 구현 전에 SDK와 client 생성 경계를 먼저 고정
 - 산출물:
-  - `db/schema/001_core_auth_scope.sql`
-  - `docs/11-database-schema-draft.md`
+  - `package.json`
+  - `package-lock.json`
+  - `src/lib/supabase/env.ts`
+  - `src/lib/supabase/database.ts`
+  - `src/lib/supabase/clients.ts`
+  - `src/lib/supabase/server.ts`
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/SUPABASE_TRANSITION_PLAN.md`
 - 주요 결정:
-  - `users.id`는 앱 도메인 id로 유지
-  - Supabase Auth 연결은 `users.auth_user_id` nullable unique column으로 분리
-  - 향후 LMS/Keycloak 연동은 `users.external_subject`로 연결 가능하게 둠
-  - `role_assignments.scope_id`는 polymorphic scope 대응을 위해 text로 둠
-- 활용 방식: 실제 Supabase SDK 설치와 DB 연결 전, session provider와 DB-backed repository의 첫 기준 테이블을 고정
+  - `@supabase/supabase-js`, `@supabase/ssr`를 사용
+  - browser client는 public URL과 anon key만 사용
+  - server client는 Next cookies 기반으로 request마다 생성
+  - admin client는 `server-only` 파일에서 service role key로만 생성
+  - generated DB type은 아직 없으므로 `database.ts`는 placeholder로 둠
+- 활용 방식: 다음 PR에서 `supabaseSessionProvider`와 users/role assignments DB repository가 이 factory를 사용
 
 ### 다음 예정 작업
 
-- Supabase SDK 설치와 client factory 구현
 - `supabaseSessionProvider` 초안 구현
 - users/role assignments DB-backed repository 구현
 - core schema seed/RLS 초안 작성

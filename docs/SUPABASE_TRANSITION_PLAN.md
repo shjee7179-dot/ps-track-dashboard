@@ -41,11 +41,12 @@ Firebase도 가능하지만, 이 관계 모델은 Postgres 기반의 Supabase가
 - Supabase session provider와 DB-backed repository가 만족해야 할 contract 명시
 - DB schema draft와 repository contract의 매핑표 확정
 - `db/schema/001_core_auth_scope.sql`로 users, role assignments, cohorts, teams 기준 SQL 초안 고정
-- 실제 SDK 설치와 연결은 보류
+- `@supabase/supabase-js`, `@supabase/ssr` 설치
+- browser/server/admin client factory 구현
+- 실제 Auth/session provider와 DB repository 연결은 보류
 
 ### Phase 2: Auth Provider 전환
 
-- Supabase browser/server client 추가
 - `supabaseSessionProvider` 구현
 - `users.auth_user_id` 또는 `users.id` 전략 확정 후 적용
 - 로그인 callback과 세션 유지 흐름 구현
@@ -131,6 +132,16 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 client bundle에 노출하지 않는다.
 - `NEXT_PUBLIC_` prefix가 붙은 값만 browser에서 읽을 수 있게 둔다.
 
+## Client Factory 경계
+
+| factory | file | purpose |
+| --- | --- | --- |
+| `createSupabaseBrowserClient` | `src/lib/supabase/clients.ts` | browser runtime에서 public URL과 anon key로 client 생성 |
+| `createSupabaseServerClient` | `src/lib/supabase/server.ts` | request cookies 기반 user-scoped server client 생성 |
+| `createSupabaseAdminClient` | `src/lib/supabase/server.ts` | service role key 기반 server-only admin client 생성 |
+
+페이지와 server action은 가능한 한 이 client를 직접 쓰지 않고, `SessionProvider`와 `AppRepositories` adapter를 통해 접근한다.
+
 ## Future Integration Track과의 경계
 
 `docs/13-lms-db-integration-proposal.md`는 지금 본선에 섞지 않는다.
@@ -141,8 +152,7 @@ Vercel에는 `.env.example`의 key를 기준으로 환경변수를 등록한다.
 
 ## 다음 PR 후보
 
-1. Supabase SDK 설치와 client factory 구현
-2. `supabaseSessionProvider` 초안 구현
-3. users / role assignments DB-backed repository 구현
-4. core schema seed/RLS 초안 작성
-5. submissions file metadata와 Storage bucket 설계
+1. `supabaseSessionProvider` 초안 구현
+2. users / role assignments DB-backed repository 구현
+3. core schema seed/RLS 초안 작성
+4. submissions file metadata와 Storage bucket 설계
