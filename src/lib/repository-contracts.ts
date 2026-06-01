@@ -92,6 +92,17 @@ export type EvaluationRepository = {
   listEvaluations(artifactId?: string): RepositoryResult<Evaluation[]>;
   getEvaluationById(evaluationId: string): RepositoryResult<Evaluation | undefined>;
   listEvaluationItemScores(evaluationId: string): RepositoryResult<EvaluationItemScore[]>;
+  createEvaluation(input: {
+    artifactId: string;
+    rubricId: string;
+    evaluatorId: string;
+    overallComment: string;
+    itemScores: Array<{
+      rubricItemId: string;
+      score: number;
+      comment: string;
+    }>;
+  }): RepositoryResult<MutationResult<Evaluation>>;
   listLearningOutcomes(): RepositoryResult<LearningOutcome[]>;
 };
 

@@ -94,22 +94,25 @@
 - PR #25: 학생 대시보드를 repository 경유로 전환하고 LMS 연동을 Future Integration Track으로 분리
 - PR #26: 학습피스 상태 변경 server action guard 구현
 - PR #27: 산출물 제출 server action guard 구현
+- PR #28: 산출물 피드백 생성 server action guard 구현
 
 ## 현재 진행 흐름
 
-### 피드백 생성 mock action 연결
+### 평가 제출 mock action 연결
 
-- 목적: 산출물 리뷰 화면에서 피드백을 생성하는 mock action guard 흐름을 구현
+- 목적: 산출물 루브릭 평가 화면에서 항목별 점수와 종합 코멘트를 제출하는 mock action guard 흐름을 구현
 - 산출물:
-  - `src/app/artifacts/[artifactId]/review/actions.ts`
-  - `/artifacts/[artifactId]/review` 피드백 작성 form
+  - `src/app/artifacts/[artifactId]/evaluation/actions.ts`
+  - `/artifacts/[artifactId]/evaluation` 평가 제출 form
+  - `src/lib/repository-contracts.ts`
+  - `src/lib/mock-repositories.ts`
   - `docs/AUTH_PERSISTENCE_PREP.md`
   - `docs/MVP_COMPLETION_LEDGER.md`
-- 활용 방식: `artifact lookup -> requireSession -> canAccess(owner scope) -> createFeedback -> revalidate` 흐름의 기준 구현
+- 활용 방식: `artifact lookup -> rubric items -> requireSession -> canAccess(owner scope) -> createEvaluation -> revalidate` 흐름의 기준 구현
 
 ### 다음 예정 작업
 
-- 평가 제출 mock action 연결
+- 멘토링 기록 mock action 연결
 
 ## 열린 판단
 

@@ -125,6 +125,7 @@
 | 첫 server action guard | Functional Mock | 학습피스 상태 변경 mock action |
 | 산출물 제출 action guard | Functional Mock | 산출물 상세 제출 등록 mock action |
 | 피드백 생성 action guard | Functional Mock | 산출물 리뷰 피드백 등록 mock action |
+| 평가 제출 action guard | Functional Mock | 산출물 루브릭 평가 제출 mock action |
 
 ## 최근 검증 기준
 
