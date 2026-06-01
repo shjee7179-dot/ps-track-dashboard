@@ -50,14 +50,26 @@ Keycloak subject
 | env | purpose |
 | --- | --- |
 | `DATABASE_URL` | future `REPOSITORY_PROVIDER=postgres` adapter connection |
+| `POSTGRES_SSL` | enable TLS for managed/private PostgreSQL when required |
 | `AUTH_PROVIDER=keycloak` | AlphaCampus/Keycloak trusted-header session |
 | `REPOSITORY_PROVIDER=postgres` | future private PostgreSQL repository selector |
 | `KEYCLOAK_SUB_HEADER` | Keycloak subject header name |
 
+## Query Helper Direction
+
+1차 private PostgreSQL adapter는 `pg` 기반의 명시적 SQL helper를 사용한다.
+
+- 한국 공공/ SI 유지보수 맥락에서 SQL이 직접 보이는 방식이 이해와 인수인계에 유리하다.
+- ORM 스키마 DSL보다 기존 PostgreSQL migration SQL과 사고방식이 더 가깝다.
+- 나중에 Spring Boot/MyBatis로 옮기더라도 repository SQL을 비교적 쉽게 재사용하거나 변환할 수 있다.
+- 복잡한 query builder는 domain table migration이 충분히 쌓인 뒤 필요성을 다시 판단한다.
+
+현재 구현 범위는 `users`와 `role_assignments` repository다. 나머지 repository domain은 `mockRepositories` fallback을 유지한다.
+
 ## Next Implementation Step
 
-1. PostgreSQL client/query helper 선택
-2. `REPOSITORY_PROVIDER=postgres` selector stub 또는 users repository 구현
-3. users / role_assignments DB-backed repository를 private PostgreSQL SQL에 맞게 구현
-4. domain table migration 확대
-5. audit/access log table migration 추가
+1. PostgreSQL users / role_assignments repository를 실제 DB에 적용 검증
+2. domain table migration 확대
+3. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환
+4. audit/access log table migration 추가
+5. app runtime user grant SQL 작성

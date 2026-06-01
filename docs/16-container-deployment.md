@@ -29,6 +29,7 @@
 | `KEYCLOAK_USERNAME_HEADER` | `x-keycloak-preferred-username` | diagnostic identity header |
 | `KEYCLOAK_EMAIL_HEADER` | `x-keycloak-email` | diagnostic identity header |
 | `DATABASE_URL` | empty in production image | future private PostgreSQL connection string |
+| `POSTGRES_SSL` | `false` | enable TLS for managed/private PostgreSQL when required |
 
 ## Local Commands
 

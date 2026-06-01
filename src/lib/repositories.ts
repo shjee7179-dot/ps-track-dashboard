@@ -1,10 +1,11 @@
 import "server-only";
 
 import { mockRepositories } from "@/lib/mock-repositories";
+import { postgresRepositories } from "@/lib/postgres/repositories";
 import type { AppRepositories } from "@/lib/repository-contracts";
 import { supabaseRepositories } from "@/lib/supabase/repositories";
 
-export type RepositoryProviderName = "mock" | "supabase";
+export type RepositoryProviderName = "mock" | "supabase" | "postgres";
 
 export function getRepositoryProviderName(
   value = process.env.REPOSITORY_PROVIDER,
@@ -15,14 +16,22 @@ export function getRepositoryProviderName(
   if (value === "supabase") {
     return "supabase";
   }
+  if (value === "postgres") {
+    return "postgres";
+  }
 
   throw new Error(`Unsupported REPOSITORY_PROVIDER value: ${value}`);
 }
 
 export function getRepositories(): AppRepositories {
-  return getRepositoryProviderName() === "supabase"
-    ? supabaseRepositories
-    : mockRepositories;
+  const providerName = getRepositoryProviderName();
+  if (providerName === "supabase") {
+    return supabaseRepositories;
+  }
+  if (providerName === "postgres") {
+    return postgresRepositories;
+  }
+  return mockRepositories;
 }
 
 export const repositories: AppRepositories = {

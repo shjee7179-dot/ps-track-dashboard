@@ -12,6 +12,7 @@ services:
       AUTH_PROVIDER: mock
       REPOSITORY_PROVIDER: mock
       DATABASE_URL: postgresql://ps_track_app:ps_track_app_password@postgres:5432/ps_track
+      POSTGRES_SSL: "false"
       KEYCLOAK_SUB_HEADER: x-keycloak-sub
       KEYCLOAK_USERNAME_HEADER: x-keycloak-preferred-username
       KEYCLOAK_EMAIL_HEADER: x-keycloak-email
