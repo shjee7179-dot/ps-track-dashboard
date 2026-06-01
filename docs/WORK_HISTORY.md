@@ -153,9 +153,31 @@
   - Keycloak realm/client role만으로 PS Track의 role + scope 권한을 대체하지 않는다.
 - 활용 방식: private PostgreSQL repository가 붙으면 `external_subject` 기반 사용자 조회가 그대로 운영 인증 흐름의 연결점이 된다.
 
+### Private PostgreSQL migration profile
+
+- 목적: Supabase validation track과 최종 private PostgreSQL 운영 target을 분리하고, 운영 DB 적용 기준선을 마련
+- 산출물:
+  - `db/private-postgres/README.md`
+  - `db/private-postgres/schema/001_core_auth_scope.sql`
+  - `db/private-postgres/seed/001_core_auth_scope_seed.sql`
+  - `db/private-postgres/policies/README.md`
+  - `docs/17-private-postgres-migration.md`
+  - optional `postgres` docker compose profile
+- 주요 결정:
+  - Supabase용 `auth.users` FK와 `auth.uid()` RLS는 운영 private PostgreSQL에 그대로 적용하지 않는다.
+  - 운영용 users table은 `external_subject`를 Keycloak/AlphaCampus 식별자 연결점으로 둔다.
+  - DB는 private network에 두고 WAS container에서만 접근한다.
+  - permission은 `SessionProvider`와 앱 레벨 guard를 1차 기준으로 둔다.
+- 활용 방식: 이후 `REPOSITORY_PROVIDER=postgres` adapter를 붙일 때 schema와 env contract의 기준점으로 사용한다.
+- 검증:
+  - `docker compose config` 통과
+  - `docker compose --profile postgres config` 통과
+  - 현재 로컬에는 `psql` CLI가 없고 Docker daemon socket이 없어 실제 PostgreSQL container 실행과 SQL 적용은 보류
+
 ### 다음 예정 작업
 
-- private PostgreSQL migration 형태 정리
+- PostgreSQL client/query helper 선택
+- `REPOSITORY_PROVIDER=postgres` selector stub 또는 users repository 구현
 - read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
 
 ## 열린 판단

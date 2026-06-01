@@ -11,6 +11,10 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       AUTH_PROVIDER: mock
       REPOSITORY_PROVIDER: mock
+      DATABASE_URL: postgresql://ps_track_app:ps_track_app_password@postgres:5432/ps_track
+      KEYCLOAK_SUB_HEADER: x-keycloak-sub
+      KEYCLOAK_USERNAME_HEADER: x-keycloak-preferred-username
+      KEYCLOAK_EMAIL_HEADER: x-keycloak-email
       NEXT_PUBLIC_APP_URL: http://localhost:3000
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
@@ -18,3 +22,25 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  postgres:
+    image: postgres:16-alpine
+    profiles:
+      - postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ps_track
+      POSTGRES_USER: ps_track_app
+      POSTGRES_PASSWORD: ps_track_app_password
+    volumes:
+      - ps-track-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ps_track_app -d ps_track"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  ps-track-postgres-data:
