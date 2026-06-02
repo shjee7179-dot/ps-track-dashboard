@@ -265,11 +265,29 @@
   - LMS readonly adapter
   - `/api/ready`
 
+### LMS readonly view contract
+
+- 목적: Keycloak/LMS 실명세 수령 전에도 진행 가능한 LMS 연계 contract와 내부 매핑 모델을 고정
+- 사용자 결정 반영:
+  - 실제 LMS DB 연결은 view 명세, DBMS, 상태 코드, 사용자 식별자 매핑을 받기 전까지 구현하지 않는다.
+  - 수료 판정은 PS Track에서 계산하지 않고 LMS view의 상태값과 `completion_bucket`을 인용한다.
+  - 운영자 사전 콘텐츠 매핑을 기본 흐름으로 두고, 학습자 직접 선택은 보조/예외 흐름으로 둔다.
+- 산출물:
+  - `docs/19-lms-readonly-view-contract.md`
+  - `src/lib/lms/contracts.ts`
+  - `LMS_PROVIDER=none|mock-view` env contract
+- 주요 모델:
+  - `lms_content_catalog_view`
+  - `lms_learning_record_view`
+  - 내부 `lms_content_mappings` draft
+- 중단선:
+  - 실제 DB adapter는 LMS 운영팀의 view 명세와 DBMS 정보를 받은 뒤 구현한다.
+
 ### 다음 예정 작업
 
+- LMS 운영팀에 DBMS, view 명세, 사용자 UUID/Keycloak subject 매핑 확인
 - Keycloak 버전/환경 확인
-- LMS 운영팀에 DBMS와 table/schema shape 확인
-- 확인 결과에 따라 Keycloak local simulation 또는 LMS mock DB 중 다음 PR 선택
+- 확인 결과에 따라 `mock-view` adapter skeleton 또는 `/api/ready` 기본형 선택
 
 ## 열린 판단
 

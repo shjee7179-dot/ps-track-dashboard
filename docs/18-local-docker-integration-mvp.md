@@ -34,9 +34,15 @@
 - Keycloak 전용 PostgreSQL container
 - LMS mock DBMS selection
 - LMS mock table/schema shape
-- LMS readonly schema/seed
-- 최소 사용자/참여 자격 조회 adapter
 - `/api/ready` readiness endpoint
+
+### Prepared Without External Confirmation
+
+- LMS readonly view contract draft
+- LMS internal content mapping model draft
+- operator pre-mapping flow
+- student self-link secondary flow
+- `LMS_PROVIDER=none|mock-view` provider contract
 
 ### Out of Scope
 
@@ -115,15 +121,16 @@ lms_private_zone
 
 ### PR 4: LMS Adapter Contract
 
-- Add `LMS_PROVIDER=none|mock-db`.
-- Add minimal adapter for user/eligibility lookup.
+- Add `LMS_PROVIDER=none|mock-view`.
+- Add readonly view contract for content catalog and learning records.
+- Add internal mapping model draft.
 - Keep deep LMS integration out of scope.
 
 ### PR 5: Readiness Endpoint
 
 - Add `/api/ready`.
 - Check PS Track DB only when `REPOSITORY_PROVIDER=postgres`.
-- Check LMS only when `LMS_PROVIDER=mock-db`.
+- Check LMS only when `LMS_PROVIDER=mock-view` or a future real LMS provider is enabled.
 - Check Keycloak only when `AUTH_PROVIDER=keycloak` or integration test profile enables it.
 
 ## Stop Conditions
