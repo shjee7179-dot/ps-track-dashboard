@@ -6,6 +6,12 @@ services:
     image: ps-track-dashboard:local
     ports:
       - "3000:3000"
+    networks:
+      - public_zone
+      - was_zone
+      - db_zone
+      - auth_zone
+      - lms_private_zone
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
@@ -28,14 +34,14 @@ services:
     image: postgres:16-alpine
     profiles:
       - postgres
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: ps_track
       POSTGRES_USER: ps_track_app
       POSTGRES_PASSWORD: ps_track_app_password
     volumes:
       - ps-track-postgres-data:/var/lib/postgresql/data
+    networks:
+      - db_zone
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ps_track_app -d ps_track"]
       interval: 30s
@@ -45,3 +51,19 @@ services:
 
 volumes:
   ps-track-postgres-data:
+
+networks:
+  public_zone:
+    name: ps-track-public-zone
+  was_zone:
+    name: ps-track-was-zone
+    internal: true
+  db_zone:
+    name: ps-track-db-zone
+    internal: true
+  auth_zone:
+    name: ps-track-auth-zone
+    internal: true
+  lms_private_zone:
+    name: ps-track-lms-private-zone
+    internal: true

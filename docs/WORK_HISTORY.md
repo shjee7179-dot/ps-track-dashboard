@@ -244,13 +244,32 @@
 - 산출물:
   - `docs/18-local-docker-integration-mvp.md`
 
+### Compose network skeleton
+
+- 목적: Keycloak/LMS 세부 구현 전, 공공기관 운영망을 흉내 내는 Docker network 경계만 먼저 추가
+- 사용자 결정 반영:
+  - 1번 Compose network skeleton만 진행한다.
+  - Keycloak 버전/환경은 별도 확인 후 다시 논의한다.
+  - LMS mock DBMS와 table/schema shape는 LMS 운영팀 문의 후 다시 논의한다.
+- 산출물:
+  - `docker-compose.yml`에 `public_zone`, `was_zone`, `db_zone`, `auth_zone`, `lms_private_zone` network 추가
+  - `ps-track-dashboard`는 `public_zone`, `was_zone`, `db_zone`, `auth_zone`, `lms_private_zone`에 연결
+  - `postgres`는 `db_zone`에만 연결
+  - Keycloak/LMS 서비스는 추가하지 않지만, app container가 auth/LMS network에 붙어 Docker가 local peering skeleton을 생성하게 한다.
+  - PostgreSQL host port publish를 제거해 DB private zone 시뮬레이션을 강화했다.
+  - PostgreSQL container 재생성 후 `healthy`와 기존 seed row count 유지 확인: `users=5`, `role_assignments=5`, `teams=1`
+- 보류:
+  - Keycloak container
+  - Keycloak DB
+  - LMS mock DB
+  - LMS readonly adapter
+  - `/api/ready`
+
 ### 다음 예정 작업
 
-- Compose network skeleton 추가
-- Keycloak local simulation 추가
-- LMS mock DB 추가
-- LMS readonly adapter contract 추가
-- `/api/ready` readiness endpoint 추가
+- Keycloak 버전/환경 확인
+- LMS 운영팀에 DBMS와 table/schema shape 확인
+- 확인 결과에 따라 Keycloak local simulation 또는 LMS mock DB 중 다음 PR 선택
 
 ## 열린 판단
 
