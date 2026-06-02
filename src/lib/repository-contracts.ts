@@ -25,6 +25,7 @@ import type {
   Team,
   User,
 } from "@/lib/types";
+import type { LmsContentMappingRepository } from "@/lib/lms/contracts";
 
 export type RepositoryResult<T> = Promise<T>;
 
@@ -184,4 +185,7 @@ export type AppRepositories = {
   operations: OperationsRepository;
   surveys: SurveyRepository;
   admin: AdminRepository;
+  lms: {
+    contentMappings: LmsContentMappingRepository;
+  };
 };

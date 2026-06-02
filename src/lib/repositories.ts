@@ -189,4 +189,20 @@ export const repositories: AppRepositories = {
       return getRepositories().admin.createNotice(input);
     },
   },
+  lms: {
+    contentMappings: {
+      listMappings(query) {
+        return getRepositories().lms.contentMappings.listMappings(query);
+      },
+      getMappingById(mappingId) {
+        return getRepositories().lms.contentMappings.getMappingById(mappingId);
+      },
+      getMappingByLearningPiece(input) {
+        return getRepositories().lms.contentMappings.getMappingByLearningPiece(input);
+      },
+      createMapping(input) {
+        return getRepositories().lms.contentMappings.createMapping(input);
+      },
+    },
+  },
 };

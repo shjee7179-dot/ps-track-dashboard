@@ -86,11 +86,11 @@ Keycloak subject
 - 나중에 Spring Boot/MyBatis로 옮기더라도 repository SQL을 비교적 쉽게 재사용하거나 변환할 수 있다.
 - 복잡한 query builder는 domain table migration이 충분히 쌓인 뒤 필요성을 다시 판단한다.
 
-현재 구현 범위는 `users`와 `role_assignments` repository다. 나머지 repository domain은 `mockRepositories` fallback을 유지한다.
+현재 구현 범위는 `users`, `role_assignments`, `lms_content_mappings` repository다. 나머지 repository domain은 `mockRepositories` fallback을 유지한다.
 
 ## Next Implementation Step
 
-1. `lms_content_mappings` repository implementation
+1. `lms_content_mappings`를 사용하는 운영자 매핑 화면 또는 server action 설계
 2. domain table migration 확대
 3. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환
 4. audit/access log table migration 추가
