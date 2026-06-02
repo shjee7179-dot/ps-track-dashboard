@@ -466,6 +466,20 @@ export const mockRepositories: AppRepositories = {
         );
       },
       async createMapping(input) {
+        const duplicate = lmsContentMappings.find((mapping) => {
+          const sameLearningPiece =
+            mapping.cohortId === input.cohortId &&
+            mapping.learningPieceId === input.learningPieceId;
+          const sameLmsTarget =
+            mapping.cohortId === input.cohortId &&
+            mapping.lmsContentId === input.lmsContentId &&
+            (mapping.lmsCourseRoundId ?? "") === (input.lmsCourseRoundId ?? "");
+          return sameLearningPiece || sameLmsTarget;
+        });
+        if (duplicate) {
+          throw new Error("duplicate LMS content mapping");
+        }
+
         const now = new Date().toISOString();
         const mapping: LmsContentMapping = {
           ...input,
