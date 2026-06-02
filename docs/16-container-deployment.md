@@ -86,6 +86,9 @@ Build note:
 - The image uses Next.js `output: "standalone"`.
 - The first container target does not require Supabase, PostgreSQL, or Keycloak.
 - The local `postgres` compose service is optional and is not started unless `--profile postgres` is used.
+- Compose defines simulated `public_zone`, `was_zone`, `db_zone`, `auth_zone`, and `lms_private_zone` networks for local operations-readiness testing. The app container is attached to the reserved auth/LMS networks so the local peering skeleton is actually created even before Keycloak/LMS services are added.
+- Keycloak and LMS services are intentionally not added yet; their versions, DBMS, and table shape need external confirmation first.
+- PostgreSQL is attached only to `db_zone` and is not published to the host. Apply SQL through container `psql` or from services attached to `db_zone`.
 - Public runtime config should be provided as environment variables.
 - Secrets must be injected by the deployment platform and never baked into the image.
 - NHN Cloud public deployment should place database access on a private network path.

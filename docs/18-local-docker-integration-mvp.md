@@ -24,13 +24,19 @@
 - simulated public / was / db / auth / lms private networks
 - PS Track app container
 - PS Track private PostgreSQL container
-- Keycloak container와 realm import 초안
+- Compose network skeleton
+- DB host port exposure 제거
+- 문서화와 검증 로그
+
+### Deferred Until External Confirmation
+
+- Keycloak container version and local realm import shape
 - Keycloak 전용 PostgreSQL container
-- LMS mock PostgreSQL container
+- LMS mock DBMS selection
+- LMS mock table/schema shape
 - LMS readonly schema/seed
 - 최소 사용자/참여 자격 조회 adapter
 - `/api/ready` readiness endpoint
-- 문서화와 검증 로그
 
 ### Out of Scope
 
@@ -68,22 +74,18 @@ lms_private_zone
 | profile | purpose |
 | --- | --- |
 | `postgres` | PS Track private PostgreSQL only |
-| `keycloak` | Keycloak + Keycloak DB |
-| `lms-mock` | LMS mock readonly DB |
-| `integration` | PS Track + PostgreSQL + Keycloak + LMS mock |
+| `keycloak` | Deferred until Keycloak version/environment is confirmed |
+| `lms-mock` | Deferred until LMS DBMS/table shape is confirmed |
+| `integration` | Deferred until Keycloak and LMS mock decisions are confirmed |
 
 ## Implementation Plan
 
-1. Add `docker-compose.integration.yml` or profile-based network separation.
-2. Add `auth_zone`, `was_zone`, `db_zone`, `lms_private_zone` Docker networks.
-3. Add Keycloak container and Keycloak PostgreSQL container.
-4. Add Keycloak realm import JSON for PS Track local simulation.
-5. Add LMS mock PostgreSQL container.
-6. Add LMS mock schema/seed for minimal user/course/cohort eligibility lookup.
-7. Add `LMS_PROVIDER=mock-db` env contract.
-8. Add LMS readonly adapter contract and first implementation.
-9. Add `/api/ready` endpoint checking app, PS Track DB, and optional LMS/Keycloak dependencies.
-10. Verify local integration profile and document commands/results.
+1. Add profile-based network separation to the existing compose file.
+2. Add `public_zone`, `was_zone`, `db_zone`, `auth_zone`, `lms_private_zone` Docker networks.
+3. Attach the app container to reserved auth/LMS networks so Docker creates the local peering skeleton.
+4. Keep Keycloak and LMS services out until their versions/environments are confirmed.
+5. Verify the existing app and PostgreSQL services still run.
+6. Document the network skeleton and deferred decisions.
 
 ## Recommended Work Order
 
@@ -93,9 +95,11 @@ lms_private_zone
 - Define simulated networks.
 - Keep existing single-service smoke flow working.
 - Do not add Keycloak/LMS yet.
+- Keep PostgreSQL private to `db_zone`; do not publish DB port to the host.
 
 ### PR 2: Keycloak Local Simulation
 
+- Wait for Keycloak version/environment confirmation.
 - Add Keycloak + Keycloak DB profile.
 - Add realm import draft.
 - Verify Keycloak boots locally.
@@ -103,6 +107,7 @@ lms_private_zone
 
 ### PR 3: LMS Mock DB
 
+- Wait for LMS operations team confirmation about DBMS and table shape.
 - Add LMS mock PostgreSQL profile.
 - Add minimal LMS schema/seed.
 - Add readonly DB user if practical.
