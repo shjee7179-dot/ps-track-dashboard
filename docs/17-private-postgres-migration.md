@@ -24,6 +24,28 @@ psql "$DATABASE_URL" -f db/private-postgres/schema/001_core_auth_scope.sql
 psql "$DATABASE_URL" -f db/private-postgres/seed/001_core_auth_scope_seed.sql
 ```
 
+If host `psql` is unavailable, use the local Docker PostgreSQL profile:
+
+```bash
+docker compose --profile postgres up -d postgres
+docker compose cp db/private-postgres/schema/001_core_auth_scope.sql postgres:/tmp/001_core_auth_scope.sql
+docker compose cp db/private-postgres/seed/001_core_auth_scope_seed.sql postgres:/tmp/001_core_auth_scope_seed.sql
+docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope.sql
+docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope_seed.sql
+```
+
+## Local Docker Verification
+
+Verified locally after Docker Desktop daemon was running:
+
+- PostgreSQL `postgres:16-alpine` profile started and became healthy.
+- private PostgreSQL schema SQL applied successfully.
+- private PostgreSQL seed SQL applied successfully.
+- seed counts: `users=5`, `role_assignments=5`, `teams=1`.
+- `external_subject` values map to role/scope rows for student, operator, mentor, PI, and admin.
+- application image `ps-track-dashboard:local` built successfully.
+- built application container responded on `/api/health` with mock providers.
+
 ## Identity Mapping
 
 `AUTH_PROVIDER=keycloak`은 trusted header에서 Keycloak subject를 읽고, `users.external_subject`와 매핑한다.

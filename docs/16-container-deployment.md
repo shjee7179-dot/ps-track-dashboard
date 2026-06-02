@@ -52,6 +52,15 @@ psql "$DATABASE_URL" -f db/private-postgres/schema/001_core_auth_scope.sql
 psql "$DATABASE_URL" -f db/private-postgres/seed/001_core_auth_scope_seed.sql
 ```
 
+When host `psql` is unavailable, copy SQL files into the running PostgreSQL container:
+
+```bash
+docker compose cp db/private-postgres/schema/001_core_auth_scope.sql postgres:/tmp/001_core_auth_scope.sql
+docker compose cp db/private-postgres/seed/001_core_auth_scope_seed.sql postgres:/tmp/001_core_auth_scope_seed.sql
+docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope.sql
+docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope_seed.sql
+```
+
 Health check:
 
 ```bash
@@ -62,8 +71,15 @@ curl http://localhost:3000/api/health
 
 - `npm run build` creates `.next/standalone`.
 - Running `.next/standalone/server.js` with mock providers responds on `/api/health`.
-- Docker CLI is installed locally, but image build was not completed in this session because the Docker daemon socket was unavailable.
-- Re-run `docker build -t ps-track-dashboard:local .` after Docker Desktop or the target container runtime is fully running.
+- Docker Desktop daemon access was verified after Docker Desktop was started locally.
+- `docker compose --profile postgres up -d postgres` starts the PostgreSQL profile and reports healthy.
+- `db/private-postgres/schema/001_core_auth_scope.sql` and `db/private-postgres/seed/001_core_auth_scope_seed.sql` were applied successfully inside the PostgreSQL container.
+- `docker build -t ps-track-dashboard:local .` completed successfully.
+- Running the built image on host port 3002 responded on `/api/health`.
+
+Build note:
+
+- Docker build reported `SecretsUsedInArgOrEnv` for `AUTH_PROVIDER`. `AUTH_PROVIDER` is not a secret, but Docker's heuristic flags env names containing `AUTH`. If this warning becomes noisy in CI, move non-secret runtime defaults out of the Dockerfile and set them only at deployment time.
 
 ## Operating Notes
 
