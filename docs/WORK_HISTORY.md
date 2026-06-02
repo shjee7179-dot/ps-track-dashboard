@@ -198,6 +198,26 @@
   - `npm audit --json` 기준 moderate 2건은 새 `pg`가 아니라 기존 `next` -> bundled `postcss <8.5.10` 경로에서 보고된다.
   - `npm audit fix --force`는 Next major downgrade를 제안하므로 이번 PR에서는 적용하지 않는다.
 
+### Docker/PostgreSQL local verification
+
+- 목적: 이전에 Docker daemon 부재로 보류했던 container build, PostgreSQL profile, schema/seed 적용을 실제 로컬 Docker에서 검증
+- 실행/검증:
+  - `docker info` 통과
+  - `docker compose --profile postgres up -d postgres` 성공
+  - PostgreSQL container `healthy` 확인
+  - private PostgreSQL schema SQL 적용 성공
+  - private PostgreSQL seed SQL 적용 성공
+  - row count 확인: `users=5`, `role_assignments=5`, `teams=1`
+  - `external_subject`와 role/scope 매핑 확인
+  - `docker build -t ps-track-dashboard:local .` 성공
+  - built image를 3002 포트로 실행하고 `/api/health` 응답 확인
+- 운영 메모:
+  - host에 `psql`이 없어 container 내부 `psql`로 SQL을 적용했다.
+  - 3000 포트는 로컬 node 프로세스가 사용 중이라 앱 smoke container는 host 3002 포트로 검증했다.
+  - smoke app container는 검증 후 제거했다.
+  - PostgreSQL container는 다음 DB 검증을 위해 유지했다.
+  - Docker build warning `SecretsUsedInArgOrEnv`는 `AUTH_PROVIDER` 이름에 대한 heuristic 경고로 보이며 실제 secret 노출은 아니다.
+
 ### 다음 예정 작업
 
 - PostgreSQL users / role_assignments repository 실제 DB 적용 검증
