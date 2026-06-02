@@ -34,6 +34,7 @@ import type {
   OutcomeScoreSummary,
   StudentJourneyItem,
 } from "@/lib/repository-contracts";
+import type { LmsContentMapping } from "@/lib/lms/contracts";
 import type {
   Evaluation,
   EvaluationItemScore,
@@ -64,6 +65,26 @@ function withAudit<T>(data: T): MutationResult<T> {
     auditLogId: nextMockId("audit"),
   };
 }
+
+const lmsContentMappings: LmsContentMapping[] = [
+  {
+    id: "lms-map-001",
+    cohortId: cohort2026.id,
+    moduleId: "module-001",
+    contentId: "content-001",
+    learningPieceId: "lp-001",
+    lmsContentId: "alpha-regular-online-001",
+    lmsCourseRoundId: "alpha-round-2026-001",
+    contentGroup: "regular",
+    contentType: "online",
+    required: true,
+    activationRule: "completion_completed",
+    status: "active",
+    createdBy: "operator-001",
+    createdAt: "2026-06-01T09:00:00.000Z",
+    updatedAt: "2026-06-01T09:00:00.000Z",
+  },
+];
 
 function listStudentJourneyRows(studentId: string): StudentJourneyItem[] {
   return studentLearningPieceStatuses
@@ -420,6 +441,41 @@ export const mockRepositories: AppRepositories = {
         readCount: 0,
       };
       return withAudit(notice);
+    },
+  },
+  lms: {
+    contentMappings: {
+      async listMappings(query) {
+        const rows = lmsContentMappings.filter((mapping) => {
+          if (query?.cohortId && mapping.cohortId !== query.cohortId) return false;
+          if (query?.learningPieceId && mapping.learningPieceId !== query.learningPieceId) return false;
+          if (query?.lmsContentId && mapping.lmsContentId !== query.lmsContentId) return false;
+          if (query?.status && mapping.status !== query.status) return false;
+          return true;
+        });
+        return applyLimit(rows, query);
+      },
+      async getMappingById(mappingId) {
+        return lmsContentMappings.find((mapping) => mapping.id === mappingId);
+      },
+      async getMappingByLearningPiece(input) {
+        return lmsContentMappings.find(
+          (mapping) =>
+            mapping.cohortId === input.cohortId &&
+            mapping.learningPieceId === input.learningPieceId,
+        );
+      },
+      async createMapping(input) {
+        const now = new Date().toISOString();
+        const mapping: LmsContentMapping = {
+          ...input,
+          id: nextMockId("lms-map"),
+          createdAt: now,
+          updatedAt: now,
+        };
+        lmsContentMappings.push(mapping);
+        return mapping;
+      },
     },
   },
 };

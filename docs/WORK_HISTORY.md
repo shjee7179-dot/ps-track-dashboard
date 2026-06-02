@@ -306,6 +306,27 @@
 - Keycloak 버전/환경 확인
 - 확인 결과에 따라 `mock-view` adapter skeleton 또는 `/api/ready` 기본형 선택
 
+### LMS content mapping repository
+
+- 목적: `lms_content_mappings` schema와 contract를 실제 repository provider 구조에 연결
+- 산출물:
+  - `src/lib/repository-contracts.ts`의 `AppRepositories`에 `lms.contentMappings` 영역 추가
+  - `src/lib/mock-repositories.ts`에 mock `LmsContentMappingRepository` 구현 추가
+  - `src/lib/postgres/repositories.ts`에 PostgreSQL `LmsContentMappingRepository` 구현 추가
+  - `src/lib/repositories.ts` proxy에 provider switch 경유 접근 경로 추가
+  - `docs/17-private-postgres-migration.md`의 현재 구현 범위와 다음 단계 갱신
+- 주요 결정:
+  - LMS content mapping은 `learning` domain에 섞지 않고 `lms.contentMappings` 하위로 분리한다.
+  - `REPOSITORY_PROVIDER=postgres`일 때도 아직 migration이 끝나지 않은 domain은 mock fallback을 유지한다.
+  - PostgreSQL 구현은 ORM 없이 명시적 SQL을 사용한다.
+  - create/list/get 경로만 먼저 구현하고, update/delete/status action은 운영자 화면 설계 시 확장한다.
+
+### 다음 예정 작업
+
+- `lms_content_mappings` 운영자 매핑 화면 또는 server action 설계
+- LMS 운영팀 view 명세 수령 전까지는 readonly LMS adapter 구현을 보류
+- Keycloak 버전/환경 확인 후 auth provider runtime 검증
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
