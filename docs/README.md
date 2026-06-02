@@ -18,6 +18,7 @@
 12. [Database Schema Draft](./11-database-schema-draft.md)
 13. [Sprint 0 Implementation Brief](./12-sprint-0-implementation-brief.md)
 14. [Private PostgreSQL Migration Plan](./17-private-postgres-migration.md)
+15. [Local Docker Integration MVP](./18-local-docker-integration-mvp.md)
 
 ## Sprint Task
 

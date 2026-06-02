@@ -218,10 +218,39 @@
   - PostgreSQL container는 다음 DB 검증을 위해 유지했다.
   - Docker build warning `SecretsUsedInArgOrEnv`는 `AUTH_PROVIDER` 이름에 대한 heuristic 경고로 보이며 실제 secret 노출은 아니다.
 
+### Local Docker integration MVP decision
+
+- 목적: 공공기관 보안망/존 분리 배포를 고려해, 로컬 Docker에서 운영 경계를 1차 검증할지 여부를 결정
+- 결정:
+  - 로컬 Docker에서 MVP 수준의 운영망 시뮬레이션을 1차 목표로 둔다.
+  - 이 작업은 본선을 Docker 중심으로 전면 전환하는 것이 아니라 운영 전환 리스크를 줄이는 별도 검증 트랙이다.
+  - 현재 화면/도메인 MVP와 provider/repository contract 흐름은 유지한다.
+- 판단 근거:
+  - Docker image build, PostgreSQL profile, schema/seed 적용, app health check가 이미 로컬에서 성공했다.
+  - 최종 목적지는 AlphaCampus/Keycloak 인증 + 독립 private PostgreSQL + container 기반 MSA다.
+  - WEB/WAS/DB zone, VPC peering, Keycloak, LMS readonly DB는 공공기관 배포의 핵심 리스크다.
+  - 로컬 Docker network/profile은 실제 VPC peering을 완벽히 재현하지는 않지만 접근 경계와 env contract 검증에는 충분하다.
+- 범위:
+  - simulated public/was/db/auth/lms private networks
+  - Keycloak local simulation
+  - LMS mock PostgreSQL
+  - LMS readonly adapter
+  - `/api/ready` readiness endpoint
+- 제외:
+  - 실제 공공기관 클라우드 배포 자동화
+  - 실제 LMS DB 전체 복제
+  - LMS DB write integration
+  - production-grade Keycloak 보안 완성
+- 산출물:
+  - `docs/18-local-docker-integration-mvp.md`
+
 ### 다음 예정 작업
 
-- PostgreSQL users / role_assignments repository 실제 DB 적용 검증
-- read pages의 `mockRepositories` 직접 import를 `repositories` selector로 점진 전환
+- Compose network skeleton 추가
+- Keycloak local simulation 추가
+- LMS mock DB 추가
+- LMS readonly adapter contract 추가
+- `/api/ready` readiness endpoint 추가
 
 ## 열린 판단
 
