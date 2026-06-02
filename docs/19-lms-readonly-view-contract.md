@@ -103,6 +103,44 @@ lms_content_mappings
 - updated_at
 ```
 
+## `lms_content_mappings` Schema Draft
+
+This table is owned by PS Track, not LMS. It stores the operator's decision that a specific LMS content/course round corresponds to a PS Track learning piece.
+
+| column | type | note |
+| --- | --- | --- |
+| `id` | uuid | primary key |
+| `cohort_id` | uuid | PS Track cohort |
+| `module_id` | text | PS Track module id, text until domain tables migrate |
+| `content_id` | text | PS Track content id, text until domain tables migrate |
+| `learning_piece_id` | text | PS Track learning piece id |
+| `lms_content_id` | text | LMS readonly content id |
+| `lms_course_round_id` | text | LMS course/session/round id |
+| `content_group` | text | `regular`, `subscription`, `community` |
+| `content_type` | text | detailed LMS content type |
+| `required` | boolean | whether this mapping is required for the journey |
+| `activation_rule` | text | `record_exists`, `participation_active`, `completion_completed` |
+| `status` | text | `draft`, `active`, `inactive` |
+| `created_by` | uuid | operator/admin user id |
+| `created_at` | timestamptz | creation time |
+| `updated_at` | timestamptz | update time |
+
+Constraints:
+
+- one PS Track learning piece mapping per cohort and learning piece
+- one LMS content/course round target per cohort, treating an empty round id as one target
+- status and type values are checked in DB
+
+Repository contract:
+
+```text
+LmsContentMappingRepository
+- listMappings(query)
+- getMappingById(mappingId)
+- getMappingByLearningPiece(cohortId, learningPieceId)
+- createMapping(input)
+```
+
 ### Activation Rule
 
 | rule | meaning |

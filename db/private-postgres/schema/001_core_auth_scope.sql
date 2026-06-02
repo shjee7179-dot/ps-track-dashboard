@@ -110,6 +110,43 @@ create table if not exists public.role_assignments (
     check (ends_at is null or ends_at > starts_at)
 );
 
+create table if not exists public.lms_content_mappings (
+  id uuid primary key default gen_random_uuid(),
+  cohort_id uuid not null references public.cohorts(id) on delete cascade,
+  module_id text not null,
+  content_id text not null,
+  learning_piece_id text not null,
+  lms_content_id text not null,
+  lms_course_round_id text,
+  content_group text not null,
+  content_type text not null,
+  required boolean not null default true,
+  activation_rule text not null default 'record_exists',
+  status text not null default 'draft',
+  created_by uuid references public.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint lms_content_mappings_content_group_check
+    check (content_group in ('regular', 'subscription', 'community')),
+  constraint lms_content_mappings_content_type_check
+    check (content_type in (
+      'offline',
+      'realtime',
+      'hyflex',
+      'online',
+      'knowledge',
+      'ebook',
+      'learning_group',
+      'seminar'
+    )),
+  constraint lms_content_mappings_activation_rule_check
+    check (activation_rule in ('record_exists', 'participation_active', 'completion_completed')),
+  constraint lms_content_mappings_status_check
+    check (status in ('draft', 'active', 'inactive')),
+  constraint lms_content_mappings_learning_piece_unique
+    unique (cohort_id, learning_piece_id)
+);
+
 create unique index if not exists role_assignments_active_unique
   on public.role_assignments (user_id, role, scope_type, scope_id)
   where status = 'active';
@@ -137,6 +174,18 @@ create index if not exists role_assignments_user_status_idx
 
 create index if not exists role_assignments_scope_status_idx
   on public.role_assignments (scope_type, scope_id, status);
+
+create index if not exists lms_content_mappings_cohort_status_idx
+  on public.lms_content_mappings (cohort_id, status);
+
+create index if not exists lms_content_mappings_learning_piece_idx
+  on public.lms_content_mappings (learning_piece_id);
+
+create index if not exists lms_content_mappings_lms_target_idx
+  on public.lms_content_mappings (lms_content_id, lms_course_round_id);
+
+create unique index if not exists lms_content_mappings_lms_target_unique
+  on public.lms_content_mappings (cohort_id, lms_content_id, coalesce(lms_course_round_id, ''));
 
 drop trigger if exists set_users_updated_at on public.users;
 create trigger set_users_updated_at
@@ -168,6 +217,11 @@ create trigger set_role_assignments_updated_at
 before update on public.role_assignments
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_lms_content_mappings_updated_at on public.lms_content_mappings;
+create trigger set_lms_content_mappings_updated_at
+before update on public.lms_content_mappings
+for each row execute function public.set_updated_at();
+
 comment on table public.users is
   'Application domain users for PS Track. Keycloak or AlphaCampus identity is linked through external_subject.';
 
@@ -179,3 +233,9 @@ comment on table public.role_assignments is
 
 comment on column public.role_assignments.scope_id is
   'Text by design because scope targets are polymorphic: system, program, cohort, track, team, or student.';
+
+comment on table public.lms_content_mappings is
+  'Operator-managed mapping between PS Track learning pieces and LMS readonly content/course round records.';
+
+comment on column public.lms_content_mappings.activation_rule is
+  'Rule used to activate or complete the mapped learning piece from LMS readonly learning records.';

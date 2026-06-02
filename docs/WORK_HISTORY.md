@@ -285,6 +285,23 @@
 
 ### 다음 예정 작업
 
+### LMS content mapping schema
+
+- 목적: 운영자 사전 매핑 기본 흐름을 위해 PS Track이 자체 소유하는 LMS 콘텐츠-학습피스 매핑 테이블과 repository contract를 준비
+- 산출물:
+  - `db/private-postgres/schema/001_core_auth_scope.sql`에 `lms_content_mappings` 추가
+  - `src/lib/lms/contracts.ts`에 `LmsContentMapping`, `LmsContentMappingRepository` 추가
+  - `docs/19-lms-readonly-view-contract.md`에 schema/repository contract 설명 추가
+- 주요 결정:
+  - `lms_content_mappings`는 LMS 원본 테이블이 아니라 PS Track 내부 운영자 결정 테이블이다.
+  - `module_id`, `content_id`, `learning_piece_id`는 아직 PS Track domain table migration이 완성되지 않았으므로 text로 둔다.
+  - `cohort_id + learning_piece_id`는 하나의 매핑만 허용한다.
+  - `cohort_id + lms_content_id + lms_course_round_id`도 중복을 막으며, `lms_course_round_id`가 비어 있는 콘텐츠도 하나의 target으로 취급한다.
+  - 실제 LMS DB adapter 구현은 여전히 LMS 운영팀 view 명세 수령 후 진행한다.
+
+### 다음 예정 작업
+
+- `lms_content_mappings` mock/postgres repository implementation
 - LMS 운영팀에 DBMS, view 명세, 사용자 UUID/Keycloak subject 매핑 확인
 - Keycloak 버전/환경 확인
 - 확인 결과에 따라 `mock-view` adapter skeleton 또는 `/api/ready` 기본형 선택
