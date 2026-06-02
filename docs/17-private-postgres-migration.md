@@ -90,7 +90,7 @@ Keycloak subject
 
 ## Next Implementation Step
 
-1. PostgreSQL users / role_assignments repository를 실제 DB에 적용 검증
+1. `lms_content_mappings` repository implementation
 2. domain table migration 확대
 3. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환
 4. audit/access log table migration 추가

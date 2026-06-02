@@ -78,6 +78,33 @@ export type LmsContentMappingDraft = {
   status: LmsContentMappingStatus;
 };
 
+export type LmsContentMapping = LmsContentMappingDraft & {
+  id: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LmsContentMappingQuery = {
+  cohortId?: string;
+  learningPieceId?: string;
+  lmsContentId?: string;
+  status?: LmsContentMappingStatus;
+  limit?: number;
+};
+
+export type LmsContentMappingRepository = {
+  listMappings(query?: LmsContentMappingQuery): Promise<LmsContentMapping[]>;
+  getMappingById(mappingId: string): Promise<LmsContentMapping | undefined>;
+  getMappingByLearningPiece(input: {
+    cohortId: string;
+    learningPieceId: string;
+  }): Promise<LmsContentMapping | undefined>;
+  createMapping(input: LmsContentMappingDraft & {
+    createdBy?: string;
+  }): Promise<LmsContentMapping>;
+};
+
 export type LmsReadonlyViewAdapter = {
   listContentCatalog(): Promise<LmsContentCatalogRecord[]>;
   listLearningRecordsByUser(input: {
