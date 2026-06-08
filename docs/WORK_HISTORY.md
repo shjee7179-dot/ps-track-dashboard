@@ -434,6 +434,25 @@
 - production `/login` 화면을 SSO 재진입/로그아웃 랜딩 화면으로 조정
 - Keycloak trusted-header runtime smoke route 또는 diagnostics 화면 설계
 
+### Login route SSO landing mode
+
+- 목적: PS Track이 자체 로그인하지 않고, 알파캠퍼스/LMS 로그인 이후 진입한다는 운영 전제를 `/login` 화면에 반영
+- 산출물:
+  - `src/app/login/page.tsx`가 `AUTH_PROVIDER`에 따라 분기
+  - `AUTH_PROVIDER=mock`: 기존 역할 선택 화면 유지
+  - `AUTH_PROVIDER=keycloak`: 알파캠퍼스 SSO 재진입/로그아웃 랜딩 화면 표시
+  - route map, MVP ledger, redirect URI 후보 문서 갱신
+- 주요 결정:
+  - keycloak 모드의 `/login`은 credential 입력 화면이 아니다.
+  - keycloak 모드의 `/login`은 gateway trusted-header 방식 설명과 `/dashboard` 재시도 링크만 제공한다.
+  - 실제 로그인 시작 URL은 알파캠퍼스/LMS gateway 정책에 맡긴다.
+
+### 다음 예정 작업
+
+- Keycloak trusted-header runtime smoke route 또는 diagnostics 화면 설계
+- 최종 public host 확정 후 LMS 운영팀에 `dashboard` / `login` URL 등록 요청
+- Docker daemon 실행 후 PostgreSQL LMS mapping E2E 재시도
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
