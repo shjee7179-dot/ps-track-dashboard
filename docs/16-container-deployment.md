@@ -28,8 +28,13 @@
 | `KEYCLOAK_SUB_HEADER` | `x-keycloak-sub` | used when `AUTH_PROVIDER=keycloak` |
 | `KEYCLOAK_USERNAME_HEADER` | `x-keycloak-preferred-username` | diagnostic identity header |
 | `KEYCLOAK_EMAIL_HEADER` | `x-keycloak-email` | diagnostic identity header |
+| `KEYCLOAK_REALM` | `kird` | confirmed AlphaCampus production realm |
+| `KEYCLOAK_CLIENT_ID` | `kird-ps-track-dashboard` | tentative request value following `kird-[target-system-english-name]` |
+| `KEYCLOAK_LOGOUT_URL` | AlphaCampus logout endpoint | non-secret endpoint for logout handoff |
 | `DATABASE_URL` | empty in production image | future private PostgreSQL connection string |
 | `POSTGRES_SSL` | `false` | enable TLS for managed/private PostgreSQL when required |
+
+Do not place `KEYCLOAK_CLIENT_SECRET` in Dockerfile, Compose defaults, git-tracked env files, or client-side code. If PS Track later performs a direct confidential-client OIDC flow, the secret must come from the deployment secret manager. The current production direction is gateway-verified JWT plus trusted headers, so the app does not need the client secret at runtime for session resolution.
 
 ## Local Commands
 

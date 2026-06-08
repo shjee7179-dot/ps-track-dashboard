@@ -90,13 +90,37 @@ Supabase 관련 코드는 최종 운영 목적지가 아니라 PostgreSQL/Auth a
 
 1차 provider는 토큰 검증기를 직접 내장하지 않고 trusted header contract를 사용한다. 운영 환경에서는 ingress, API gateway, reverse proxy, 또는 AlphaCampus 연계 WAS가 Keycloak token을 검증한 뒤 아래 header를 주입해야 한다.
 
+## Confirmed Keycloak Environment
+
+| item | confirmed value |
+| --- | --- |
+| Keycloak version | `v26.0.4` on JDK 17 |
+| Realm | `kird` for production |
+| Client id pattern | `kird-[target-system-english-name]`; tentative PS Track request value: `kird-ps-track-dashboard` |
+| Client type | `confidential`; client secret is delivered out-of-band and must not be committed |
+| Token verification | AlphaCampus/LMS gateway verifies JWT against Keycloak before forwarding the request |
+| Baseline claims | LMS member `uuid`, `email`, and `username/login_id` |
+| Role claim | optional; PS Track can request it later, but internal authorization remains app-owned |
+| SSO session | idle 2 hours, max 10 hours |
+| Local realm export | not expected to be provided |
+
+Because the gateway verifies JWTs, PS Track's first production integration should continue to use trusted headers. The app should not require a client secret in source code, Compose files, or public environment templates. If a direct OIDC flow is introduced later, `KEYCLOAK_CLIENT_SECRET` must be supplied only through the deployment secret manager.
+
 | env | default header | purpose |
 | --- | --- | --- |
 | `KEYCLOAK_SUB_HEADER` | `x-keycloak-sub` | `users.external_subject`와 매핑되는 Keycloak subject |
 | `KEYCLOAK_USERNAME_HEADER` | `x-keycloak-preferred-username` | 운영 진단/감사 확장을 위한 로그인 식별자 |
 | `KEYCLOAK_EMAIL_HEADER` | `x-keycloak-email` | 운영 진단/감사 확장을 위한 이메일 |
 
-PS Track은 header의 `subject`를 `users.external_subject`와 매핑한 뒤, 자체 `role_assignments`로 역할과 scope를 결정한다. Keycloak realm/client role만으로 PS Track 내부 권한을 대체하지 않는다.
+PS Track은 header의 `subject`를 `users.external_subject`와 매핑한 뒤, 자체 `role_assignments`로 역할과 scope를 결정한다. Keycloak realm/client role만으로 PS Track 내부 권한을 대체하지 않는다. 운영 기본 매핑값은 Keycloak/LMS `uuid`를 `users.external_subject`에 저장하는 것이다. `email`과 `username/login_id`는 진단, 감사, 사용자 동기화 보조키로 사용한다.
+
+Logout integration should use the AlphaCampus Keycloak logout endpoint shape:
+
+```text
+https://alpha-campus.kr/auth/realms/kird/protocol/openid-connect/logout?id_token_hint=[id_token]&post_logout_redirect_uri=[redirect_uri]
+```
+
+The redirect URI/callback URL must be registered by the Keycloak/LMS operations team before production login flow testing.
 
 후속 운영 구현에서는 다음 중 하나로 강화한다.
 

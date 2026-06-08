@@ -386,6 +386,34 @@
 - PostgreSQL app runtime user grant SQL 작성
 - LMS readonly catalog view 명세 수령 시 catalog selector로 직접 입력 필드를 대체
 
+### Confirmed AlphaCampus Keycloak environment
+
+- 목적: LMS 운영팀이 공유한 Keycloak 운영 정보를 현재 auth/provider/infra 계획에 반영
+- 수령 정보:
+  - Keycloak `v26.0.4` on JDK 17
+  - production realm `kird`
+  - client id pattern `kird-[target-system-english-name]`; PS Track tentative value `kird-ps-track-dashboard`
+  - client type `confidential`, client secret out-of-band 전달
+  - JWT token verification은 AlphaCampus/LMS gateway에서 수행
+  - 기본 claim은 LMS 회원 `uuid`, `email`, `username/login_id`
+  - role claim은 필요 시 추가 가능
+  - logout endpoint는 realm `kird`의 OIDC logout URL 사용
+  - SSO session idle 2시간, max 10시간
+  - local realm export 제공은 어려움
+- 주요 결정:
+  - 기존 trusted-header `AUTH_PROVIDER=keycloak` 방향은 유지한다.
+  - PS Track primary external identity는 Keycloak/LMS member `uuid`를 `users.external_subject`에 저장한다.
+  - `email`, `username/login_id`는 보조 식별자와 감사/동기화 진단값으로 둔다.
+  - Keycloak role claim은 받아도 PS Track 내부 `role_assignments`를 대체하지 않는다.
+  - client secret은 git, Dockerfile, Compose default, client bundle에 넣지 않는다.
+  - local Keycloak simulation은 production realm export 없이 synthetic realm으로도 가치가 있는지 별도 판단한다.
+
+### 다음 예정 작업
+
+- redirect URI/callback URL 후보 확정 후 LMS 운영팀에 등록 요청
+- Docker daemon 실행 후 PostgreSQL LMS mapping E2E 재시도
+- Keycloak trusted-header runtime smoke route 또는 diagnostics 화면 설계
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
