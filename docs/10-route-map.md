@@ -33,6 +33,7 @@
 | `/notices/new` | 공지사항 작성 | 운영자 |
 | `/admin/users` | 사용자 관리 | 총괄 |
 | `/admin/roles` | 역할 / 접근 범위 관리 | 총괄 |
+| `/admin/auth-diagnostics` | Keycloak trusted-header 진단 | 총괄 |
 | `/admin/audit-logs` | 감사 로그 | 총괄 |
 | `/admin/access-logs` | 접속 로그 | 총괄 |
 | `/admin/pwa` | PWA 설정 화면 | 총괄 |

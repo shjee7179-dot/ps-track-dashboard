@@ -57,6 +57,12 @@ psql "$DATABASE_URL" -f db/private-postgres/schema/001_core_auth_scope.sql
 psql "$DATABASE_URL" -f db/private-postgres/seed/001_core_auth_scope_seed.sql
 ```
 
+For local app-container smoke tests against the compose PostgreSQL service, override the repository provider at runtime:
+
+```bash
+REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgres up --build ps-track-dashboard
+```
+
 When host `psql` is unavailable, copy SQL files into the running PostgreSQL container:
 
 ```bash

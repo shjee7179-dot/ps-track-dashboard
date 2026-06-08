@@ -34,6 +34,12 @@ docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_cor
 docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope_seed.sql
 ```
 
+App-container smoke command after the PostgreSQL profile is healthy:
+
+```bash
+REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgres up --build ps-track-dashboard
+```
+
 ## Local Docker Verification
 
 Verified locally after Docker Desktop daemon was running:

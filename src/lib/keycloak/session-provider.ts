@@ -22,6 +22,14 @@ function getHeaderName(envName: string, fallback: string) {
   return process.env[envName]?.trim() || fallback;
 }
 
+export function getKeycloakHeaderNames() {
+  return {
+    subject: getHeaderName("KEYCLOAK_SUB_HEADER", defaultSubjectHeader),
+    username: getHeaderName("KEYCLOAK_USERNAME_HEADER", defaultUsernameHeader),
+    email: getHeaderName("KEYCLOAK_EMAIL_HEADER", defaultEmailHeader),
+  };
+}
+
 function pickActiveAssignment(
   user: User,
   assignments: RoleAssignment[],
@@ -40,16 +48,17 @@ function pickActiveAssignment(
 
 async function getExternalSubjectFromTrustedHeaders() {
   const requestHeaders = await headers();
-  return requestHeaders.get(getHeaderName("KEYCLOAK_SUB_HEADER", defaultSubjectHeader));
+  return requestHeaders.get(getKeycloakHeaderNames().subject);
 }
 
 export async function getKeycloakHeaderSnapshot() {
   const requestHeaders = await headers();
+  const headerNames = getKeycloakHeaderNames();
 
   return {
-    subject: requestHeaders.get(getHeaderName("KEYCLOAK_SUB_HEADER", defaultSubjectHeader)),
-    username: requestHeaders.get(getHeaderName("KEYCLOAK_USERNAME_HEADER", defaultUsernameHeader)),
-    email: requestHeaders.get(getHeaderName("KEYCLOAK_EMAIL_HEADER", defaultEmailHeader)),
+    subject: requestHeaders.get(headerNames.subject),
+    username: requestHeaders.get(headerNames.username),
+    email: requestHeaders.get(headerNames.email),
   };
 }
 

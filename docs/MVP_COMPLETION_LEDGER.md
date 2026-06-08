@@ -30,6 +30,7 @@
 | 2026년 기수 seed 데이터 | Verified Mock | cohort, teams, participants, schedule mock data | DB seed/migration |
 | 감사 로그 | UI Mock | 감사 로그 화면과 mock data | 실제 이벤트 기록 자동화 |
 | 접속 로그 | UI Mock | 접속 로그 화면과 mock data | 실제 session/access 기록 |
+| 인증 진단 | Functional Mock | Keycloak trusted-header 화면/API | 실제 LMS gateway smoke |
 | 전체 시스템 설정 | UI Mock | 설정 화면과 mock data | 저장/적용 로직 |
 | PWA manifest / 설정 화면 | Functional Mock | manifest, PWA 설정 화면, 품질 체크 mock | 실제 install QA, 아이콘/캐시 전략 보강 |
 
@@ -100,6 +101,7 @@
 | 위험군 / 리마인드 추천 | Functional Mock |
 | 공지사항 | UI Mock |
 | 사용자 / 역할 / scope 관리 | Functional Mock |
+| 인증 진단 | Functional Mock |
 | 감사 로그 / 접속 로그 | UI Mock |
 | PWA / 전체 시스템 설정 | UI Mock |
 
