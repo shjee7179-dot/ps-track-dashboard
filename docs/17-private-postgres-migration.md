@@ -90,7 +90,7 @@ Keycloak subject
 
 ## Next Implementation Step
 
-1. `REPOSITORY_PROVIDER=postgres` 화면 저장/상태 변경 경로를 Docker 앱 컨테이너에서 end-to-end 검증
+1. Docker daemon 실행 후 `REPOSITORY_PROVIDER=postgres` 화면 저장/상태 변경 경로를 앱 컨테이너에서 end-to-end 검증
 2. LMS readonly catalog view 명세 수령 후 catalog selector 연결
 3. domain table migration 확대
 4. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환

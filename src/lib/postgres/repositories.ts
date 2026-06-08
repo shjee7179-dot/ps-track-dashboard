@@ -2,7 +2,7 @@ import "server-only";
 
 import { mockRepositories } from "@/lib/mock-repositories";
 import { queryPostgres } from "@/lib/postgres/client";
-import type { UserRepository } from "@/lib/repository-contracts";
+import type { CohortRepository, UserRepository } from "@/lib/repository-contracts";
 import type {
   LmsContentGroup,
   LmsContentMapping,
@@ -11,7 +11,7 @@ import type {
   LmsContentMappingStatus,
   LmsContentType,
 } from "@/lib/lms/contracts";
-import type { Role, RoleAssignment, ScopeType, User } from "@/lib/types";
+import type { Cohort, Role, RoleAssignment, ScopeType, User } from "@/lib/types";
 
 type UserRow = {
   id: string;
@@ -29,6 +29,15 @@ type RoleAssignmentRow = {
   role: string;
   scope_type: string;
   scope_id: string;
+  status: string;
+};
+
+type CohortRow = {
+  id: string;
+  name: string;
+  agreement_date: Date | string | null;
+  starts_at: Date | string;
+  ends_at: Date | string;
   status: string;
 };
 
@@ -98,6 +107,17 @@ function toIsoString(value: Date | string) {
   return value instanceof Date ? value.toISOString() : value;
 }
 
+function toDateString(value: Date | string | null) {
+  if (!value) return "";
+  return value instanceof Date ? value.toISOString().slice(0, 10) : value.slice(0, 10);
+}
+
+function isUuid(value: string | undefined): value is string {
+  return Boolean(
+    value?.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
+  );
+}
+
 export function mapPostgresUser(row: UserRow): User | null {
   if (!isPostgresRole(row.default_role)) {
     return null;
@@ -131,6 +151,21 @@ export function mapPostgresRoleAssignment(row: RoleAssignmentRow): RoleAssignmen
     role: row.role,
     scopeType: row.scope_type,
     scopeId: row.scope_id,
+    status: row.status,
+  };
+}
+
+export function mapPostgresCohort(row: CohortRow): Cohort | null {
+  if (row.status !== "draft" && row.status !== "active" && row.status !== "closed") {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    agreementDate: toDateString(row.agreement_date),
+    startsAt: toDateString(row.starts_at),
+    endsAt: toDateString(row.ends_at),
     status: row.status,
   };
 }
@@ -189,6 +224,11 @@ const lmsContentMappingSelect = `
   from public.lms_content_mappings
 `;
 
+const cohortSelect = `
+  select id, name, agreement_date, starts_at, ends_at, status
+  from public.cohorts
+`;
+
 export const postgresUserRepository: UserRepository = {
   async listUsers(query) {
     const limit = query?.limit ?? 100;
@@ -233,6 +273,21 @@ export const postgresUserRepository: UserRepository = {
       .map((row) => mapPostgresRoleAssignment(row))
       .filter((assignment): assignment is RoleAssignment => Boolean(assignment));
   },
+};
+
+export const postgresCohortRepository: CohortRepository = {
+  async getActiveCohort() {
+    const result = await queryPostgres<CohortRow>(
+      `${cohortSelect}
+       where status in ('active', 'draft')
+       order by year desc, starts_at desc
+       limit 1`,
+    );
+
+    return result.rows[0] ? mapPostgresCohort(result.rows[0]) ?? undefined : undefined;
+  },
+  listTeams: mockRepositories.cohorts.listTeams,
+  getTeamById: mockRepositories.cohorts.getTeamById,
 };
 
 export const postgresLmsContentMappingRepository: LmsContentMappingRepository = {
@@ -333,7 +388,7 @@ export const postgresLmsContentMappingRepository: LmsContentMappingRepository = 
         input.required,
         input.activationRule,
         input.status,
-        input.createdBy ?? null,
+        isUuid(input.createdBy) ? input.createdBy : null,
       ],
     );
     const mapping = result.rows[0] ? mapPostgresLmsContentMapping(result.rows[0]) : null;
@@ -376,6 +431,7 @@ export const postgresLmsContentMappingRepository: LmsContentMappingRepository = 
 export const postgresRepositories = {
   ...mockRepositories,
   users: postgresUserRepository,
+  cohorts: postgresCohortRepository,
   lms: {
     ...mockRepositories.lms,
     contentMappings: postgresLmsContentMappingRepository,
