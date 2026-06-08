@@ -366,6 +366,26 @@
 - LMS readonly catalog view 명세 수령 시 catalog selector로 직접 입력 필드를 대체
 - app runtime DB grant SQL 작성
 
+### PostgreSQL LMS mapping E2E prep
+
+- 목적: `/admin/lms-content-mappings` 화면을 `REPOSITORY_PROVIDER=postgres`로 실행할 때 발생할 수 있는 mock id와 PostgreSQL UUID FK 불일치를 제거
+- 산출물:
+  - PostgreSQL provider에 `cohorts.getActiveCohort()` 최소 구현 추가
+  - `lms_content_mappings.created_by`는 UUID 형식일 때만 저장하고, mock auth 문자열 id는 `null`로 저장하도록 보호
+- 주요 결정:
+  - LMS mapping repository가 PostgreSQL을 사용할 때 화면의 `cohortId`도 PostgreSQL cohort UUID를 사용해야 한다.
+  - `AUTH_PROVIDER=mock` + `REPOSITORY_PROVIDER=postgres` 조합은 개발 검증용이므로 `created_by` FK는 nullable 처리한다.
+  - operator role은 mock assignment scope와 PostgreSQL cohort UUID가 다르므로, local postgres E2E는 우선 admin role로 검증한다. 실제 운영에서는 Keycloak/postgres session이 같은 DB scope를 사용해야 한다.
+- 검증 상태:
+  - Docker daemon이 실행 중이 아니어서 컨테이너 E2E는 보류
+  - 코드 검증 후 Docker 실행 시 `REPOSITORY_PROVIDER=postgres` 경로로 재검증 예정
+
+### 다음 예정 작업
+
+- Docker daemon 실행 후 `REPOSITORY_PROVIDER=postgres` 화면 저장/상태 변경 E2E 재시도
+- PostgreSQL app runtime user grant SQL 작성
+- LMS readonly catalog view 명세 수령 시 catalog selector로 직접 입력 필드를 대체
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
