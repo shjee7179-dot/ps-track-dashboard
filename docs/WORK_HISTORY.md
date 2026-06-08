@@ -343,9 +343,28 @@
 
 ### 다음 예정 작업
 
-- LMS content mapping update/status action 설계
+- LMS content mapping update/status action 구현
 - LMS readonly catalog view 명세 수령 시 catalog selector로 직접 입력 필드를 대체
 - `REPOSITORY_PROVIDER=postgres` 화면 저장 경로를 Docker 앱 컨테이너에서 end-to-end 검증
+
+### LMS content mapping status action
+
+- 목적: 이미 생성된 LMS 콘텐츠 매핑을 운영자가 `draft`, `active`, `inactive` 상태로 전환할 수 있게 함
+- 산출물:
+  - `LmsContentMappingRepository.updateMappingStatus` contract 추가
+  - mock/PostgreSQL repository status update 구현
+  - `updateLmsContentMappingStatusAction` server action 추가
+  - `/admin/lms-content-mappings` 기존 매핑 행에 상태 변경 폼 추가
+- 주요 결정:
+  - 상태 변경은 매핑의 `cohortId` 기준 `update` 권한으로 검사한다.
+  - create와 동일하게 `repositories.lms.contentMappings` proxy를 경유해 provider 전환을 유지한다.
+  - 삭제보다는 `inactive` 상태 전환을 1차 운영 기본값으로 둔다.
+
+### 다음 예정 작업
+
+- `REPOSITORY_PROVIDER=postgres` 화면 저장/상태 변경 경로를 Docker 앱 컨테이너에서 end-to-end 검증
+- LMS readonly catalog view 명세 수령 시 catalog selector로 직접 입력 필드를 대체
+- app runtime DB grant SQL 작성
 
 ## 열린 판단
 

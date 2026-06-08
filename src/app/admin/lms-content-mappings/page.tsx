@@ -1,4 +1,7 @@
-import { createLmsContentMappingAction } from "@/app/admin/lms-content-mappings/actions";
+import {
+  createLmsContentMappingAction,
+  updateLmsContentMappingStatusAction,
+} from "@/app/admin/lms-content-mappings/actions";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { getContentById, getModuleById } from "@/lib/domain";
@@ -15,6 +18,8 @@ const updateMessages: Record<string, string> = {
   denied: "현재 역할/scope에서는 LMS 콘텐츠 매핑을 생성할 수 없습니다.",
   duplicate: "이미 같은 학습피스 또는 LMS target이 매핑되어 있습니다.",
   invalid: "필수 입력값 또는 LMS 분류값을 확인해 주세요.",
+  missing: "대상 LMS 콘텐츠 매핑을 찾을 수 없습니다.",
+  "status-updated": "LMS 콘텐츠 매핑 상태가 변경되었습니다.",
 };
 
 const contentGroupOptions: Array<{ value: LmsContentGroup; label: string }> = [
@@ -149,9 +154,35 @@ export default async function LmsContentMappingsPage({
                       </td>
                       <td className="py-4">
                         {mapping ? (
-                          <p className="max-w-sm text-xs leading-5 text-stone-500">
-                            1차 구현에서는 학습피스당 하나의 LMS target만 허용합니다.
-                          </p>
+                          <div className="grid max-w-sm gap-3">
+                            <p className="text-xs leading-5 text-stone-500">
+                              1차 구현에서는 학습피스당 하나의 LMS target만 허용합니다.
+                            </p>
+                            <form
+                              action={updateLmsContentMappingStatusAction}
+                              className="flex flex-wrap gap-2"
+                            >
+                              <input type="hidden" name="role" value={params.role ?? "operator"} />
+                              <input type="hidden" name="mappingId" value={mapping.id} />
+                              <select
+                                name="status"
+                                defaultValue={mapping.status}
+                                className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs text-stone-700"
+                              >
+                                {statusOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="submit"
+                                className="h-9 rounded-md border border-stone-300 bg-white px-3 text-xs font-medium text-stone-700 hover:border-teal-700 hover:text-teal-800"
+                              >
+                                상태 변경
+                              </button>
+                            </form>
+                          </div>
                         ) : (
                           <form
                             action={createLmsContentMappingAction}
@@ -291,13 +322,13 @@ export default async function LmsContentMappingsPage({
             <div>
               <p className="font-semibold text-stone-950">권한</p>
               <p className="mt-1">
-                role + scope 기준으로 cohort create 권한을 확인한 뒤 repository create를 실행한다.
+                role + scope 기준으로 cohort create/update 권한을 확인한 뒤 repository를 실행한다.
               </p>
             </div>
             <div>
               <p className="font-semibold text-stone-950">저장소</p>
               <p className="mt-1">
-                `repositories.lms.contentMappings`를 경유하므로 mock/postgres provider 전환을 따른다.
+                `repositories.lms.contentMappings`를 경유해 create와 status update 모두 provider 전환을 따른다.
               </p>
             </div>
           </div>
