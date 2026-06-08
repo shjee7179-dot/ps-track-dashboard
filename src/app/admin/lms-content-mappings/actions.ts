@@ -130,3 +130,43 @@ export async function createLmsContentMappingAction(formData: FormData) {
     throw error;
   }
 }
+
+export async function updateLmsContentMappingStatusAction(formData: FormData) {
+  const mappingId = normalizeText(formData.get("mappingId"));
+  const status = formData.get("status");
+  const roleParam = formData.get("role");
+
+  if (!mappingId || !isMappingStatus(status)) {
+    redirect(buildRedirectPath("invalid"));
+  }
+
+  const mapping = await repositories.lms.contentMappings.getMappingById(mappingId);
+  if (!mapping) {
+    redirect(buildRedirectPath("missing", mappingId));
+  }
+
+  const session = await sessionProvider.requireSession({
+    roleParam: typeof roleParam === "string" ? roleParam : undefined,
+  });
+  const decision = await sessionProvider.canAccess(session, {
+    scopeType: "cohort",
+    scopeId: mapping.cohortId,
+    action: "update",
+  });
+
+  if (!decision.allowed) {
+    redirect(buildRedirectPath("denied", mapping.id));
+  }
+
+  const updated = await repositories.lms.contentMappings.updateMappingStatus({
+    mappingId: mapping.id,
+    status,
+  });
+
+  if (!updated) {
+    redirect(buildRedirectPath("missing", mapping.id));
+  }
+
+  revalidatePath("/admin/lms-content-mappings");
+  redirect(buildRedirectPath("status-updated", updated.id));
+}

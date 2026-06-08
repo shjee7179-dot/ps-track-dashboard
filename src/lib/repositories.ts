@@ -203,6 +203,9 @@ export const repositories: AppRepositories = {
       createMapping(input) {
         return getRepositories().lms.contentMappings.createMapping(input);
       },
+      updateMappingStatus(input) {
+        return getRepositories().lms.contentMappings.updateMappingStatus(input);
+      },
     },
   },
 };

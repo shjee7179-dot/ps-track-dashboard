@@ -490,6 +490,19 @@ export const mockRepositories: AppRepositories = {
         lmsContentMappings.push(mapping);
         return mapping;
       },
+      async updateMappingStatus(input) {
+        const mapping = lmsContentMappings.find((item) => item.id === input.mappingId);
+        if (!mapping) return undefined;
+
+        const updated: LmsContentMapping = {
+          ...mapping,
+          status: input.status,
+          updatedAt: new Date().toISOString(),
+        };
+        const index = lmsContentMappings.findIndex((item) => item.id === input.mappingId);
+        lmsContentMappings[index] = updated;
+        return updated;
+      },
     },
   },
 };

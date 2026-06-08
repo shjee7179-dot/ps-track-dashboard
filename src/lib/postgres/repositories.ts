@@ -343,6 +343,34 @@ export const postgresLmsContentMappingRepository: LmsContentMappingRepository = 
 
     return mapping;
   },
+  async updateMappingStatus(input) {
+    const result = await queryPostgres<LmsContentMappingRow>(
+      `
+        update public.lms_content_mappings
+        set status = $2
+        where id = $1
+        returning
+          id,
+          cohort_id,
+          module_id,
+          content_id,
+          learning_piece_id,
+          lms_content_id,
+          lms_course_round_id,
+          content_group,
+          content_type,
+          required,
+          activation_rule,
+          status,
+          created_by,
+          created_at,
+          updated_at
+      `,
+      [input.mappingId, input.status],
+    );
+
+    return result.rows[0] ? mapPostgresLmsContentMapping(result.rows[0]) ?? undefined : undefined;
+  },
 };
 
 export const postgresRepositories = {

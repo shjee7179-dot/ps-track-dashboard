@@ -103,6 +103,10 @@ export type LmsContentMappingRepository = {
   createMapping(input: LmsContentMappingDraft & {
     createdBy?: string;
   }): Promise<LmsContentMapping>;
+  updateMappingStatus(input: {
+    mappingId: string;
+    status: LmsContentMappingStatus;
+  }): Promise<LmsContentMapping | undefined>;
 };
 
 export type LmsReadonlyViewAdapter = {
