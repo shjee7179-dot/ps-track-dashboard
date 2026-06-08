@@ -414,6 +414,26 @@
 - Docker daemon 실행 후 PostgreSQL LMS mapping E2E 재시도
 - Keycloak trusted-header runtime smoke route 또는 diagnostics 화면 설계
 
+### Keycloak redirect URI candidates
+
+- 목적: LMS/Keycloak 운영팀에 전달할 redirect/callback URL 후보를 확정
+- 산출물:
+  - `docs/20-keycloak-redirect-uri-candidates.md` 신규 작성
+  - `docs/README.md` 문서 색인 추가
+  - `docs/15-alphacampus-msa-boundary.md`에 후보 문서 링크 추가
+- 주요 결정:
+  - 현재 gateway-verified trusted-header 구조에서는 PS Track이 직접 OIDC callback을 받지 않는다.
+  - 로그인 성공 후 기본 진입 URL은 `/dashboard`로 둔다.
+  - 로그아웃 후 복귀 URL은 현재 존재하는 `/login`으로 둔다. production 전에는 mock role selector를 SSO re-entry 화면으로 조정해야 한다.
+  - 직접 OIDC callback 후보 `/auth/callback/keycloak`은 future direct-OIDC 전환용으로만 보관한다.
+  - 운영 DNS가 확정되지 않았으므로 host는 `[PS_TRACK_PUBLIC_HOST]` placeholder로 두고, 추천 후보는 `https://ps-track.alpha-campus.kr`로 기록한다.
+
+### 다음 예정 작업
+
+- 최종 public host 확정 후 LMS 운영팀에 `dashboard` / `login` URL 등록 요청
+- production `/login` 화면을 SSO 재진입/로그아웃 랜딩 화면으로 조정
+- Keycloak trusted-header runtime smoke route 또는 diagnostics 화면 설계
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

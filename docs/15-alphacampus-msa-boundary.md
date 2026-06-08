@@ -120,7 +120,7 @@ Logout integration should use the AlphaCampus Keycloak logout endpoint shape:
 https://alpha-campus.kr/auth/realms/kird/protocol/openid-connect/logout?id_token_hint=[id_token]&post_logout_redirect_uri=[redirect_uri]
 ```
 
-The redirect URI/callback URL must be registered by the Keycloak/LMS operations team before production login flow testing.
+The redirect URI/callback URL must be registered by the Keycloak/LMS operations team before production login flow testing. The candidate request set is maintained in [Keycloak Redirect URI Candidates](./20-keycloak-redirect-uri-candidates.md).
 
 후속 운영 구현에서는 다음 중 하나로 강화한다.
 
