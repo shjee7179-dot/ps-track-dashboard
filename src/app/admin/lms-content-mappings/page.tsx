@@ -166,6 +166,7 @@ export default async function LmsContentMappingsPage({
                               <input type="hidden" name="mappingId" value={mapping.id} />
                               <select
                                 name="status"
+                                aria-label={`${learningPiece.title} 매핑 상태`}
                                 defaultValue={mapping.status}
                                 className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs text-stone-700"
                               >

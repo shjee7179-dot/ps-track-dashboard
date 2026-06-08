@@ -493,6 +493,27 @@
 REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgres up --build ps-track-dashboard
 ```
 
+### Docker/Postgres E2E completed
+
+- 목적: `REPOSITORY_PROVIDER=postgres` 앱 컨테이너에서 LMS content mapping create/status update가 실제 PostgreSQL repository를 경유하는지 검증
+- 실행 환경:
+  - Docker Desktop daemon 정상 연결 확인
+  - `postgres:16-alpine` compose profile healthy
+  - 앱 컨테이너 `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=postgres`
+- 재현/검증:
+  - `docker compose --profile postgres up -d postgres`
+  - schema/seed SQL을 Postgres 컨테이너에 copy 후 `psql -f`로 적용
+  - `REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgres up -d --build ps-track-dashboard`
+  - `/api/health` 응답에서 `repositoryProvider: postgres` 확인
+  - `/admin/lms-content-mappings?role=admin` 화면 렌더링 확인
+  - 첫 번째 학습피스 `lp-001`에 `lms-content-smoke-001` mapping 생성
+  - PostgreSQL `lms_content_mappings` row 생성 확인
+  - 상태 변경 action으로 `draft -> active` 업데이트 확인
+- 진단 교훈:
+  - 상태 변경 form의 select는 시각적으로는 충분했지만 accessible label이 없어 브라우저 자동화가 아래 생성 form의 `상태` select를 잘못 잡았다.
+  - 원인을 재현한 뒤 update form select에 `aria-label`을 추가했다.
+  - 앞으로 반복 row의 select/button은 자동화와 보조기기 모두를 위해 고유한 label 또는 aria-label을 둔다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
