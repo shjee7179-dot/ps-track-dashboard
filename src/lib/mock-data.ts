@@ -1052,6 +1052,14 @@ export const routeAccessPolicies: RouteAccessPolicy[] = [
     navGroup: "operations",
   },
   {
+    href: "/admin/lms-content-mappings",
+    label: "LMS 매핑",
+    roles: ["operator", "admin"],
+    targetScopeType: "cohort",
+    targetScopeId: cohort2026.id,
+    navGroup: "operations",
+  },
+  {
     href: "/surveys",
     label: "설문",
     roles: ["operator", "pi", "admin"],

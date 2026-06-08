@@ -90,8 +90,8 @@ Keycloak subject
 
 ## Next Implementation Step
 
-1. `lms_content_mappings`를 사용하는 운영자 매핑 화면 또는 server action 설계
-2. domain table migration 확대
-3. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환
-4. audit/access log table migration 추가
+1. `lms_content_mappings` update/status action 설계
+2. LMS readonly catalog view 명세 수령 후 catalog selector 연결
+3. domain table migration 확대
+4. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환
 5. app runtime user grant SQL 작성

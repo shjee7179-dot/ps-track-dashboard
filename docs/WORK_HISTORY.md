@@ -327,6 +327,26 @@
 - LMS 운영팀 view 명세 수령 전까지는 readonly LMS adapter 구현을 보류
 - Keycloak 버전/환경 확인 후 auth provider runtime 검증
 
+### LMS content mapping admin screen and action
+
+- 목적: 운영자가 PS Track 학습피스와 AlphaCampus/LMS 콘텐츠 target을 직접 연결할 수 있는 1차 화면과 저장 action을 구현
+- 산출물:
+  - `/admin/lms-content-mappings` 운영자 화면 추가
+  - `createLmsContentMappingAction` server action 추가
+  - route access policy에 `LMS 매핑` 메뉴 추가
+  - mock repository에도 DB와 동일한 중복 매핑 방지 규칙 추가
+- 주요 결정:
+  - LMS 콘텐츠 catalog view 명세 수령 전까지는 운영자 직접 입력 방식으로 먼저 구현한다.
+  - 화면은 학습피스별 행 단위로 구성하고, 매핑되지 않은 학습피스에만 신규 매핑 폼을 노출한다.
+  - 저장 action은 enum/input 검증, role+scope 권한 확인, `repositories.lms.contentMappings.createMapping` 호출, revalidate/redirect 순서로 처리한다.
+  - 수정/비활성화/delete action은 실제 운영 흐름 확인 후 후속 PR에서 확장한다.
+
+### 다음 예정 작업
+
+- LMS content mapping update/status action 설계
+- LMS readonly catalog view 명세 수령 시 catalog selector로 직접 입력 필드를 대체
+- `REPOSITORY_PROVIDER=postgres` 화면 저장 경로를 Docker 앱 컨테이너에서 end-to-end 검증
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
