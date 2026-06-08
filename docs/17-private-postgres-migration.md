@@ -6,7 +6,7 @@
 
 - Supabase는 validation track이다.
 - private PostgreSQL은 최종 운영 target이다.
-- AlphaCampus/Keycloak 인증은 `users.external_subject`로 연결한다.
+- AlphaCampus/Keycloak 인증은 `users.external_subject`로 연결한다. 운영 기본값은 Keycloak/LMS member `uuid`다.
 - PS Track 권한은 `role_assignments`가 소유한다.
 - 깊은 LMS DB integration은 Future Integration Track으로 유지한다.
 
@@ -58,6 +58,20 @@ Keycloak subject
   -> role_assignments
   -> AppSession
 ```
+
+Confirmed Keycloak context:
+
+- Keycloak `v26.0.4` on JDK 17
+- production realm `kird`
+- default claims include LMS member `uuid`, `email`, `username/login_id`
+- JWT verification happens at the AlphaCampus/LMS gateway
+- PS Track keeps role + scope authorization in `role_assignments`
+
+Operational mapping policy:
+
+- `users.external_subject`: Keycloak/LMS member `uuid`
+- `users.email`: Keycloak/LMS email claim
+- username/login_id: diagnostic and synchronization helper, not the primary FK
 
 ## Private PostgreSQL Differences From Supabase
 

@@ -28,10 +28,21 @@
 - DB host port exposure 제거
 - 문서화와 검증 로그
 
+### Confirmed External Information
+
+- Keycloak version: `v26.0.4` on JDK 17.
+- Production realm: `kird`.
+- Client id pattern: `kird-[target-system-english-name]`; tentative PS Track value is `kird-ps-track-dashboard`.
+- Client type: `confidential`, with secret delivered out-of-band.
+- JWT verification: AlphaCampus/LMS gateway verifies tokens before forwarding requests.
+- Claims available by default: LMS member `uuid`, `email`, `username/login_id`.
+- Role claim is optional and can be requested later.
+- Local realm export is not expected to be provided.
+
 ### Deferred Until External Confirmation
 
-- Keycloak container version and local realm import shape
-- Keycloak 전용 PostgreSQL container
+- Whether a local Keycloak simulation is still valuable without a production realm export
+- Keycloak 전용 PostgreSQL container, only if local simulation is approved
 - LMS mock DBMS selection
 - LMS mock table/schema shape
 - `/api/ready` readiness endpoint
@@ -80,7 +91,7 @@ lms_private_zone
 | profile | purpose |
 | --- | --- |
 | `postgres` | PS Track private PostgreSQL only |
-| `keycloak` | Deferred until Keycloak version/environment is confirmed |
+| `keycloak` | Optional local simulation with Keycloak `v26.0.4`; no production realm export expected |
 | `lms-mock` | Deferred until LMS DBMS/table shape is confirmed |
 | `integration` | Deferred until Keycloak and LMS mock decisions are confirmed |
 
@@ -105,10 +116,10 @@ lms_private_zone
 
 ### PR 2: Keycloak Local Simulation
 
-- Wait for Keycloak version/environment confirmation.
-- Add Keycloak + Keycloak DB profile.
-- Add realm import draft.
-- Verify Keycloak boots locally.
+- Use Keycloak `v26.0.4` only if local simulation is still useful without a production realm export.
+- Add Keycloak + Keycloak DB profile if approved.
+- Add a synthetic local realm/client draft, not a production `kird` export.
+- Verify Keycloak boots locally and can emit equivalent `uuid`, `email`, and `username` claims.
 - Keep app auth in `mock` unless explicitly testing `keycloak`.
 
 ### PR 3: LMS Mock DB
