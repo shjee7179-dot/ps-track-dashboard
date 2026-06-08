@@ -15,14 +15,14 @@ services:
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
-      AUTH_PROVIDER: mock
-      REPOSITORY_PROVIDER: mock
-      DATABASE_URL: postgresql://ps_track_app:ps_track_app_password@postgres:5432/ps_track
-      POSTGRES_SSL: "false"
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-mock}
+      REPOSITORY_PROVIDER: ${REPOSITORY_PROVIDER:-mock}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ps_track_app:ps_track_app_password@postgres:5432/ps_track}
+      POSTGRES_SSL: ${POSTGRES_SSL:-false}
       KEYCLOAK_SUB_HEADER: x-keycloak-sub
       KEYCLOAK_USERNAME_HEADER: x-keycloak-preferred-username
       KEYCLOAK_EMAIL_HEADER: x-keycloak-email
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
       interval: 30s

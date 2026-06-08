@@ -446,12 +446,52 @@
   - keycloak 모드의 `/login`은 credential 입력 화면이 아니다.
   - keycloak 모드의 `/login`은 gateway trusted-header 방식 설명과 `/dashboard` 재시도 링크만 제공한다.
   - 실제 로그인 시작 URL은 알파캠퍼스/LMS gateway 정책에 맡긴다.
+- PR: #62, merged.
 
 ### 다음 예정 작업
 
 - Keycloak trusted-header runtime smoke route 또는 diagnostics 화면 설계
 - 최종 public host 확정 후 LMS 운영팀에 `dashboard` / `login` URL 등록 요청
 - Docker daemon 실행 후 PostgreSQL LMS mapping E2E 재시도
+
+### Keycloak trusted-header diagnostics
+
+- 목적: 최종 public host 등록 요청 전에 AlphaCampus/LMS gateway가 전달할 trusted headers를 PS Track 내부에서 검증할 수 있게 준비
+- 산출물:
+  - `src/lib/keycloak/session-provider.ts`에 configured trusted-header name helper 추가
+  - `src/lib/keycloak/diagnostics.ts`에 masked diagnostics helper 추가
+  - `/admin/auth-diagnostics` 관리자 진단 화면 추가
+  - `/api/auth/diagnostics` no-store JSON smoke endpoint 추가
+- 주요 결정:
+  - 진단 화면/API는 원문 JWT, client secret, 전체 UUID/email 값을 표시하지 않는다.
+  - 응답은 header 존재 여부와 짧은 마스킹 preview만 제공한다.
+  - 최종 LMS 운영팀 URL 등록 요청은 MVP 품질 검증 이후 마지막 단계로 유지한다.
+- 검증:
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm run build`
+  - `AUTH_PROVIDER=keycloak` dev server에서 `/api/auth/diagnostics`에 synthetic trusted headers를 전달해 present/masked preview 확인
+  - `AUTH_PROVIDER=keycloak` dev server에서 `/admin/auth-diagnostics?role=admin` 화면 렌더링 확인
+
+### Docker/Postgres E2E retry
+
+- 목적: Docker daemon 실행 후 `REPOSITORY_PROVIDER=postgres` 앱 컨테이너 E2E를 재시도
+- 재현:
+  - `docker compose --profile postgres ps`
+  - `docker info`
+  - `docker desktop status`
+- 결과:
+  - Docker CLI와 context는 확인되었으나, `desktop-linux` context가 Docker daemon socket에 연결하지 못했다.
+  - `docker desktop status`도 "Could not retrieve status. Is Docker Desktop running?"으로 실패했다.
+- 조치:
+  - compose app service의 `AUTH_PROVIDER`, `REPOSITORY_PROVIDER`, `DATABASE_URL`, `POSTGRES_SSL`, `NEXT_PUBLIC_APP_URL`을 runtime env override 가능하게 변경했다.
+  - `docker compose --profile postgres config`로 compose 문법을 검증했다.
+  - `REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgres config`로 provider override 반영을 검증했다.
+  - Docker Desktop daemon이 정상화되면 아래 명령으로 즉시 재시도한다.
+
+```bash
+REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgres up --build ps-track-dashboard
+```
 
 ## 열린 판단
 

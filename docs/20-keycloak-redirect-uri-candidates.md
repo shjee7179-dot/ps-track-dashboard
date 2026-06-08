@@ -86,6 +86,28 @@ Recommended production candidate:
 https://ps-track.alpha-campus.kr/api/health
 ```
 
+### 4. Internal Gateway Header Diagnostic URLs
+
+These are not Keycloak redirect URIs. Use them only for internal smoke tests after the AlphaCampus/LMS gateway forwards verified identity headers.
+
+```text
+https://[PS_TRACK_PUBLIC_HOST]/admin/auth-diagnostics
+https://[PS_TRACK_PUBLIC_HOST]/api/auth/diagnostics
+```
+
+Recommended production candidates:
+
+```text
+https://ps-track.alpha-campus.kr/admin/auth-diagnostics
+https://ps-track.alpha-campus.kr/api/auth/diagnostics
+```
+
+Rationale:
+
+- The admin page verifies expected trusted-header names and masked received values.
+- The JSON endpoint is `no-store` and returns only presence flags plus short masked previews.
+- Neither URL should receive raw credentials or unverified user input.
+
 ## Future Direct OIDC Callback Candidate
 
 Only use this if PS Track later performs the OIDC authorization-code flow directly instead of relying on the AlphaCampus/LMS gateway.
