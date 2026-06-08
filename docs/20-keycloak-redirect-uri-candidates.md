@@ -69,7 +69,8 @@ https://ps-track.alpha-campus.kr/login
 Rationale:
 
 - `/login` exists today and can serve as the logout landing/re-entry screen.
-- The current page is a mock role selector, so before production it should be replaced or adjusted to a real SSO re-entry page.
+- In `AUTH_PROVIDER=mock`, `/login` remains a role selector for local validation.
+- In `AUTH_PROVIDER=keycloak`, `/login` renders an AlphaCampus SSO re-entry/logout landing page and does not collect credentials.
 
 ### 3. Health / Smoke URL
 
@@ -150,4 +151,3 @@ Token verification:
 - AlphaCampus/LMS gateway verifies JWT
 - PS Track receives trusted identity headers
 ```
-

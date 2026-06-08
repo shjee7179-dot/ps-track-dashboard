@@ -24,7 +24,7 @@
 
 | 항목 | 상태 | 근거 | 남은 Gap |
 | --- | --- | --- | --- |
-| 로그인 / 역할별 라우팅 | Functional Mock | `/login`, role query, mock session helper 기반 흐름 | 실제 Auth/session 저장 |
+| 로그인 / 역할별 라우팅 | Functional Mock | `/login`, role query, mock session helper, Keycloak mode SSO landing | 실제 Auth/session 저장 |
 | 공통 레이아웃 | Verified Mock | `AppShell`, 공통 nav, 역할별 route 접근 정책 | UI 디자인 고도화 |
 | 권한 + scope 기본 구조 | Verified Mock | `role + scope`, route access policy, permission helper 분리 | 서버 액션/API 권한 강제 |
 | 2026년 기수 seed 데이터 | Verified Mock | cohort, teams, participants, schedule mock data | DB seed/migration |
