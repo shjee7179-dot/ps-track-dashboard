@@ -106,12 +106,14 @@ Operational mapping policy:
 - 나중에 Spring Boot/MyBatis로 옮기더라도 repository SQL을 비교적 쉽게 재사용하거나 변환할 수 있다.
 - 복잡한 query builder는 domain table migration이 충분히 쌓인 뒤 필요성을 다시 판단한다.
 
-현재 구현 범위는 `users`, `role_assignments`, `lms_content_mappings` repository다. 나머지 repository domain은 `mockRepositories` fallback을 유지한다.
+현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses` repository다.
+
+`learning_piece_statuses`는 Postgres가 소유하지만, `modules`, `contents`, `learning_pieces` 정의는 아직 mock domain seed를 fallback으로 사용한다. 이 중간 단계는 LMS 완료 수동 반영 action이 실제 상태 row를 갱신하도록 하기 위한 최소 persistence 전환이다.
 
 ## Next Implementation Step
 
-1. Docker daemon 실행 후 `REPOSITORY_PROVIDER=postgres` 화면 저장/상태 변경 경로를 앱 컨테이너에서 end-to-end 검증
-2. LMS readonly catalog view 명세 수령 후 catalog selector 연결
-3. domain table migration 확대
-4. journey/artifact/evaluation repository를 순차적으로 postgres-backed로 전환
+1. Docker daemon 실행 후 `REPOSITORY_PROVIDER=postgres` LMS 완료 반영 action을 앱 컨테이너에서 end-to-end 검증
+2. `modules`, `contents`, `learning_pieces` domain table migration 확대
+3. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
+4. artifact/evaluation/outcome repository를 순차적으로 postgres-backed로 전환
 5. app runtime user grant SQL 작성

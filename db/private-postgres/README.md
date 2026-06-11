@@ -29,7 +29,7 @@ private PostgreSQL profile은 Supabase RLS에 의존하지 않는다.
 ## Future Work
 
 1. domain tables: modules, contents, learning_pieces
-2. journey tables: learning_piece_statuses, activity_logs
+2. journey tables: activity_logs
 3. artifact tables: artifacts, submissions, feedback
 4. evaluation/outcome tables
 5. audit/access log tables

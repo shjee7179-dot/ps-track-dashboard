@@ -583,6 +583,22 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - LMS 상태가 PS Track 상태를 자동 변경하지 않고, 운영자 확인 버튼을 통해 반영한다.
   - “LMS 완료지만 PS Track 미완료” 항목만 반영 대상으로 노출한다.
 
+### Postgres learning status repository
+
+- 목적: LMS 완료 반영 action이 `REPOSITORY_PROVIDER=postgres`에서도 실제 상태 row를 갱신하도록 최소 persistence 범위를 확대
+- 산출물:
+  - private PostgreSQL schema에 `learning_piece_statuses` 테이블, 인덱스, updated_at trigger 추가
+  - private PostgreSQL seed에 학생별 학습피스 상태와 synthetic LMS mapping seed 추가
+  - `postgresLearningRepository` 추가: 상태 목록, 학생 여정, 요약, 상태 갱신을 Postgres로 처리
+  - `users.external_subject` seed를 `keycloak-subject-synthetic-001`로 맞춰 `LMS_PROVIDER=mock-view` learning record overlay와 연결
+- 검증:
+  - `npm run lint`, `npm run typecheck` 통과
+  - `docker compose --profile postgres config` 통과
+  - 실제 Docker/Postgres E2E는 Docker daemon 미기동으로 보류
+- 주요 결정:
+  - `modules`, `contents`, `learning_pieces`는 아직 mock domain seed를 fallback으로 유지한다.
+  - 지금 단계의 DB 전환 범위는 action persistence에 필요한 `learning_piece_statuses`로 제한한다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

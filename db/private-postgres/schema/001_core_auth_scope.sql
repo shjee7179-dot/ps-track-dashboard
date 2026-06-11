@@ -110,6 +110,31 @@ create table if not exists public.role_assignments (
     check (ends_at is null or ends_at > starts_at)
 );
 
+create table if not exists public.learning_piece_statuses (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.users(id) on delete cascade,
+  learning_piece_id text not null,
+  status text not null default 'not_started',
+  completed_at date,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint learning_piece_statuses_status_check
+    check (status in (
+      'locked',
+      'not_started',
+      'in_progress',
+      'needs_submission',
+      'pending_review',
+      'revising',
+      'pending_evaluation',
+      'completed',
+      'delayed'
+    )),
+  constraint learning_piece_statuses_student_piece_unique
+    unique (student_id, learning_piece_id)
+);
+
 create table if not exists public.lms_content_mappings (
   id uuid primary key default gen_random_uuid(),
   cohort_id uuid not null references public.cohorts(id) on delete cascade,
@@ -175,6 +200,15 @@ create index if not exists role_assignments_user_status_idx
 create index if not exists role_assignments_scope_status_idx
   on public.role_assignments (scope_type, scope_id, status);
 
+create index if not exists learning_piece_statuses_student_idx
+  on public.learning_piece_statuses (student_id);
+
+create index if not exists learning_piece_statuses_learning_piece_idx
+  on public.learning_piece_statuses (learning_piece_id);
+
+create index if not exists learning_piece_statuses_status_idx
+  on public.learning_piece_statuses (status);
+
 create index if not exists lms_content_mappings_cohort_status_idx
   on public.lms_content_mappings (cohort_id, status);
 
@@ -217,6 +251,11 @@ create trigger set_role_assignments_updated_at
 before update on public.role_assignments
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_learning_piece_statuses_updated_at on public.learning_piece_statuses;
+create trigger set_learning_piece_statuses_updated_at
+before update on public.learning_piece_statuses
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_lms_content_mappings_updated_at on public.lms_content_mappings;
 create trigger set_lms_content_mappings_updated_at
 before update on public.lms_content_mappings
@@ -233,6 +272,9 @@ comment on table public.role_assignments is
 
 comment on column public.role_assignments.scope_id is
   'Text by design because scope targets are polymorphic: system, program, cohort, track, team, or student.';
+
+comment on table public.learning_piece_statuses is
+  'Per-student PS Track learning piece state. LMS readonly completion can be manually applied into this table.';
 
 comment on table public.lms_content_mappings is
   'Operator-managed mapping between PS Track learning pieces and LMS readonly content/course round records.';

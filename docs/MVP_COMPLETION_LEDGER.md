@@ -133,6 +133,7 @@
 | 공지 생성 action guard | Functional Mock | 공지 작성 mock action |
 | mock completion note | Documented | `docs/MOCK_COMPLETION_NOTES.md` |
 | LMS readonly mock-view | Functional Mock | catalog selector, learning record overlay |
+| Postgres learning status repository | Functional Mock | `learning_piece_statuses` schema/seed/repository |
 
 ## 최근 검증 기준
 
