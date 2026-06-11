@@ -49,6 +49,7 @@ export const users: User[] = [
     email: "student@example.kr",
     affiliation: "예비 의사과학자",
     defaultRole: "student",
+    externalSubject: "keycloak-subject-synthetic-001",
     status: "active",
   },
   {

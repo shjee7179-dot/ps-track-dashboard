@@ -66,6 +66,8 @@ The matching TypeScript contract lives in `src/lib/lms/source-table-contract.ts`
 
 `/admin/lms-content-mappings` uses this adapter when `LMS_PROVIDER=mock-view`. Operators select an LMS catalog item instead of manually typing `lms_content_id`; the server action then reloads the catalog record and resolves `lms_content_id`, `lms_course_round_id`, `content_group`, and `content_type`.
 
+Student journey screens use `src/lib/lms/journey-overlay.ts` to join active PS Track LMS mappings with `lms_learning_record_view` records. In the MVP this is display-only: LMS completion is shown as an external signal and does not automatically overwrite the PS Track learning piece status.
+
 ## Required LMS Views
 
 ### 1. `lms_content_catalog_view`

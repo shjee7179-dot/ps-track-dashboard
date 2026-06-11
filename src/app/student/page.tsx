@@ -2,62 +2,34 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { JourneyTimeline, LearningPieceCard } from "@/components/journey";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { mockRepositories } from "@/lib/mock-repositories";
-import type { LearningPiece, StudentLearningPieceStatus } from "@/lib/domain";
+import { attachLmsRecordsToJourney } from "@/lib/lms/journey-overlay";
+import { repositories } from "@/lib/repositories";
 
 const studentId = "student-001";
 
-function getJourneyItems(
-  statuses: StudentLearningPieceStatus[],
-  learningPieces: LearningPiece[],
-) {
-  return statuses
-    .map((status) => ({
-      status,
-      learningPiece: learningPieces.find((piece) => piece.id === status.learningPieceId),
-    }))
-    .filter(
-      (item): item is { status: StudentLearningPieceStatus; learningPiece: LearningPiece } =>
-        Boolean(item.learningPiece),
-    );
-}
-
-function getJourneySummary(items: Array<{ status: StudentLearningPieceStatus }>) {
-  const completed = items.filter((item) => item.status.status === "completed").length;
-  const delayed = items.filter((item) => item.status.status === "delayed").length;
-  const needsAction = items.filter((item) =>
-    ["needs_submission", "pending_review", "revising", "in_progress"].includes(item.status.status),
-  ).length;
-
-  return {
-    total: items.length,
-    completed,
-    delayed,
-    needsAction,
-    completionRate: items.length ? Math.round((completed / items.length) * 100) : 0,
-  };
-}
-
 export default async function StudentDashboardPage() {
-  const [student, learningPieces, statuses, activityLogs] = await Promise.all([
-    mockRepositories.users.getUserById(studentId),
-    mockRepositories.learning.listLearningPieces(),
-    mockRepositories.learning.listStudentLearningPieceStatuses({ studentId }),
-    mockRepositories.admin.listActivityLogs({ studentId }),
+  const [student, baseJourney, summary, activityLogs] = await Promise.all([
+    repositories.users.getUserById(studentId),
+    repositories.learning.listStudentJourney(studentId),
+    repositories.learning.getJourneySummary(studentId),
+    repositories.admin.listActivityLogs({ studentId }),
   ]);
-  const journey = getJourneyItems(statuses, learningPieces);
-  const summary = getJourneySummary(journey);
+  const journey = await attachLmsRecordsToJourney(studentId, baseJourney);
+  const lmsCompleted = journey.filter(
+    (item) => item.lmsRecord?.completionBucket === "completed",
+  ).length;
   const currentItems = journey.filter((item) =>
     ["in_progress", "needs_submission", "pending_review"].includes(item.status.status),
   );
 
   return (
     <AppShell title="학생 대시보드" eyebrow={`${student?.name ?? "학생"} / 이번 주 할 일`}>
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-5">
         <Stat label="전체 학습피스" value={`${summary.total}개`} tone="teal" />
         <Stat label="완료" value={`${summary.completed}개`} />
         <Stat label="조치 필요" value={`${summary.needsAction}개`} tone="amber" />
         <Stat label="완료율" value={`${summary.completionRate}%`} />
+        <Stat label="LMS 완료" value={`${lmsCompleted}개`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
@@ -68,11 +40,12 @@ export default async function StudentDashboardPage() {
               전체 보기
             </Link>
           </div>
-          {currentItems.map(({ learningPiece, status }) => (
+          {currentItems.map(({ learningPiece, status, lmsRecord }) => (
             <LearningPieceCard
               key={learningPiece.id}
               learningPiece={learningPiece}
               status={status}
+              lmsRecord={lmsRecord}
             />
           ))}
         </section>
