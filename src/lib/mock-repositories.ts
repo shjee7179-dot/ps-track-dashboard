@@ -84,6 +84,22 @@ const lmsContentMappings: LmsContentMapping[] = [
     createdAt: "2026-06-01T09:00:00.000Z",
     updatedAt: "2026-06-01T09:00:00.000Z",
   },
+  {
+    id: "lms-map-002",
+    cohortId: cohort2026.id,
+    moduleId: "module-002",
+    contentId: "content-003",
+    learningPieceId: "lp-003",
+    lmsContentId: "lms-channel-content-synthetic-001",
+    contentGroup: "subscription",
+    contentType: "knowledge",
+    required: true,
+    activationRule: "completion_completed",
+    status: "active",
+    createdBy: "operator-001",
+    createdAt: "2026-06-01T09:00:00.000Z",
+    updatedAt: "2026-06-01T09:00:00.000Z",
+  },
 ];
 
 function listStudentJourneyRows(studentId: string): StudentJourneyItem[] {

@@ -41,7 +41,7 @@
 | 학생 대시보드 | Verified Mock | `/student`, 해야 할 일 + 성장 요약 | 실제 학생 session 연결 |
 | 학생 상세 | Verified Mock | `/journeys/students/[studentId]`, LMS mock-view overlay | 운영자/멘토 scope 기반 접근 제한 강화 |
 | 학습피스 목록 / 상세 | Verified Mock | `/objects/learning-pieces`, 상세 라우트, LMS mock-view 상태 표시 | 상태 변경/제출 액션 |
-| 학습피스 상태 | Functional Mock | 상태 데이터와 라벨, `/journeys/status` | 상태 수정 UI/API |
+| 학습피스 상태 | Functional Mock | 상태 데이터와 라벨, `/journeys/status`, LMS 완료 수동 반영 action | 상태 변경 persistence |
 | 학생별 학습 여정 | Verified Mock | 학생별 타임라인, LMS 수료 기록 overlay, 목록 LMS 요약 | 실제 완료 규칙 계산 |
 
 ## Sprint 2: 산출물과 멘토링

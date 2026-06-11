@@ -571,6 +571,18 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - “상태 미반영”은 LMS 완료 bucket은 `completed`지만 PS Track 학습피스 상태가 아직 `completed`가 아닌 경우로 정의한다.
   - 이 단계에서도 자동 동기화는 하지 않고 운영자가 조치할 수 있는 신호만 표시한다.
 
+### LMS completion apply action
+
+- 목적: LMS 수료 근거가 있는 학습피스를 운영자가 학생 상세 화면에서 PS Track 완료 상태로 반영
+- 산출물:
+  - `/journeys/students/[studentId]`에 `LMS 수료 반영 대기` 카드 추가
+  - `applyLmsCompletionToLearningPieceStatusAction` server action 추가
+  - action은 학생 scope 권한, 상태 레코드 존재, LMS 완료 bucket을 검증한 뒤 `completed`로 변경
+  - 반영 후 학생 목록, 학생 상세, 학습피스 상세 경로를 revalidate
+- 주요 결정:
+  - LMS 상태가 PS Track 상태를 자동 변경하지 않고, 운영자 확인 버튼을 통해 반영한다.
+  - “LMS 완료지만 PS Track 미완료” 항목만 반영 대상으로 노출한다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
