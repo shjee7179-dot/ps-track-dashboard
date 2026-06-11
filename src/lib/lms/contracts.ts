@@ -116,3 +116,21 @@ export type LmsReadonlyViewAdapter = {
     keycloakSubject?: string;
   }): Promise<LmsLearningRecord[]>;
 };
+
+export type LmsReadonlySourceTableName =
+  | "회원"
+  | "회원소속"
+  | "등록"
+  | "등록_통계"
+  | "수강_통계"
+  | "과목"
+  | "시퀀스"
+  | "시퀀스_모듈"
+  | "시퀀스_수업"
+  | "콘텐츠_풀"
+  | "채널_콘텐츠"
+  | "채널_학습"
+  | "전자책_콘텐츠"
+  | "전자책_학습"
+  | "학습_랩"
+  | "학습_랩_회원";

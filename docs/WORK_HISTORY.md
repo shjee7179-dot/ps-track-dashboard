@@ -514,6 +514,26 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - 원인을 재현한 뒤 update form select에 `aria-label`을 추가했다.
   - 앞으로 반복 row의 select/button은 자동화와 보조기기 모두를 위해 고유한 label 또는 aria-label을 둔다.
 
+### LMS table spec extraction
+
+- 목적: `table.xlsx`에 포함된 AlphaCampus/LMS DB 테이블 명세에서 PS Track readonly view contract에 필요한 테이블명/컬럼명을 추출
+- 입력:
+  - `/Users/jeesanghyun/Downloads/table.xlsx`
+  - sheet: `테이블 명세서`
+  - 구조: `B열=테이블명`, `C열=컬럼명`
+- 확인 결과:
+  - 총 346개 테이블이 포함되어 있다.
+  - PS Track 1차 연동 후보는 사용자, 정규교육 catalog/수강실적, 구독/전자책/커뮤니티 catalog/학습실적 테이블로 좁힌다.
+- 산출물:
+  - `docs/19-lms-readonly-view-contract.md`에 실제 source table/column 후보 추가
+  - `src/lib/lms/source-table-contract.ts`에 TypeScript source table contract와 synthetic id namespace 추가
+  - `src/lib/lms/contracts.ts`에 readonly source table name union 추가
+  - `src/lib/lms/readonly-adapter.ts`에 `LMS_PROVIDER=none|mock-view` adapter와 synthetic LMS catalog/learning records 추가
+- 결정:
+  - 실제 ID 값은 보안상 받지 않았으므로 개발용 ID는 `*-synthetic-*` namespace를 사용한다.
+  - 운영 연계는 원본 테이블 직접 조회가 아니라 LMS 운영팀이 제공하는 readonly view를 대상으로 유지한다.
+  - `등록_통계`와 `수강_통계` 중 canonical 수강/수료 source는 LMS 운영팀 확인이 필요하다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
