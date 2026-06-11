@@ -534,6 +534,18 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - 운영 연계는 원본 테이블 직접 조회가 아니라 LMS 운영팀이 제공하는 readonly view를 대상으로 유지한다.
   - `등록_통계`와 `수강_통계` 중 canonical 수강/수료 source는 LMS 운영팀 확인이 필요하다.
 
+### LMS catalog selector for mappings
+
+- 목적: `/admin/lms-content-mappings`에서 운영자가 LMS 콘텐츠 ID를 직접 입력하지 않고 readonly catalog view 후보를 선택할 수 있게 연결
+- 산출물:
+  - `LMS_PROVIDER=mock-view`일 때 `getLmsReadonlyViewAdapter().listContentCatalog()` 결과를 매핑 form select로 표시
+  - catalog가 없거나 `LMS_PROVIDER=none`이면 기존 직접 입력 방식을 유지
+  - `createLmsContentMappingAction`은 `lmsCatalogTarget`이 전달되면 server action 안에서 catalog를 다시 조회해 `lmsContentId`, `lmsCourseRoundId`, `contentGroup`, `contentType`을 확정
+- 주요 결정:
+  - catalog option 값만 신뢰하지 않고, server action에서 adapter를 다시 조회해 실제 record와 일치하는지 검증한다.
+  - client-side JavaScript 없이 server-rendered form으로 구현한다.
+  - 실제 LMS ID 수령 전까지는 `mock-view` synthetic catalog로 매핑 UI와 저장 흐름을 검증한다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
