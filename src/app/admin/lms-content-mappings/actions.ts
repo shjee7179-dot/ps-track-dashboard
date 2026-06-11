@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
+import { getLmsReadonlyViewAdapter } from "@/lib/lms/readonly-adapter";
 import type {
   LmsContentGroup,
   LmsContentMappingActivationRule,
@@ -63,19 +64,40 @@ function buildRedirectPath(update: string, mappingId?: string) {
   return `/admin/lms-content-mappings?${params.toString()}`;
 }
 
+function buildCatalogTargetKey(lmsContentId: string, lmsCourseRoundId?: string) {
+  return `${lmsContentId}::${lmsCourseRoundId ?? ""}`;
+}
+
 export async function createLmsContentMappingAction(formData: FormData) {
   const cohortId = normalizeText(formData.get("cohortId"));
   const moduleId = normalizeText(formData.get("moduleId"));
   const contentId = normalizeText(formData.get("contentId"));
   const learningPieceId = normalizeText(formData.get("learningPieceId"));
-  const lmsContentId = normalizeText(formData.get("lmsContentId"));
-  const lmsCourseRoundId = normalizeOptionalText(formData.get("lmsCourseRoundId"));
-  const contentGroup = formData.get("contentGroup");
-  const contentType = formData.get("contentType");
+  let lmsContentId = normalizeText(formData.get("lmsContentId"));
+  let lmsCourseRoundId = normalizeOptionalText(formData.get("lmsCourseRoundId"));
+  let contentGroup = formData.get("contentGroup");
+  let contentType = formData.get("contentType");
   const activationRule = formData.get("activationRule");
   const status = formData.get("status");
   const required = formData.get("required") === "on";
   const roleParam = formData.get("role");
+  const lmsCatalogTarget = normalizeOptionalText(formData.get("lmsCatalogTarget"));
+
+  if (lmsCatalogTarget) {
+    const catalog = await getLmsReadonlyViewAdapter().listContentCatalog();
+    const selected = catalog.find(
+      (record) => buildCatalogTargetKey(record.lmsContentId, record.lmsCourseRoundId) === lmsCatalogTarget,
+    );
+
+    if (!selected) {
+      redirect(buildRedirectPath("invalid"));
+    }
+
+    lmsContentId = selected.lmsContentId;
+    lmsCourseRoundId = selected.lmsCourseRoundId;
+    contentGroup = selected.contentGroup;
+    contentType = selected.contentType;
+  }
 
   if (
     !cohortId ||

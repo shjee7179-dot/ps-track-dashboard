@@ -5,8 +5,10 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { getContentById, getModuleById } from "@/lib/domain";
+import { getLmsProviderName, getLmsReadonlyViewAdapter } from "@/lib/lms/readonly-adapter";
 import { repositories } from "@/lib/repositories";
 import type {
+  LmsContentCatalogRecord,
   LmsContentGroup,
   LmsContentMappingActivationRule,
   LmsContentMappingStatus,
@@ -66,16 +68,28 @@ function getDefaultActivationRule(pieceType: string): LmsContentMappingActivatio
   return "record_exists";
 }
 
+function buildCatalogTargetKey(record: LmsContentCatalogRecord) {
+  return `${record.lmsContentId}::${record.lmsCourseRoundId ?? ""}`;
+}
+
+function getCatalogOptionLabel(record: LmsContentCatalogRecord) {
+  const round = record.courseRoundTitle ?? record.lmsCourseRoundId ?? "차수 없음";
+  return `${record.contentTitle} / ${round} / ${record.contentGroup}:${record.contentType}`;
+}
+
 export default async function LmsContentMappingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ role?: string; update?: string; mapping?: string }>;
 }) {
   const params = await searchParams;
-  const [cohort, learningPieces] = await Promise.all([
+  const [cohort, learningPieces, lmsCatalog] = await Promise.all([
     repositories.cohorts.getActiveCohort(),
     repositories.learning.listLearningPieces(),
+    getLmsReadonlyViewAdapter().listContentCatalog(),
   ]);
+  const lmsProvider = getLmsProviderName();
+  const hasLmsCatalog = lmsCatalog.length > 0;
   const cohortId = cohort?.id ?? "cohort-2026";
   const mappings = await repositories.lms.contentMappings.listMappings({ cohortId });
   const mappingByLearningPieceId = new Map(
@@ -91,6 +105,10 @@ export default async function LmsContentMappingsPage({
         <Stat label="학습피스" value={`${learningPieces.length}개`} />
         <Stat label="매핑 완료" value={`${mappings.length}개`} tone="amber" />
         <Stat label="활성 매핑" value={`${activeMappings.length}개`} />
+      </div>
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <Stat label="LMS provider" value={lmsProvider} tone={hasLmsCatalog ? "teal" : "amber"} />
+        <Stat label="조회 가능한 LMS catalog" value={`${lmsCatalog.length}개`} />
       </div>
 
       {updateMessage ? (
@@ -202,35 +220,63 @@ export default async function LmsContentMappingsPage({
                               name="learningPieceId"
                               value={learningPiece.id}
                             />
-                            <div className="grid gap-2 sm:grid-cols-2">
+                            {hasLmsCatalog ? (
                               <label className="grid gap-1">
                                 <span className="text-xs font-medium text-stone-600">
-                                  LMS 콘텐츠 ID
+                                  LMS 콘텐츠 선택
                                 </span>
-                                <input
-                                  name="lmsContentId"
+                                <select
+                                  name="lmsCatalogTarget"
                                   required
-                                  placeholder="예: alpha-content-uuid"
-                                  className="h-10 rounded-md border border-stone-200 bg-white px-3 text-stone-700"
-                                />
-                              </label>
-                              <label className="grid gap-1">
-                                <span className="text-xs font-medium text-stone-600">
-                                  LMS 차수 ID
+                                  defaultValue=""
+                                  aria-label={`${learningPiece.title} LMS 콘텐츠 선택`}
+                                  className="h-10 rounded-md border border-stone-200 bg-white px-2 text-stone-700"
+                                >
+                                  <option value="" disabled>
+                                    AlphaCampus 콘텐츠를 선택하세요
+                                  </option>
+                                  {lmsCatalog.map((record) => (
+                                    <option key={buildCatalogTargetKey(record)} value={buildCatalogTargetKey(record)}>
+                                      {getCatalogOptionLabel(record)}
+                                    </option>
+                                  ))}
+                                </select>
+                                <span className="text-xs text-stone-500">
+                                  선택값은 server action에서 catalog view를 다시 조회해 ID와 유형을 확정합니다.
                                 </span>
-                                <input
-                                  name="lmsCourseRoundId"
-                                  placeholder="선택 입력"
-                                  className="h-10 rounded-md border border-stone-200 bg-white px-3 text-stone-700"
-                                />
                               </label>
-                            </div>
+                            ) : (
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <label className="grid gap-1">
+                                  <span className="text-xs font-medium text-stone-600">
+                                    LMS 콘텐츠 ID
+                                  </span>
+                                  <input
+                                    name="lmsContentId"
+                                    required
+                                    placeholder="예: alpha-content-uuid"
+                                    className="h-10 rounded-md border border-stone-200 bg-white px-3 text-stone-700"
+                                  />
+                                </label>
+                                <label className="grid gap-1">
+                                  <span className="text-xs font-medium text-stone-600">
+                                    LMS 차수 ID
+                                  </span>
+                                  <input
+                                    name="lmsCourseRoundId"
+                                    placeholder="선택 입력"
+                                    className="h-10 rounded-md border border-stone-200 bg-white px-3 text-stone-700"
+                                  />
+                                </label>
+                              </div>
+                            )}
                             <div className="grid gap-2 sm:grid-cols-4">
                               <label className="grid gap-1">
                                 <span className="text-xs font-medium text-stone-600">그룹</span>
                                 <select
                                   name="contentGroup"
                                   defaultValue="regular"
+                                  disabled={hasLmsCatalog}
                                   className="h-10 rounded-md border border-stone-200 bg-white px-2 text-stone-700"
                                 >
                                   {contentGroupOptions.map((option) => (
@@ -245,6 +291,7 @@ export default async function LmsContentMappingsPage({
                                 <select
                                   name="contentType"
                                   defaultValue={getDefaultContentType(learningPiece.pieceType)}
+                                  disabled={hasLmsCatalog}
                                   className="h-10 rounded-md border border-stone-200 bg-white px-2 text-stone-700"
                                 >
                                   {contentTypeOptions.map((option) => (

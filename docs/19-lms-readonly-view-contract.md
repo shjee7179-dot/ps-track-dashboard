@@ -64,6 +64,8 @@ The matching TypeScript contract lives in `src/lib/lms/source-table-contract.ts`
 
 `src/lib/lms/readonly-adapter.ts` provides the current `LMS_PROVIDER=none|mock-view` adapter. `mock-view` uses only synthetic IDs and sanitized sample records so screens can be developed before real LMS IDs are available.
 
+`/admin/lms-content-mappings` uses this adapter when `LMS_PROVIDER=mock-view`. Operators select an LMS catalog item instead of manually typing `lms_content_id`; the server action then reloads the catalog record and resolves `lms_content_id`, `lms_course_round_id`, `content_group`, and `content_type`.
+
 ## Required LMS Views
 
 ### 1. `lms_content_catalog_view`
