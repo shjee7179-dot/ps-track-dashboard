@@ -546,6 +546,19 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - client-side JavaScript 없이 server-rendered form으로 구현한다.
   - 실제 LMS ID 수령 전까지는 `mock-view` synthetic catalog로 매핑 UI와 저장 흐름을 검증한다.
 
+### LMS learning record overlay for student journey
+
+- 목적: 운영자 LMS 콘텐츠 매핑 후 학생 여정 화면에서 LMS 수료/미수료 실적을 읽어 표시하는 end-to-end mock-view 연결
+- 산출물:
+  - `src/lib/lms/journey-overlay.ts`에 학생, active cohort, active LMS mapping, readonly learning record를 조합하는 overlay helper 추가
+  - mock 학생 `student-001`에 synthetic Keycloak subject를 연결
+  - 기본 mock LMS mapping을 `mock-view` synthetic catalog/learning record와 일치하도록 조정
+  - `/student`, `/journeys/students/[studentId]`, `/objects/learning-pieces/[learningPieceId]`에 LMS 완료 상태 표시 추가
+- 주요 결정:
+  - 1차 구현에서는 LMS 수료 상태가 PS Track 내부 학습피스 상태를 자동으로 덮어쓰지 않는다.
+  - LMS 상태는 학생 여정과 학습피스 상세의 참고 신호로 표시하고, 자동 완료 처리 정책은 별도 rule/action 단계에서 다룬다.
+  - 실제 LMS view 명세 전까지는 `LMS_PROVIDER=mock-view`와 synthetic ID만 사용한다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

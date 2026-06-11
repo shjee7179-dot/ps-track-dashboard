@@ -39,10 +39,10 @@
 | 항목 | 상태 | 근거 | 남은 Gap |
 | --- | --- | --- | --- |
 | 학생 대시보드 | Verified Mock | `/student`, 해야 할 일 + 성장 요약 | 실제 학생 session 연결 |
-| 학생 상세 | Verified Mock | `/journeys/students/[studentId]` | 운영자/멘토 scope 기반 접근 제한 강화 |
-| 학습피스 목록 / 상세 | Verified Mock | `/objects/learning-pieces`, 상세 라우트 | 상태 변경/제출 액션 |
+| 학생 상세 | Verified Mock | `/journeys/students/[studentId]`, LMS mock-view overlay | 운영자/멘토 scope 기반 접근 제한 강화 |
+| 학습피스 목록 / 상세 | Verified Mock | `/objects/learning-pieces`, 상세 라우트, LMS mock-view 상태 표시 | 상태 변경/제출 액션 |
 | 학습피스 상태 | Functional Mock | 상태 데이터와 라벨, `/journeys/status` | 상태 수정 UI/API |
-| 학생별 학습 여정 | Verified Mock | `src/lib/journeys.ts`, 학생별 타임라인 | 실제 완료 규칙 계산 |
+| 학생별 학습 여정 | Verified Mock | 학생별 타임라인, LMS 수료 기록 overlay | 실제 완료 규칙 계산 |
 
 ## Sprint 2: 산출물과 멘토링
 
@@ -132,6 +132,7 @@
 | 리스크/리마인더 action guard | Functional Mock | 운영 리스크/리마인더 조치 상태 저장 mock action |
 | 공지 생성 action guard | Functional Mock | 공지 작성 mock action |
 | mock completion note | Documented | `docs/MOCK_COMPLETION_NOTES.md` |
+| LMS readonly mock-view | Functional Mock | catalog selector, learning record overlay |
 
 ## 최근 검증 기준
 
@@ -140,4 +141,4 @@
 - `npm run build`
 - 주요 라우트 `curl -I` 확인
 
-현재 Ledger 기준일: 2026-06-01
+현재 Ledger 기준일: 2026-06-11

@@ -4,11 +4,11 @@ import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import {
   getContentById,
-  getLearningPieceById,
   getModuleById,
   getStatusLabel,
-  studentLearningPieceStatuses,
 } from "@/lib/domain";
+import { getJourneyLmsRecordMap } from "@/lib/lms/journey-overlay";
+import { repositories } from "@/lib/repositories";
 
 const studentId = "student-001";
 
@@ -18,22 +18,37 @@ export default async function LearningPieceDetailPage({
   params: Promise<{ learningPieceId: string }>;
 }) {
   const { learningPieceId } = await params;
-  const learningPiece = getLearningPieceById(learningPieceId);
+  const learningPiece = await repositories.learning.getLearningPieceById(learningPieceId);
   if (!learningPiece) notFound();
 
   const moduleInfo = getModuleById(learningPiece.moduleId);
   const content = getContentById(learningPiece.contentId);
-  const status = studentLearningPieceStatuses.find(
+  const [statuses, lmsRecordMap] = await Promise.all([
+    repositories.learning.listStudentLearningPieceStatuses({ studentId }),
+    getJourneyLmsRecordMap(studentId),
+  ]);
+  const status = statuses.find(
     (item) => item.studentId === studentId && item.learningPieceId === learningPiece.id,
   );
+  const lmsRecord = lmsRecordMap.get(learningPiece.id);
 
   return (
     <AppShell title={learningPiece.title} eyebrow="Learning Piece Detail">
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-5">
         <Stat label="유형" value={learningPiece.pieceType} tone="teal" />
         <Stat label="공개일" value={learningPiece.opensAt} />
         <Stat label="마감일" value={learningPiece.dueAt} tone="amber" />
         <Stat label="상태" value={status ? getStatusLabel(status.status) : "미지정"} />
+        <Stat
+          label="LMS"
+          value={
+            lmsRecord?.completionBucket === "completed"
+              ? "수료"
+              : lmsRecord
+                ? "미완료"
+                : "미연결"
+          }
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -82,6 +97,12 @@ export default async function LearningPieceDetailPage({
               <p className="mt-1 text-sm text-stone-600">
                 {status?.note ?? "아직 상태 메모가 없습니다."}
               </p>
+              {lmsRecord ? (
+                <p className="mt-2 text-xs text-stone-500">
+                  LMS {lmsRecord.completionStatusLabel ?? "상태 미확인"} · 진도{" "}
+                  {lmsRecord.progressRate ?? "-"}% · 학습 {lmsRecord.learningTimeMinutes ?? 0}분
+                </p>
+              ) : null}
             </div>
             <StatusBadge>{status ? getStatusLabel(status.status) : "미지정"}</StatusBadge>
           </div>
