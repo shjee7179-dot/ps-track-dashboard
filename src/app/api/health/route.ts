@@ -6,5 +6,6 @@ export function GET() {
     service: "ps-track-dashboard",
     authProvider: process.env.AUTH_PROVIDER ?? "mock",
     repositoryProvider: process.env.REPOSITORY_PROVIDER ?? "mock",
+    lmsProvider: process.env.LMS_PROVIDER ?? "none",
   });
 }

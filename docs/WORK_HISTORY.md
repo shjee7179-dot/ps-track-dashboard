@@ -621,6 +621,29 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - 최신 앱 컨테이너 E2E는 Docker registry/credential/frontend resolve 문제가 풀린 뒤 재시도해야 한다.
   - 현재 서비스는 기존 이미지로 healthy 상태까지 복구했다.
 
+### Docker/Postgres LMS completion E2E completed
+
+- 목적: 앞선 Docker frontend/base image resolution 보류 상태를 해소하고, 컨테이너 환경에서 LMS 완료 반영 action을 끝까지 검증
+- 산출물:
+  - `Dockerfile`의 Dockerfile frontend registry 의존을 제거하고 `NODE_IMAGE` build arg를 추가
+  - local/offline 검증 시 `--build-arg NODE_IMAGE=ps-track-dashboard:local`로 사전 반입된 base image를 사용할 수 있게 조정
+  - deps stage에서 dev dependency가 설치되도록 `npm ci --include=dev` 적용
+  - stale image와 provider 누락을 빠르게 찾기 위해 `/api/health`에 `lmsProvider` 표시 추가
+  - `docker-compose.yml`이 `LMS_PROVIDER`를 앱 컨테이너에 전달하도록 수정
+  - Postgres repository가 mock route alias(`student-001`)를 DB user email로 해석하도록 보강
+- 검증:
+  - `npm run lint`, `npm run typecheck`, `npm run build` 통과
+  - `docker build --progress plain --build-arg NODE_IMAGE=ps-track-dashboard:local -t ps-track-dashboard:local .` 통과
+  - `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=postgres`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 성공
+  - `/api/health`에서 `authProvider=mock`, `repositoryProvider=postgres`, `lmsProvider=mock-view` 확인
+  - `/journeys/students/student-001?role=admin`에서 `LMS 완료 2개`와 `LMS 수료 반영 대기` 버튼 확인
+  - 브라우저에서 `완료 반영` 클릭 후 URL에 `lmsSync=accepted`가 붙고 대기 버튼이 사라짐
+  - Postgres `learning_piece_statuses.lp-003`가 `in_progress`에서 `completed`로 변경됨
+- 오진/교훈:
+  - 최초에는 DB/overlay 연결 문제처럼 보였지만 실제 원인은 `docker-compose.yml`에서 `LMS_PROVIDER`가 컨테이너에 전달되지 않은 설정 누락이었다.
+  - `/api/health`가 repository provider만 보여주면 LMS provider 누락을 놓치기 쉬우므로 provider 진단값을 함께 노출한다.
+  - Docker Hub 접근이 불안정하거나 폐쇄망에 가까운 환경에서는 base image 사전 반입과 build arg 경로가 필요하다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
