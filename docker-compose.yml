@@ -17,6 +17,7 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       AUTH_PROVIDER: ${AUTH_PROVIDER:-mock}
       REPOSITORY_PROVIDER: ${REPOSITORY_PROVIDER:-mock}
+      LMS_PROVIDER: ${LMS_PROVIDER:-none}
       DATABASE_URL: ${DATABASE_URL:-postgresql://ps_track_app:ps_track_app_password@postgres:5432/ps_track}
       POSTGRES_SSL: ${POSTGRES_SSL:-false}
       KEYCLOAK_SUB_HEADER: x-keycloak-sub

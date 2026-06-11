@@ -1,19 +1,23 @@
-# syntax=docker/dockerfile:1
+ARG NODE_IMAGE=node:22-alpine
 
-FROM node:22-alpine AS base
+FROM ${NODE_IMAGE} AS base
+USER root
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 FROM base AS builder
+ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM ${NODE_IMAGE} AS runner
+USER root
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -23,8 +27,8 @@ ENV PORT=3000
 ENV AUTH_PROVIDER=mock
 ENV REPOSITORY_PROVIDER=mock
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs || true \
+  && adduser --system --uid 1001 nextjs || true
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

@@ -293,6 +293,24 @@ const learningPieceStatusSelect = `
   from public.learning_piece_statuses
 `;
 
+async function resolvePostgresUserId(userIdOrAlias: string): Promise<string | undefined> {
+  if (isUuid(userIdOrAlias)) {
+    return userIdOrAlias;
+  }
+
+  const mockUser = await mockRepositories.users.getUserById(userIdOrAlias);
+  if (!mockUser) {
+    return undefined;
+  }
+
+  const result = await queryPostgres<UserRow>(
+    `${userSelect} where email = $1 limit 1`,
+    [mockUser.email],
+  );
+
+  return result.rows[0]?.id;
+}
+
 function summarizeJourney(items: StudentJourneyItem[]): JourneySummary {
   const completed = items.filter((item) => item.status.status === "completed").length;
   const delayed = items.filter((item) => item.status.status === "delayed").length;
@@ -336,6 +354,19 @@ export const postgresUserRepository: UserRepository = {
       .filter((user): user is User => Boolean(user));
   },
   async getUserById(userId) {
+    if (!isUuid(userId)) {
+      const mockUser = await mockRepositories.users.getUserById(userId);
+      if (!mockUser) {
+        return undefined;
+      }
+      const result = await queryPostgres<UserRow>(
+        `${userSelect} where email = $1 limit 1`,
+        [mockUser.email],
+      );
+
+      return result.rows[0] ? mapPostgresUser(result.rows[0]) ?? undefined : undefined;
+    }
+
     const result = await queryPostgres<UserRow>(
       `${userSelect} where id = $1 limit 1`,
       [userId],
@@ -379,7 +410,11 @@ export const postgresLearningRepository: LearningRepository = {
     const filters: string[] = [];
 
     if (query?.studentId) {
-      values.push(query.studentId);
+      const postgresStudentId = await resolvePostgresUserId(query.studentId);
+      if (!postgresStudentId) {
+        return [];
+      }
+      values.push(postgresStudentId);
       filters.push(`student_id = $${values.length}`);
     }
 

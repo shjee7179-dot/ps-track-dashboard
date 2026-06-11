@@ -60,6 +60,18 @@ Additional retry on 2026-06-12:
 - latest app image rebuild was blocked at Docker frontend image resolution: `docker-image://docker.io/docker/dockerfile:1`.
 - because the running app image was stale, LMS completion apply action E2E against the latest code remains pending.
 
+Final retry on 2026-06-12:
+
+- Dockerfile frontend registry dependency was removed, and `NODE_IMAGE` build arg now allows local/offline verification with a preloaded image.
+- `docker-compose.yml` now forwards `LMS_PROVIDER` to the app container.
+- `/api/health` now reports `lmsProvider` in addition to auth/repository providers.
+- `docker build --progress plain --build-arg NODE_IMAGE=ps-track-dashboard:local -t ps-track-dashboard:local .` completed successfully.
+- app container ran with `AUTH_PROVIDER=mock`, `REPOSITORY_PROVIDER=postgres`, `LMS_PROVIDER=mock-view`.
+- `/api/health` returned `lmsProvider=mock-view`.
+- student journey detail rendered `LMS 완료 2개` and the LMS completion apply button for `lp-003`.
+- browser E2E clicked `완료 반영`; Postgres confirmed `learning_piece_statuses.lp-003` changed from `in_progress` to `completed`.
+- diagnostic correction: the missing LMS overlay was caused by `LMS_PROVIDER` not being passed into the container, not by the LMS overlay query itself.
+
 ## Identity Mapping
 
 `AUTH_PROVIDER=keycloak`은 trusted header에서 Keycloak subject를 읽고, `users.external_subject`와 매핑한다.
@@ -120,8 +132,7 @@ Operational mapping policy:
 
 ## Next Implementation Step
 
-1. Docker daemon 실행 후 `REPOSITORY_PROVIDER=postgres` LMS 완료 반영 action을 앱 컨테이너에서 end-to-end 검증
-2. `modules`, `contents`, `learning_pieces` domain table migration 확대
-3. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
-4. artifact/evaluation/outcome repository를 순차적으로 postgres-backed로 전환
-5. app runtime user grant SQL 작성
+1. `modules`, `contents`, `learning_pieces` domain table migration 확대
+2. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
+3. artifact/evaluation/outcome repository를 순차적으로 postgres-backed로 전환
+4. app runtime user grant SQL 작성
