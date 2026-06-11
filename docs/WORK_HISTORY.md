@@ -559,6 +559,18 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - LMS 상태는 학생 여정과 학습피스 상세의 참고 신호로 표시하고, 자동 완료 처리 정책은 별도 rule/action 단계에서 다룬다.
   - 실제 LMS view 명세 전까지는 `LMS_PROVIDER=mock-view`와 synthetic ID만 사용한다.
 
+### LMS journey list summary
+
+- 목적: 운영자/멘토가 학생 목록에서 LMS 수료 신호와 PS Track 상태 미반영 후보를 빠르게 확인
+- 산출물:
+  - `getStudentJourneyLmsSummary` helper 추가
+  - `/journeys/students`를 repository 경유로 전환
+  - 학생 목록 상단에 LMS 완료 건수와 상태 미반영 건수 표시
+  - 학생 row badge에 학생별 LMS 완료/미반영 건수 표시
+- 주요 결정:
+  - “상태 미반영”은 LMS 완료 bucket은 `completed`지만 PS Track 학습피스 상태가 아직 `completed`가 아닌 경우로 정의한다.
+  - 이 단계에서도 자동 동기화는 하지 않고 운영자가 조치할 수 있는 신호만 표시한다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

@@ -32,6 +32,13 @@ export type StudentJourneyItemWithLms = StudentJourneyItem & {
   lmsRecord?: LmsLearningRecordOverlay;
 };
 
+export type StudentJourneyLmsSummary = {
+  mappedRecords: number;
+  completedRecords: number;
+  notCompletedRecords: number;
+  completionReadyButNotSynced: number;
+};
+
 function lmsRecordKey(input: { lmsContentId: string; lmsCourseRoundId?: string }) {
   return `${input.lmsContentId}::${input.lmsCourseRoundId ?? ""}`;
 }
@@ -103,4 +110,26 @@ export async function attachLmsRecordsToJourney(
     ...item,
     lmsRecord: overlays.get(item.learningPiece.id),
   }));
+}
+
+export async function getStudentJourneyLmsSummary(
+  studentId: string,
+  items: StudentJourneyItem[],
+): Promise<StudentJourneyLmsSummary> {
+  const journey = await attachLmsRecordsToJourney(studentId, items);
+  const lmsItems = journey.filter((item) => item.lmsRecord);
+  const completedItems = lmsItems.filter(
+    (item) => item.lmsRecord?.completionBucket === "completed",
+  );
+
+  return {
+    mappedRecords: lmsItems.length,
+    completedRecords: completedItems.length,
+    notCompletedRecords: lmsItems.filter(
+      (item) => item.lmsRecord?.completionBucket === "not_completed",
+    ).length,
+    completionReadyButNotSynced: completedItems.filter(
+      (item) => item.status.status !== "completed",
+    ).length,
+  };
 }
