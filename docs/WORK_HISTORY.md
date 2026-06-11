@@ -599,6 +599,28 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - `modules`, `contents`, `learning_pieces`는 아직 mock domain seed를 fallback으로 유지한다.
   - 지금 단계의 DB 전환 범위는 action persistence에 필요한 `learning_piece_statuses`로 제한한다.
 
+### Postgres LMS completion E2E retry
+
+- 목적: Docker Desktop 기동 후 `REPOSITORY_PROVIDER=postgres`, `LMS_PROVIDER=mock-view`에서 LMS 완료 반영 action E2E를 재시도
+- 성공한 검증:
+  - `docker compose --profile postgres ps`에서 Postgres와 앱 컨테이너 healthy 확인
+  - private PostgreSQL schema SQL 적용 성공
+  - private PostgreSQL seed SQL 적용 성공
+  - DB 직접 확인 결과:
+    - `learning_piece_statuses` row 5건
+    - `student@example.kr`의 `external_subject = keycloak-subject-synthetic-001`
+    - `lp-003` 상태가 `in_progress`
+    - `lp-001`, `lp-003` LMS mapping active
+  - 기존 앱 컨테이너는 `/api/health`에서 `repositoryProvider: postgres`로 응답
+- 보류된 검증:
+  - 최신 코드가 포함된 앱 이미지 빌드가 `resolve image config for docker-image://docker.io/docker/dockerfile:1` 단계에서 멈췄다.
+  - `docker compose up --build`와 `docker build --progress plain` 모두 같은 지점에서 정지했다.
+  - 기존 이미지로 앱 컨테이너를 복구했지만, HTML 확인 결과 최신 `LMS 수료 반영 대기` 카드가 포함되지 않은 오래된 이미지였다.
+- 판단:
+  - DB 적용과 seed는 검증 완료.
+  - 최신 앱 컨테이너 E2E는 Docker registry/credential/frontend resolve 문제가 풀린 뒤 재시도해야 한다.
+  - 현재 서비스는 기존 이미지로 healthy 상태까지 복구했다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

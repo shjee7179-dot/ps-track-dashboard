@@ -52,6 +52,14 @@ Verified locally after Docker Desktop daemon was running:
 - application image `ps-track-dashboard:local` built successfully.
 - built application container responded on `/api/health` with mock providers.
 
+Additional retry on 2026-06-12:
+
+- private PostgreSQL schema and seed re-applied successfully after adding `learning_piece_statuses`.
+- verified `learning_piece_statuses=5`, synthetic student subject, and active LMS mappings for `lp-001`/`lp-003`.
+- existing app container responded on `/api/health` with `repositoryProvider=postgres`.
+- latest app image rebuild was blocked at Docker frontend image resolution: `docker-image://docker.io/docker/dockerfile:1`.
+- because the running app image was stale, LMS completion apply action E2E against the latest code remains pending.
+
 ## Identity Mapping
 
 `AUTH_PROVIDER=keycloak`은 trusted header에서 Keycloak subject를 읽고, `users.external_subject`와 매핑한다.
