@@ -58,7 +58,7 @@ student_user as (
     status
   )
   values (
-    'keycloak:student-001',
+    'keycloak-subject-synthetic-001',
     'student@example.kr',
     '김서연',
     '예비 의사과학자',
@@ -230,6 +230,102 @@ from public.users
 where users.email = 'student@example.kr'
 on conflict (user_id, role, scope_type, scope_id) where status = 'active'
 do update set status = excluded.status, updated_at = now();
+
+insert into public.learning_piece_statuses (
+  student_id,
+  learning_piece_id,
+  status,
+  completed_at,
+  note
+)
+select users.id, seed.learning_piece_id, seed.status, seed.completed_at, seed.note
+from public.users
+cross join (
+  values
+    ('lp-001', 'completed', date '2026-07-02', '오리엔테이션 참석 확인 완료'),
+    ('lp-002', 'pending_review', null::date, '관심 주제 제출 완료, 운영 확인 대기'),
+    ('lp-003', 'in_progress', null::date, '영상 60% 시청'),
+    ('lp-004', 'not_started', null::date, null),
+    ('lp-005', 'locked', null::date, null)
+) as seed(learning_piece_id, status, completed_at, note)
+where users.email = 'student@example.kr'
+on conflict (student_id, learning_piece_id) do update
+  set status = excluded.status,
+      completed_at = excluded.completed_at,
+      note = excluded.note,
+      updated_at = now();
+
+insert into public.lms_content_mappings (
+  cohort_id,
+  module_id,
+  content_id,
+  learning_piece_id,
+  lms_content_id,
+  lms_course_round_id,
+  content_group,
+  content_type,
+  required,
+  activation_rule,
+  status,
+  created_by
+)
+select
+  cohorts.id,
+  seed.module_id,
+  seed.content_id,
+  seed.learning_piece_id,
+  seed.lms_content_id,
+  seed.lms_course_round_id,
+  seed.content_group,
+  seed.content_type,
+  true,
+  'completion_completed',
+  'active',
+  users.id
+from public.cohorts
+cross join public.users
+cross join (
+  values
+    (
+      'module-001',
+      'content-001',
+      'lp-001',
+      'lms-content-pool-synthetic-001',
+      'lms-round-synthetic-ps-track-2026-01',
+      'regular',
+      'online'
+    ),
+    (
+      'module-002',
+      'content-003',
+      'lp-003',
+      'lms-channel-content-synthetic-001',
+      null,
+      'subscription',
+      'knowledge'
+    )
+) as seed(
+  module_id,
+  content_id,
+  learning_piece_id,
+  lms_content_id,
+  lms_course_round_id,
+  content_group,
+  content_type
+)
+where cohorts.code = 'cohort-2026-1'
+  and users.email = 'operator@example.kr'
+on conflict (cohort_id, learning_piece_id) do update
+  set module_id = excluded.module_id,
+      content_id = excluded.content_id,
+      lms_content_id = excluded.lms_content_id,
+      lms_course_round_id = excluded.lms_course_round_id,
+      content_group = excluded.content_group,
+      content_type = excluded.content_type,
+      required = excluded.required,
+      activation_rule = excluded.activation_rule,
+      status = excluded.status,
+      updated_at = now();
 
 insert into public.role_assignments (
   user_id,

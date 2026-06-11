@@ -2,7 +2,14 @@ import "server-only";
 
 import { mockRepositories } from "@/lib/mock-repositories";
 import { queryPostgres } from "@/lib/postgres/client";
-import type { CohortRepository, UserRepository } from "@/lib/repository-contracts";
+import type {
+  CohortRepository,
+  JourneySummary,
+  LearningRepository,
+  MutationResult,
+  StudentJourneyItem,
+  UserRepository,
+} from "@/lib/repository-contracts";
 import type {
   LmsContentGroup,
   LmsContentMapping,
@@ -11,7 +18,16 @@ import type {
   LmsContentMappingStatus,
   LmsContentType,
 } from "@/lib/lms/contracts";
-import type { Cohort, Role, RoleAssignment, ScopeType, User } from "@/lib/types";
+import type {
+  Cohort,
+  LearningPiece,
+  LearningPieceStatus,
+  Role,
+  RoleAssignment,
+  ScopeType,
+  StudentLearningPieceStatus,
+  User,
+} from "@/lib/types";
 
 type UserRow = {
   id: string;
@@ -59,8 +75,29 @@ type LmsContentMappingRow = {
   updated_at: Date | string;
 };
 
+type LearningPieceStatusRow = {
+  id: string;
+  student_id: string;
+  learning_piece_id: string;
+  status: string;
+  updated_at: Date | string;
+  completed_at: Date | string | null;
+  note: string | null;
+};
+
 const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
 const scopeTypes: ScopeType[] = ["system", "program", "cohort", "track", "team", "student"];
+const learningPieceStatuses: LearningPieceStatus[] = [
+  "locked",
+  "not_started",
+  "in_progress",
+  "needs_submission",
+  "pending_review",
+  "revising",
+  "pending_evaluation",
+  "completed",
+  "delayed",
+];
 const lmsContentGroups: LmsContentGroup[] = ["regular", "subscription", "community"];
 const lmsContentTypes: LmsContentType[] = [
   "offline",
@@ -85,6 +122,10 @@ function isPostgresRole(value: string | null | undefined): value is Role {
 
 function isPostgresScopeType(value: string): value is ScopeType {
   return scopeTypes.includes(value as ScopeType);
+}
+
+function isLearningPieceStatus(value: string): value is LearningPieceStatus {
+  return learningPieceStatuses.includes(value as LearningPieceStatus);
 }
 
 function isLmsContentGroup(value: string): value is LmsContentGroup {
@@ -199,6 +240,24 @@ export function mapPostgresLmsContentMapping(row: LmsContentMappingRow): LmsCont
   };
 }
 
+export function mapPostgresLearningPieceStatus(
+  row: LearningPieceStatusRow,
+): StudentLearningPieceStatus | null {
+  if (!isLearningPieceStatus(row.status)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    studentId: row.student_id,
+    learningPieceId: row.learning_piece_id,
+    status: row.status,
+    updatedAt: toDateString(row.updated_at),
+    completedAt: toDateString(row.completed_at) || undefined,
+    note: row.note ?? undefined,
+  };
+}
+
 const userSelect = `
   select id, external_subject, email, name, affiliation, default_role, status
   from public.users
@@ -228,6 +287,41 @@ const cohortSelect = `
   select id, name, agreement_date, starts_at, ends_at, status
   from public.cohorts
 `;
+
+const learningPieceStatusSelect = `
+  select id, student_id, learning_piece_id, status, updated_at, completed_at, note
+  from public.learning_piece_statuses
+`;
+
+function summarizeJourney(items: StudentJourneyItem[]): JourneySummary {
+  const completed = items.filter((item) => item.status.status === "completed").length;
+  const delayed = items.filter((item) => item.status.status === "delayed").length;
+  const needsAction = items.filter((item) =>
+    ["needs_submission", "pending_review", "revising", "in_progress"].includes(item.status.status),
+  ).length;
+
+  return {
+    total: items.length,
+    completed,
+    delayed,
+    needsAction,
+    completionRate: items.length ? Math.round((completed / items.length) * 100) : 0,
+  };
+}
+
+function joinJourneyRows(
+  statuses: StudentLearningPieceStatus[],
+  learningPieces: LearningPiece[],
+): StudentJourneyItem[] {
+  return statuses
+    .map((status) => ({
+      status,
+      learningPiece: learningPieces.find((piece) => piece.id === status.learningPieceId),
+    }))
+    .filter(
+      (item): item is StudentJourneyItem => Boolean(item.learningPiece),
+    );
+}
 
 export const postgresUserRepository: UserRepository = {
   async listUsers(query) {
@@ -272,6 +366,71 @@ export const postgresUserRepository: UserRepository = {
     return result.rows
       .map((row) => mapPostgresRoleAssignment(row))
       .filter((assignment): assignment is RoleAssignment => Boolean(assignment));
+  },
+};
+
+export const postgresLearningRepository: LearningRepository = {
+  listModules: mockRepositories.learning.listModules,
+  listContents: mockRepositories.learning.listContents,
+  listLearningPieces: mockRepositories.learning.listLearningPieces,
+  getLearningPieceById: mockRepositories.learning.getLearningPieceById,
+  async listStudentLearningPieceStatuses(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.studentId) {
+      values.push(query.studentId);
+      filters.push(`student_id = $${values.length}`);
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<LearningPieceStatusRow>(
+      `${learningPieceStatusSelect}${whereClause} order by updated_at desc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresLearningPieceStatus(row))
+      .filter((status): status is StudentLearningPieceStatus => Boolean(status));
+  },
+  async listStudentJourney(studentId) {
+    const [statuses, learningPieces] = await Promise.all([
+      postgresLearningRepository.listStudentLearningPieceStatuses({ studentId }),
+      postgresLearningRepository.listLearningPieces(),
+    ]);
+
+    return joinJourneyRows(statuses, learningPieces);
+  },
+  async getJourneySummary(studentId) {
+    return summarizeJourney(await postgresLearningRepository.listStudentJourney(studentId));
+  },
+  async updateStudentLearningPieceStatus(statusId, status) {
+    const result = await queryPostgres<LearningPieceStatusRow>(
+      `
+        update public.learning_piece_statuses
+        set status = $2,
+            completed_at = case
+              when $2 = 'completed' then coalesce(completed_at, current_date)
+              else completed_at
+            end
+        where id = $1
+        returning id, student_id, learning_piece_id, status, updated_at, completed_at, note
+      `,
+      [statusId, status],
+    );
+    const updated = result.rows[0]
+      ? mapPostgresLearningPieceStatus(result.rows[0])
+      : undefined;
+
+    if (!updated) {
+      throw new Error("Failed to update learning piece status");
+    }
+
+    return {
+      data: updated,
+      auditLogId: "postgres-learning-status",
+    } satisfies MutationResult<StudentLearningPieceStatus>;
   },
 };
 
@@ -431,6 +590,7 @@ export const postgresLmsContentMappingRepository: LmsContentMappingRepository = 
 export const postgresRepositories = {
   ...mockRepositories,
   users: postgresUserRepository,
+  learning: postgresLearningRepository,
   cohorts: postgresCohortRepository,
   lms: {
     ...mockRepositories.lms,
