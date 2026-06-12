@@ -1,9 +1,13 @@
 import "server-only";
 
+import type { QueryConfig, QueryResultRow } from "pg";
+
 import { mockRepositories } from "@/lib/mock-repositories";
 import { queryPostgres, transactionPostgres } from "@/lib/postgres/client";
 import type {
   AdminRepository,
+  AuditLogDraft,
+  AuditWriteContext,
   ArtifactRepository,
   CohortRepository,
   EvaluationRepository,
@@ -239,6 +243,11 @@ type LogEventRow = {
   occurred_at: Date | string;
 };
 
+type PostgresQuery = <R extends QueryResultRow>(
+  query: string | QueryConfig,
+  values?: unknown[],
+) => Promise<{ rows: R[] }>;
+
 const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
 const scopeTypes: ScopeType[] = ["system", "program", "cohort", "track", "team", "student"];
 const learningPieceStatuses: LearningPieceStatus[] = [
@@ -421,6 +430,16 @@ function toKoreanMinuteString(value: Date | string) {
     parts.find((part) => part.type === type)?.value ?? "";
 
   return `${getPart("year")}-${getPart("month")}-${getPart("day")} ${getPart("hour")}:${getPart("minute")}`;
+}
+
+function mergeAuditMetadata(
+  audit: AuditWriteContext | undefined,
+  metadata: Record<string, unknown>,
+) {
+  return {
+    ...(audit?.metadata ?? {}),
+    ...metadata,
+  };
 }
 
 function isUuid(value: string | undefined): value is string {
@@ -729,6 +748,45 @@ export function mapPostgresLogEvent(row: LogEventRow): LogEvent | null {
     occurredAt: toKoreanMinuteString(row.occurred_at),
     severity: row.severity,
   };
+}
+
+async function createPostgresAuditLog(
+  input: AuditLogDraft,
+  query: PostgresQuery = queryPostgres,
+) {
+  const result = await query<LogEventRow>(
+    `
+      insert into public.audit_logs (
+        actor_id,
+        actor_label,
+        event,
+        target_type,
+        target_id,
+        target_label,
+        severity,
+        metadata,
+        occurred_at
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())
+      returning id, actor_label, event, target_label, severity, occurred_at
+    `,
+    [
+      input.actorId,
+      input.actorLabel,
+      input.event,
+      input.targetType,
+      input.targetId,
+      input.targetLabel,
+      input.severity ?? "notice",
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  );
+  const auditLog = result.rows[0] ? mapPostgresLogEvent(result.rows[0]) : null;
+  if (!auditLog) {
+    throw new Error("Failed to create audit log");
+  }
+
+  return auditLog;
 }
 
 const userSelect = `
@@ -1093,32 +1151,52 @@ export const postgresLearningRepository: LearningRepository = {
   async getJourneySummary(studentId) {
     return summarizeJourney(await postgresLearningRepository.listStudentJourney(studentId));
   },
-  async updateStudentLearningPieceStatus(statusId, status) {
-    const result = await queryPostgres<LearningPieceStatusRow>(
-      `
-        update public.learning_piece_statuses
-        set status = $2,
-            completed_at = case
-              when $2 = 'completed' then coalesce(completed_at, current_date)
-              else completed_at
-            end
-        where id = $1
-        returning id, student_id, learning_piece_id, status, updated_at, completed_at, note
-      `,
-      [statusId, status],
-    );
-    const updated = result.rows[0]
-      ? mapPostgresLearningPieceStatus(result.rows[0])
-      : undefined;
+  async updateStudentLearningPieceStatus(statusId, status, audit) {
+    return transactionPostgres(async (query) => {
+      const result = await query<LearningPieceStatusRow>(
+        `
+          update public.learning_piece_statuses
+          set status = $2,
+              completed_at = case
+                when $2 = 'completed' then coalesce(completed_at, current_date)
+                else completed_at
+              end
+          where id = $1
+          returning id, student_id, learning_piece_id, status, updated_at, completed_at, note
+        `,
+        [statusId, status],
+      );
+      const updated = result.rows[0]
+        ? mapPostgresLearningPieceStatus(result.rows[0])
+        : undefined;
 
-    if (!updated) {
-      throw new Error("Failed to update learning piece status");
-    }
+      if (!updated) {
+        throw new Error("Failed to update learning piece status");
+      }
+      const auditLog = audit
+        ? await createPostgresAuditLog(
+            {
+              ...audit,
+              event: "학습피스 상태 변경",
+              targetType: "learning_piece_status",
+              targetId: updated.id,
+              targetLabel: `${updated.learningPieceId} / ${updated.status}`,
+              severity: "notice",
+              metadata: mergeAuditMetadata(audit, {
+                studentId: updated.studentId,
+                learningPieceId: updated.learningPieceId,
+                status: updated.status,
+              }),
+            },
+            query,
+          )
+        : undefined;
 
-    return {
-      data: updated,
-      auditLogId: "postgres-learning-status",
-    } satisfies MutationResult<StudentLearningPieceStatus>;
+      return {
+        data: updated,
+        auditLogId: auditLog?.id ?? "postgres-learning-status",
+      } satisfies MutationResult<StudentLearningPieceStatus>;
+    });
   },
 };
 
@@ -1193,98 +1271,138 @@ export const postgresArtifactRepository: ArtifactRepository = {
       .filter((feedback): feedback is Feedback => Boolean(feedback));
   },
   async createSubmission(input) {
-    const result = await queryPostgres<SubmissionRow>(
-      `
-        insert into public.submissions (
-          artifact_id,
-          submitted_by,
-          version,
-          submitted_at,
-          file_name,
-          external_url,
-          note
-        )
-        select
-          $1,
-          $2,
-          coalesce(max(version), 0) + 1,
-          now(),
-          $3,
-          $4,
-          $5
-        from public.submissions
-        where artifact_id = $1
-        returning
-          id,
-          artifact_id,
-          submitted_by,
-          version,
-          submitted_at,
-          file_name,
-          external_url,
-          note
-      `,
-      [
-        input.artifactId,
-        input.submittedBy,
-        input.fileName ?? null,
-        input.externalUrl ?? null,
-        input.note,
-      ],
-    );
+    return transactionPostgres(async (query) => {
+      const result = await query<SubmissionRow>(
+        `
+          insert into public.submissions (
+            artifact_id,
+            submitted_by,
+            version,
+            submitted_at,
+            file_name,
+            external_url,
+            note
+          )
+          select
+            $1,
+            $2,
+            coalesce(max(version), 0) + 1,
+            now(),
+            $3,
+            $4,
+            $5
+          from public.submissions
+          where artifact_id = $1
+          returning
+            id,
+            artifact_id,
+            submitted_by,
+            version,
+            submitted_at,
+            file_name,
+            external_url,
+            note
+        `,
+        [
+          input.artifactId,
+          input.submittedBy,
+          input.fileName ?? null,
+          input.externalUrl ?? null,
+          input.note,
+        ],
+      );
 
-    const submission = result.rows[0] ? mapPostgresSubmission(result.rows[0]) : null;
-    if (!submission) {
-      throw new Error("Failed to create artifact submission");
-    }
+      const submission = result.rows[0] ? mapPostgresSubmission(result.rows[0]) : null;
+      if (!submission) {
+        throw new Error("Failed to create artifact submission");
+      }
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "산출물 제출",
+              targetType: "artifact",
+              targetId: submission.artifactId,
+              targetLabel: submission.artifactId,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                submissionId: submission.id,
+                version: submission.version,
+                submittedBy: submission.submittedBy,
+              }),
+            },
+            query,
+          )
+        : undefined;
 
-    return {
-      data: submission,
-      auditLogId: "postgres-submission",
-    } satisfies MutationResult<Submission>;
+      return {
+        data: submission,
+        auditLogId: auditLog?.id ?? "postgres-submission",
+      } satisfies MutationResult<Submission>;
+    });
   },
   async createFeedback(input) {
-    const result = await queryPostgres<FeedbackRow>(
-      `
-        insert into public.feedback (
-          artifact_id,
-          mentoring_session_id,
-          author_id,
-          target_user_id,
-          target_team_id,
-          body,
-          status
-        )
-        values ($1, $2, $3, $4, $5, $6, 'open')
-        returning
-          id,
-          artifact_id,
-          mentoring_session_id,
-          author_id,
-          target_user_id,
-          target_team_id,
-          body,
-          status,
-          created_at
-      `,
-      [
-        input.artifactId ?? null,
-        input.mentoringSessionId ?? null,
-        input.authorId,
-        input.targetUserId ?? null,
-        input.targetTeamId ?? null,
-        input.body,
-      ],
-    );
-    const feedback = result.rows[0] ? mapPostgresFeedback(result.rows[0]) : null;
-    if (!feedback) {
-      throw new Error("Failed to create artifact feedback");
-    }
+    return transactionPostgres(async (query) => {
+      const result = await query<FeedbackRow>(
+        `
+          insert into public.feedback (
+            artifact_id,
+            mentoring_session_id,
+            author_id,
+            target_user_id,
+            target_team_id,
+            body,
+            status
+          )
+          values ($1, $2, $3, $4, $5, $6, 'open')
+          returning
+            id,
+            artifact_id,
+            mentoring_session_id,
+            author_id,
+            target_user_id,
+            target_team_id,
+            body,
+            status,
+            created_at
+        `,
+        [
+          input.artifactId ?? null,
+          input.mentoringSessionId ?? null,
+          input.authorId,
+          input.targetUserId ?? null,
+          input.targetTeamId ?? null,
+          input.body,
+        ],
+      );
+      const feedback = result.rows[0] ? mapPostgresFeedback(result.rows[0]) : null;
+      if (!feedback) {
+        throw new Error("Failed to create artifact feedback");
+      }
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "산출물 피드백 작성",
+              targetType: input.artifactId ? "artifact" : "mentoring_session",
+              targetId: input.artifactId ?? input.mentoringSessionId ?? feedback.id,
+              targetLabel: input.artifactId ?? input.mentoringSessionId ?? feedback.id,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                feedbackId: feedback.id,
+                targetUserId: feedback.targetUserId,
+                targetTeamId: feedback.targetTeamId,
+              }),
+            },
+            query,
+          )
+        : undefined;
 
-    return {
-      data: feedback,
-      auditLogId: "postgres-feedback",
-    } satisfies MutationResult<Feedback>;
+      return {
+        data: feedback,
+        auditLogId: auditLog?.id ?? "postgres-feedback",
+      } satisfies MutationResult<Feedback>;
+    });
   },
 };
 
@@ -1453,10 +1571,29 @@ export const postgresEvaluationRepository: EvaluationRepository = {
           );
         }
       }
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "산출물 평가 제출",
+              targetType: "artifact",
+              targetId: evaluation.artifactId,
+              targetLabel: artifact.title,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                evaluationId: evaluation.id,
+                rubricId: evaluation.rubricId,
+                totalScore: evaluation.totalScore,
+                maxScore: evaluation.maxScore,
+              }),
+            },
+            query,
+          )
+        : undefined;
 
       return {
         data: evaluation,
-        auditLogId: "postgres-evaluation",
+        auditLogId: auditLog?.id ?? "postgres-evaluation",
       } satisfies MutationResult<Evaluation>;
     });
   },
@@ -1691,6 +1828,9 @@ export const postgresAdminRepository: AdminRepository = {
     return result.rows
       .map((row) => mapPostgresLogEvent(row))
       .filter((event): event is LogEvent => Boolean(event));
+  },
+  async createAuditLog(input) {
+    return createPostgresAuditLog(input);
   },
 };
 

@@ -56,6 +56,14 @@ export async function createArtifactSubmissionAction(formData: FormData) {
     externalUrl,
     fileName,
     note,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
   });
 
   revalidatePath(`/artifacts/${artifact.id}`);
