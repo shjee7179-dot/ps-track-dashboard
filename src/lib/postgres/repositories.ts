@@ -1,13 +1,15 @@
 import "server-only";
 
 import { mockRepositories } from "@/lib/mock-repositories";
-import { queryPostgres } from "@/lib/postgres/client";
+import { queryPostgres, transactionPostgres } from "@/lib/postgres/client";
 import type {
   ArtifactRepository,
   CohortRepository,
+  EvaluationRepository,
   JourneySummary,
   LearningRepository,
   MutationResult,
+  OutcomeScoreSummary,
   StudentJourneyItem,
   UserRepository,
 } from "@/lib/repository-contracts";
@@ -24,12 +26,18 @@ import type {
   ArtifactStatus,
   Content,
   Cohort,
+  Evaluation,
+  EvaluationItemScore,
   Feedback,
   LearningPiece,
   LearningPieceStatus,
+  LearningOutcome,
   Module,
+  OutcomeEvidence,
   Role,
   RoleAssignment,
+  Rubric,
+  RubricItem,
   ScopeType,
   StudentLearningPieceStatus,
   Submission,
@@ -159,6 +167,67 @@ type FeedbackRow = {
   created_at: Date | string;
 };
 
+type LearningOutcomeRow = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+};
+
+type RubricRow = {
+  id: string;
+  artifact_type: string;
+  title: string;
+  max_score: number;
+  status: string;
+};
+
+type RubricItemRow = {
+  id: string;
+  rubric_id: string;
+  title: string;
+  description: string;
+  max_score: number;
+  outcome_ids: string[] | null;
+};
+
+type EvaluationRow = {
+  id: string;
+  artifact_id: string;
+  rubric_id: string;
+  evaluator_id: string;
+  evaluated_at: Date | string;
+  total_score: number;
+  max_score: number;
+  overall_comment: string;
+  status: string;
+};
+
+type EvaluationItemScoreRow = {
+  id: string;
+  evaluation_id: string;
+  rubric_item_id: string;
+  score: number;
+  comment: string;
+};
+
+type OutcomeEvidenceRow = {
+  id: string;
+  outcome_id: string;
+  student_id: string;
+  source_type: string;
+  source_id: string;
+  evidence_label: string;
+  recorded_at: Date | string;
+};
+
+type OutcomeSummaryRow = {
+  total_score: number | string | null;
+  max_score: number | string | null;
+  evidence_count: number | string | null;
+};
+
 const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
 const scopeTypes: ScopeType[] = ["system", "program", "cohort", "track", "team", "student"];
 const learningPieceStatuses: LearningPieceStatus[] = [
@@ -229,6 +298,20 @@ const artifactStatuses: ArtifactStatus[] = [
   "evaluated",
   "final_confirmed",
 ];
+const learningOutcomeCategories: LearningOutcome["category"][] = [
+  "research_foundation",
+  "research_design",
+  "communication",
+  "career",
+];
+const rubricStatuses: Rubric["status"][] = ["draft", "active", "archived"];
+const evaluationStatuses: Evaluation["status"][] = ["draft", "submitted"];
+const outcomeEvidenceSourceTypes: OutcomeEvidence["sourceType"][] = [
+  "learning_piece",
+  "artifact",
+  "evaluation",
+  "feedback",
+];
 
 function isPostgresRole(value: string | null | undefined): value is Role {
   return roles.includes(value as Role);
@@ -280,6 +363,22 @@ function isArtifactOwnerType(value: string): value is Artifact["ownerType"] {
 
 function isArtifactStatus(value: string): value is ArtifactStatus {
   return artifactStatuses.includes(value as ArtifactStatus);
+}
+
+function isLearningOutcomeCategory(value: string): value is LearningOutcome["category"] {
+  return learningOutcomeCategories.includes(value as LearningOutcome["category"]);
+}
+
+function isRubricStatus(value: string): value is Rubric["status"] {
+  return rubricStatuses.includes(value as Rubric["status"]);
+}
+
+function isEvaluationStatus(value: string): value is Evaluation["status"] {
+  return evaluationStatuses.includes(value as Evaluation["status"]);
+}
+
+function isOutcomeEvidenceSourceType(value: string): value is OutcomeEvidence["sourceType"] {
+  return outcomeEvidenceSourceTypes.includes(value as OutcomeEvidence["sourceType"]);
 }
 
 function toIsoString(value: Date | string) {
@@ -499,6 +598,91 @@ export function mapPostgresFeedback(row: FeedbackRow): Feedback | null {
   };
 }
 
+export function mapPostgresLearningOutcome(row: LearningOutcomeRow): LearningOutcome | null {
+  if (!isLearningOutcomeCategory(row.category)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title,
+    description: row.description,
+    category: row.category,
+  };
+}
+
+export function mapPostgresRubric(row: RubricRow): Rubric | null {
+  if (!isArtifactType(row.artifact_type) || !isRubricStatus(row.status)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    artifactType: row.artifact_type,
+    title: row.title,
+    maxScore: row.max_score,
+    status: row.status,
+  };
+}
+
+export function mapPostgresRubricItem(row: RubricItemRow): RubricItem {
+  return {
+    id: row.id,
+    rubricId: row.rubric_id,
+    title: row.title,
+    description: row.description,
+    maxScore: row.max_score,
+    outcomeIds: row.outcome_ids ?? [],
+  };
+}
+
+export function mapPostgresEvaluation(row: EvaluationRow): Evaluation | null {
+  if (!isEvaluationStatus(row.status)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    artifactId: row.artifact_id,
+    rubricId: row.rubric_id,
+    evaluatorId: row.evaluator_id,
+    evaluatedAt: toIsoString(row.evaluated_at),
+    totalScore: row.total_score,
+    maxScore: row.max_score,
+    overallComment: row.overall_comment,
+    status: row.status,
+  };
+}
+
+export function mapPostgresEvaluationItemScore(
+  row: EvaluationItemScoreRow,
+): EvaluationItemScore {
+  return {
+    id: row.id,
+    evaluationId: row.evaluation_id,
+    rubricItemId: row.rubric_item_id,
+    score: row.score,
+    comment: row.comment,
+  };
+}
+
+export function mapPostgresOutcomeEvidence(row: OutcomeEvidenceRow): OutcomeEvidence | null {
+  if (!isOutcomeEvidenceSourceType(row.source_type)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    outcomeId: row.outcome_id,
+    studentId: row.student_id,
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    evidenceLabel: row.evidence_label,
+    recordedAt: toIsoString(row.recorded_at),
+  };
+}
+
 const userSelect = `
   select id, external_subject, email, name, affiliation, default_role, status
   from public.users
@@ -602,6 +786,52 @@ const feedbackSelect = `
     status,
     created_at
   from public.feedback
+`;
+
+const learningOutcomeSelect = `
+  select id, code, title, description, category
+  from public.learning_outcomes
+`;
+
+const rubricSelect = `
+  select id, artifact_type, title, max_score, status
+  from public.rubrics
+`;
+
+const rubricItemSelect = `
+  select id, rubric_id, title, description, max_score, outcome_ids
+  from public.rubric_items
+`;
+
+const evaluationSelect = `
+  select
+    id,
+    artifact_id,
+    rubric_id,
+    evaluator_id,
+    evaluated_at,
+    total_score,
+    max_score,
+    overall_comment,
+    status
+  from public.evaluations
+`;
+
+const evaluationItemScoreSelect = `
+  select id, evaluation_id, rubric_item_id, score, comment
+  from public.evaluation_item_scores
+`;
+
+const outcomeEvidenceSelect = `
+  select
+    id,
+    outcome_id,
+    student_id,
+    source_type,
+    source_id,
+    evidence_label,
+    recorded_at
+  from public.outcome_evidence
 `;
 
 async function resolvePostgresUserId(userIdOrAlias: string): Promise<string | undefined> {
@@ -1000,6 +1230,250 @@ export const postgresArtifactRepository: ArtifactRepository = {
   },
 };
 
+function toNumber(value: number | string | null | undefined) {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return Number(value);
+  return 0;
+}
+
+export const postgresEvaluationRepository: EvaluationRepository = {
+  async listRubrics() {
+    const result = await queryPostgres<RubricRow>(
+      `${rubricSelect} order by artifact_type asc, title asc`,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresRubric(row))
+      .filter((rubric): rubric is Rubric => Boolean(rubric));
+  },
+  async listRubricItems(rubricId) {
+    const result = rubricId
+      ? await queryPostgres<RubricItemRow>(
+          `${rubricItemSelect} where rubric_id = $1 order by rubric_id asc, id asc`,
+          [rubricId],
+        )
+      : await queryPostgres<RubricItemRow>(
+          `${rubricItemSelect} order by rubric_id asc, id asc`,
+        );
+
+    return result.rows.map((row) => mapPostgresRubricItem(row));
+  },
+  async listEvaluations(artifactId) {
+    const result = artifactId
+      ? await queryPostgres<EvaluationRow>(
+          `${evaluationSelect} where artifact_id = $1 order by created_at asc, evaluated_at asc, id asc`,
+          [artifactId],
+        )
+      : await queryPostgres<EvaluationRow>(
+          `${evaluationSelect} order by created_at asc, evaluated_at asc, id asc`,
+        );
+
+    return result.rows
+      .map((row) => mapPostgresEvaluation(row))
+      .filter((evaluation): evaluation is Evaluation => Boolean(evaluation));
+  },
+  async getEvaluationById(evaluationId) {
+    const result = await queryPostgres<EvaluationRow>(
+      `${evaluationSelect} where id = $1 limit 1`,
+      [evaluationId],
+    );
+
+    return result.rows[0] ? mapPostgresEvaluation(result.rows[0]) ?? undefined : undefined;
+  },
+  async listEvaluationItemScores(evaluationId) {
+    const result = await queryPostgres<EvaluationItemScoreRow>(
+      `${evaluationItemScoreSelect} where evaluation_id = $1 order by rubric_item_id asc`,
+      [evaluationId],
+    );
+
+    return result.rows.map((row) => mapPostgresEvaluationItemScore(row));
+  },
+  async createEvaluation(input) {
+    return transactionPostgres(async (query) => {
+      const rubricItemsResult = await query<RubricItemRow>(
+        `${rubricItemSelect} where rubric_id = $1 order by rubric_id asc, id asc`,
+        [input.rubricId],
+      );
+      const rubricItems = rubricItemsResult.rows.map((row) => mapPostgresRubricItem(row));
+      if (!rubricItems.length) {
+        throw new Error("Rubric items are required to create an evaluation");
+      }
+
+      const artifactResult = await query<ArtifactRow>(
+        `${artifactSelect} where id = $1 limit 1`,
+        [input.artifactId],
+      );
+      const artifact = artifactResult.rows[0]
+        ? mapPostgresArtifact(artifactResult.rows[0])
+        : null;
+      if (!artifact) {
+        throw new Error("Artifact is required to create an evaluation");
+      }
+
+      const maxScore = rubricItems.reduce((sum, item) => sum + item.maxScore, 0);
+      const totalScore = input.itemScores.reduce((sum, item) => sum + item.score, 0);
+
+      const evaluationResult = await query<EvaluationRow>(
+        `
+          insert into public.evaluations (
+            artifact_id,
+            rubric_id,
+            evaluator_id,
+            evaluated_at,
+            total_score,
+            max_score,
+            overall_comment,
+            status
+          )
+          values ($1, $2, $3, now(), $4, $5, $6, 'submitted')
+          returning
+            id,
+            artifact_id,
+            rubric_id,
+            evaluator_id,
+            evaluated_at,
+            total_score,
+            max_score,
+            overall_comment,
+            status
+        `,
+        [
+          input.artifactId,
+          input.rubricId,
+          input.evaluatorId,
+          totalScore,
+          maxScore,
+          input.overallComment,
+        ],
+      );
+      const evaluation = evaluationResult.rows[0]
+        ? mapPostgresEvaluation(evaluationResult.rows[0])
+        : null;
+      if (!evaluation) {
+        throw new Error("Failed to create artifact evaluation");
+      }
+
+      for (const itemScore of input.itemScores) {
+        await query(
+          `
+            insert into public.evaluation_item_scores (
+              evaluation_id,
+              rubric_item_id,
+              score,
+              comment
+            )
+            values ($1, $2, $3, $4)
+          `,
+          [evaluation.id, itemScore.rubricItemId, itemScore.score, itemScore.comment],
+        );
+      }
+
+      const studentId = artifact.ownerType === "student" ? artifact.ownerId : "student-001";
+      for (const itemScore of input.itemScores) {
+        const rubricItem = rubricItems.find((item) => item.id === itemScore.rubricItemId);
+        if (!rubricItem) continue;
+
+        for (const outcomeId of rubricItem.outcomeIds) {
+          await query(
+            `
+              insert into public.outcome_evidence (
+                outcome_id,
+                student_id,
+                source_type,
+                source_id,
+                evidence_label,
+                recorded_at
+              )
+              values ($1, $2, 'evaluation', $3, $4, now())
+            `,
+            [
+              outcomeId,
+              studentId,
+              evaluation.id,
+              `${rubricItem.title} 루브릭 점수 ${itemScore.score}/${rubricItem.maxScore}`,
+            ],
+          );
+        }
+      }
+
+      return {
+        data: evaluation,
+        auditLogId: "postgres-evaluation",
+      } satisfies MutationResult<Evaluation>;
+    });
+  },
+  async listLearningOutcomes() {
+    const result = await queryPostgres<LearningOutcomeRow>(
+      `${learningOutcomeSelect} order by code asc`,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresLearningOutcome(row))
+      .filter((outcome): outcome is LearningOutcome => Boolean(outcome));
+  },
+  async getLearningOutcomeById(outcomeId) {
+    const result = await queryPostgres<LearningOutcomeRow>(
+      `${learningOutcomeSelect} where id = $1 limit 1`,
+      [outcomeId],
+    );
+
+    return result.rows[0] ? mapPostgresLearningOutcome(result.rows[0]) ?? undefined : undefined;
+  },
+  async listOutcomeEvidence(outcomeId) {
+    const result = outcomeId
+      ? await queryPostgres<OutcomeEvidenceRow>(
+          `${outcomeEvidenceSelect} where outcome_id = $1 order by recorded_at asc, id asc`,
+          [outcomeId],
+        )
+      : await queryPostgres<OutcomeEvidenceRow>(
+          `${outcomeEvidenceSelect} order by recorded_at asc, id asc`,
+        );
+
+    return result.rows
+      .map((row) => mapPostgresOutcomeEvidence(row))
+      .filter((evidence): evidence is OutcomeEvidence => Boolean(evidence));
+  },
+  async listStudentOutcomeEvidence(studentId) {
+    const result = await queryPostgres<OutcomeEvidenceRow>(
+      `${outcomeEvidenceSelect} where student_id = $1 order by recorded_at asc, id asc`,
+      [studentId],
+    );
+
+    return result.rows
+      .map((row) => mapPostgresOutcomeEvidence(row))
+      .filter((evidence): evidence is OutcomeEvidence => Boolean(evidence));
+  },
+  async getOutcomeScoreSummary(outcomeId) {
+    const result = await queryPostgres<OutcomeSummaryRow>(
+      `
+        select
+          coalesce(sum(scores.score), 0) as total_score,
+          coalesce(sum(items.max_score), 0) as max_score,
+          (
+            select count(*)
+            from public.outcome_evidence evidence
+            where evidence.outcome_id = $1
+          ) as evidence_count
+        from public.evaluation_item_scores scores
+        join public.rubric_items items on items.id = scores.rubric_item_id
+        where items.outcome_ids @> array[$1]::text[]
+      `,
+      [outcomeId],
+    );
+    const row = result.rows[0];
+    const totalScore = toNumber(row?.total_score);
+    const maxScore = toNumber(row?.max_score);
+    const evidenceCount = toNumber(row?.evidence_count);
+
+    return {
+      totalScore,
+      maxScore,
+      averageRate: maxScore ? Math.round((totalScore / maxScore) * 100) : 0,
+      evidenceCount,
+    } satisfies OutcomeScoreSummary;
+  },
+};
+
 export const postgresLmsContentMappingRepository: LmsContentMappingRepository = {
   async listMappings(query) {
     const values: unknown[] = [];
@@ -1144,6 +1618,7 @@ export const postgresRepositories = {
   learning: postgresLearningRepository,
   cohorts: postgresCohortRepository,
   artifacts: postgresArtifactRepository,
+  evaluations: postgresEvaluationRepository,
   lms: {
     ...mockRepositories.lms,
     contentMappings: postgresLmsContentMappingRepository,

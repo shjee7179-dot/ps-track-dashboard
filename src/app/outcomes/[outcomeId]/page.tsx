@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import type { Artifact, Evaluation, OutcomeEvidence } from "@/lib/types";
 
 const sourceLabels = {
@@ -36,12 +37,12 @@ export default async function OutcomeDetailPage({
 }) {
   const { outcomeId } = await params;
   const [outcome, rubricItems, evidence, summary, artifacts, evaluations, users] = await Promise.all([
-    mockRepositories.evaluations.getLearningOutcomeById(outcomeId),
-    mockRepositories.evaluations.listRubricItems(),
-    mockRepositories.evaluations.listOutcomeEvidence(outcomeId),
-    mockRepositories.evaluations.getOutcomeScoreSummary(outcomeId),
-    mockRepositories.artifacts.listArtifacts(),
-    mockRepositories.evaluations.listEvaluations(),
+    repositories.evaluations.getLearningOutcomeById(outcomeId),
+    repositories.evaluations.listRubricItems(),
+    repositories.evaluations.listOutcomeEvidence(outcomeId),
+    repositories.evaluations.getOutcomeScoreSummary(outcomeId),
+    repositories.artifacts.listArtifacts(),
+    repositories.evaluations.listEvaluations(),
     mockRepositories.users.listUsers(),
   ]);
   if (!outcome) notFound();

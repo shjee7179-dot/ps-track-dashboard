@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
 
 function normalizeText(value: FormDataEntryValue | null) {
@@ -27,12 +27,12 @@ export async function submitArtifactEvaluationAction(formData: FormData) {
     redirect("/artifacts?update=invalid");
   }
 
-  const artifact = await mockRepositories.artifacts.getArtifactById(artifactId);
+  const artifact = await repositories.artifacts.getArtifactById(artifactId);
   if (!artifact) {
     redirect("/artifacts?update=missing");
   }
 
-  const rubricItems = await mockRepositories.evaluations.listRubricItems(rubricId);
+  const rubricItems = await repositories.evaluations.listRubricItems(rubricId);
   if (!rubricItems.length) {
     redirect(buildRedirectPath(artifact.id, "missing-rubric"));
   }
@@ -68,7 +68,7 @@ export async function submitArtifactEvaluationAction(formData: FormData) {
     redirect(buildRedirectPath(artifact.id, "denied"));
   }
 
-  const result = await mockRepositories.evaluations.createEvaluation({
+  const result = await repositories.evaluations.createEvaluation({
     artifactId: artifact.id,
     rubricId,
     evaluatorId: session.user.id,
@@ -83,5 +83,5 @@ export async function submitArtifactEvaluationAction(formData: FormData) {
   revalidatePath(`/artifacts/${artifact.id}/evaluation`);
   revalidatePath(`/artifacts/${artifact.id}`);
   revalidatePath("/outcomes");
-  redirect(buildRedirectPath(artifact.id, "submitted", result.auditLogId ?? "mock"));
+  redirect(buildRedirectPath(artifact.id, "submitted", result.auditLogId));
 }

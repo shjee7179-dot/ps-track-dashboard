@@ -263,6 +263,94 @@ create table if not exists public.feedback (
     check (target_user_id is not null or target_team_id is not null)
 );
 
+create table if not exists public.learning_outcomes (
+  id text primary key,
+  code text not null unique,
+  title text not null,
+  description text not null default '',
+  category text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint learning_outcomes_category_check
+    check (category in ('research_foundation', 'research_design', 'communication', 'career'))
+);
+
+create table if not exists public.rubrics (
+  id text primary key,
+  artifact_type text not null,
+  title text not null,
+  max_score int not null,
+  status text not null default 'draft',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint rubrics_artifact_type_check
+    check (artifact_type in ('profile', 'literature_log', 'research_plan', 'presentation', 'final_report')),
+  constraint rubrics_status_check
+    check (status in ('draft', 'active', 'archived')),
+  constraint rubrics_max_score_check
+    check (max_score > 0)
+);
+
+create table if not exists public.rubric_items (
+  id text primary key,
+  rubric_id text not null references public.rubrics(id) on delete cascade,
+  title text not null,
+  description text not null default '',
+  max_score int not null,
+  outcome_ids text[] not null default '{}',
+  order_index int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint rubric_items_max_score_check
+    check (max_score > 0)
+);
+
+create table if not exists public.evaluations (
+  id text primary key default gen_random_uuid()::text,
+  artifact_id text not null references public.artifacts(id) on delete cascade,
+  rubric_id text not null references public.rubrics(id) on delete restrict,
+  evaluator_id text not null,
+  evaluated_at timestamptz not null default now(),
+  total_score int not null,
+  max_score int not null,
+  overall_comment text not null default '',
+  status text not null default 'submitted',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint evaluations_status_check
+    check (status in ('draft', 'submitted')),
+  constraint evaluations_score_range_check
+    check (total_score >= 0 and max_score > 0 and total_score <= max_score)
+);
+
+create table if not exists public.evaluation_item_scores (
+  id text primary key default gen_random_uuid()::text,
+  evaluation_id text not null references public.evaluations(id) on delete cascade,
+  rubric_item_id text not null references public.rubric_items(id) on delete restrict,
+  score int not null,
+  comment text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint evaluation_item_scores_score_check
+    check (score >= 0),
+  constraint evaluation_item_scores_evaluation_item_unique
+    unique (evaluation_id, rubric_item_id)
+);
+
+create table if not exists public.outcome_evidence (
+  id text primary key default gen_random_uuid()::text,
+  outcome_id text not null references public.learning_outcomes(id) on delete cascade,
+  student_id text not null,
+  source_type text not null,
+  source_id text not null,
+  evidence_label text not null,
+  recorded_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint outcome_evidence_source_type_check
+    check (source_type in ('learning_piece', 'artifact', 'evaluation', 'feedback'))
+);
+
 create table if not exists public.lms_content_mappings (
   id uuid primary key default gen_random_uuid(),
   cohort_id uuid not null references public.cohorts(id) on delete cascade,
@@ -373,6 +461,33 @@ create index if not exists feedback_artifact_status_idx
 create index if not exists feedback_author_idx
   on public.feedback (author_id);
 
+create index if not exists learning_outcomes_category_idx
+  on public.learning_outcomes (category);
+
+create index if not exists rubrics_artifact_status_idx
+  on public.rubrics (artifact_type, status);
+
+create index if not exists rubric_items_rubric_order_idx
+  on public.rubric_items (rubric_id, order_index);
+
+create index if not exists rubric_items_outcome_ids_idx
+  on public.rubric_items using gin (outcome_ids);
+
+create index if not exists evaluations_artifact_idx
+  on public.evaluations (artifact_id, evaluated_at);
+
+create index if not exists evaluations_rubric_idx
+  on public.evaluations (rubric_id);
+
+create index if not exists evaluation_item_scores_evaluation_idx
+  on public.evaluation_item_scores (evaluation_id);
+
+create index if not exists outcome_evidence_outcome_idx
+  on public.outcome_evidence (outcome_id, recorded_at);
+
+create index if not exists outcome_evidence_student_idx
+  on public.outcome_evidence (student_id);
+
 create index if not exists lms_content_mappings_cohort_status_idx
   on public.lms_content_mappings (cohort_id, status);
 
@@ -450,6 +565,36 @@ create trigger set_feedback_updated_at
 before update on public.feedback
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_learning_outcomes_updated_at on public.learning_outcomes;
+create trigger set_learning_outcomes_updated_at
+before update on public.learning_outcomes
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_rubrics_updated_at on public.rubrics;
+create trigger set_rubrics_updated_at
+before update on public.rubrics
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_rubric_items_updated_at on public.rubric_items;
+create trigger set_rubric_items_updated_at
+before update on public.rubric_items
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_evaluations_updated_at on public.evaluations;
+create trigger set_evaluations_updated_at
+before update on public.evaluations
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_evaluation_item_scores_updated_at on public.evaluation_item_scores;
+create trigger set_evaluation_item_scores_updated_at
+before update on public.evaluation_item_scores
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_outcome_evidence_updated_at on public.outcome_evidence;
+create trigger set_outcome_evidence_updated_at
+before update on public.outcome_evidence
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_lms_content_mappings_updated_at on public.lms_content_mappings;
 create trigger set_lms_content_mappings_updated_at
 before update on public.lms_content_mappings
@@ -487,6 +632,24 @@ comment on table public.submissions is
 
 comment on table public.feedback is
   'Artifact or mentoring feedback records shown in review workflows.';
+
+comment on table public.learning_outcomes is
+  'Learning outcome definitions connected to rubric items and evidence.';
+
+comment on table public.rubrics is
+  'Rubric definitions for evaluating artifact types.';
+
+comment on table public.rubric_items is
+  'Scored rubric criteria with links to learning outcomes.';
+
+comment on table public.evaluations is
+  'Submitted artifact evaluations. Evaluator id remains text until full auth cutover.';
+
+comment on table public.evaluation_item_scores is
+  'Per-rubric-item scores belonging to an artifact evaluation.';
+
+comment on table public.outcome_evidence is
+  'Evidence rows used to show how learning outcomes are demonstrated.';
 
 comment on table public.lms_content_mappings is
   'Operator-managed mapping between PS Track learning pieces and LMS readonly content/course round records.';

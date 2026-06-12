@@ -6,6 +6,7 @@ import { Card, Stat } from "@/components/ui";
 import { submitArtifactEvaluationAction } from "@/app/artifacts/[artifactId]/evaluation/actions";
 import { getArtifactStatusLabel } from "@/lib/domain";
 import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import type { Artifact, Team, User } from "@/lib/types";
 
 function getArtifactOwnerName(artifact: Artifact, users: User[], teams: Team[]) {
@@ -25,27 +26,27 @@ export default async function ArtifactEvaluationPage({
   const { artifactId } = await params;
   const query = await searchParams;
   const [artifact, evaluations, rubrics, users, teams, outcomes] = await Promise.all([
-    mockRepositories.artifacts.getArtifactById(artifactId),
-    mockRepositories.evaluations.listEvaluations(artifactId),
-    mockRepositories.evaluations.listRubrics(),
+    repositories.artifacts.getArtifactById(artifactId),
+    repositories.evaluations.listEvaluations(artifactId),
+    repositories.evaluations.listRubrics(),
     mockRepositories.users.listUsers(),
     mockRepositories.cohorts.listTeams(),
-    mockRepositories.evaluations.listLearningOutcomes(),
+    repositories.evaluations.listLearningOutcomes(),
   ]);
   if (!artifact) notFound();
 
   const rubric = rubrics.find(
     (candidate) => candidate.artifactType === artifact.artifactType && candidate.status === "active",
   );
-  const rubricItems = rubric ? await mockRepositories.evaluations.listRubricItems(rubric.id) : [];
+  const rubricItems = rubric ? await repositories.evaluations.listRubricItems(rubric.id) : [];
   const latestEvaluation = evaluations.at(-1);
   const latestEvaluationScores = latestEvaluation
-    ? await mockRepositories.evaluations.listEvaluationItemScores(latestEvaluation.id)
+    ? await repositories.evaluations.listEvaluationItemScores(latestEvaluation.id)
     : [];
   const userById = new Map(users.map((user) => [user.id, user]));
   const ownerName = getArtifactOwnerName(artifact, users, teams);
   const updateMessages: Record<string, string> = {
-    submitted: "평가 제출 요청이 mock repository를 통해 접수되었습니다.",
+    submitted: "평가 제출 요청이 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 산출물을 평가할 수 없습니다.",
     invalid: "항목별 점수와 종합 코멘트를 확인해 주세요.",
     missing: "산출물 레코드를 찾을 수 없습니다.",
@@ -100,7 +101,7 @@ export default async function ArtifactEvaluationPage({
 
       {rubric ? (
         <div className="mt-6">
-          <Card title="평가 제출" subtitle="항목별 점수와 종합 코멘트를 mock action으로 기록">
+          <Card title="평가 제출" subtitle="항목별 점수와 종합 코멘트를 기록">
             <form action={submitArtifactEvaluationAction} className="grid gap-4 text-sm">
               <input type="hidden" name="artifactId" value={artifact.id} />
               <input type="hidden" name="rubricId" value={rubric.id} />

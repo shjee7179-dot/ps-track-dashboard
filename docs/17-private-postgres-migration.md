@@ -129,7 +129,7 @@ Operational mapping policy:
 - 나중에 Spring Boot/MyBatis로 옮기더라도 repository SQL을 비교적 쉽게 재사용하거나 변환할 수 있다.
 - 복잡한 query builder는 domain table migration이 충분히 쌓인 뒤 필요성을 다시 판단한다.
 
-현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses`, `modules`, `contents`, `learning_pieces`, `artifacts`, `submissions`, `feedback` repository다.
+현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses`, `modules`, `contents`, `learning_pieces`, `artifacts`, `submissions`, `feedback`, `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence` repository다.
 
 `learning_piece_statuses`는 Postgres가 소유하고, `modules`, `contents`, `learning_pieces` 정의도 Postgres read path로 전환했다. 아직 cohort/template cloning ownership은 별도 table로 분리하지 않았고, 첫 전환에서는 기존 mock id(`module-001`, `content-003`, `lp-003`)를 유지하는 text primary key를 사용한다.
 
@@ -149,8 +149,18 @@ Artifact table expansion on 2026-06-12:
 - `/artifacts`, `/artifacts/[artifactId]`, and `/artifacts/[artifactId]/review` render through repository reads under `REPOSITORY_PROVIDER=postgres`.
 - local MVP still keeps artifact `owner_id`, feedback `author_id`, and submission `submitted_by` as stable text aliases so mock-auth screens can operate before full Keycloak/Postgres session cutover.
 
+Evaluation/outcome table expansion on 2026-06-12:
+
+- added `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence` tables to private PostgreSQL schema.
+- seeded MVP learning outcome, rubric, evaluation, score, and evidence rows.
+- app runtime grant SQL now allows evaluation/outcome reads and evaluation/evidence writes needed by the MVP evaluation submission action.
+- `postgresEvaluationRepository` now reads learning outcomes, rubrics, rubric items, evaluations, item scores, outcome evidence, and score summaries from Postgres.
+- `/artifacts/[artifactId]/evaluation`, `/outcomes`, and `/outcomes/[outcomeId]` render through repository reads under `REPOSITORY_PROVIDER=postgres`.
+- evaluation submission writes evaluation, item scores, and generated outcome evidence in a single Postgres transaction.
+- diagnostic correction: seed evaluation dates can be later than local test dates, so latest evaluation display must sort by DB `created_at` before evaluated date.
+
 ## Next Implementation Step
 
-1. evaluation/outcome repository를 순차적으로 postgres-backed로 전환
-2. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
-3. audit/access log table과 retention policy 작성
+1. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
+2. audit/access log table과 retention policy 작성
+3. journey activity log table ownership 확정
