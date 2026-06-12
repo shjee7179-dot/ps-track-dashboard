@@ -1,9 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { LogsTable } from "@/components/tables";
 import { Card, Stat } from "@/components/ui";
-import { auditLogs } from "@/lib/domain";
+import { repositories } from "@/lib/repositories";
 
-export default function AuditLogsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AuditLogsPage() {
+  const auditLogs = await repositories.admin.listAuditLogs({ limit: 100 });
+
   return (
     <AppShell title="감사 로그" eyebrow="Admin / Audit Logs">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">

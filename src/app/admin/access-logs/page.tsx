@@ -1,9 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { LogsTable } from "@/components/tables";
 import { Card, Stat } from "@/components/ui";
-import { accessLogs } from "@/lib/domain";
+import { repositories } from "@/lib/repositories";
 
-export default function AccessLogsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AccessLogsPage() {
+  const accessLogs = await repositories.admin.listAccessLogs({ limit: 100 });
+
   return (
     <AppShell title="접속 로그" eyebrow="Admin / Access Logs">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">

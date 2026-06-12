@@ -351,6 +351,41 @@ create table if not exists public.outcome_evidence (
     check (source_type in ('learning_piece', 'artifact', 'evaluation', 'feedback'))
 );
 
+create table if not exists public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_id text,
+  actor_label text not null,
+  event text not null,
+  target_type text not null,
+  target_id text not null,
+  target_label text not null,
+  severity text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  occurred_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  constraint audit_logs_severity_check
+    check (severity in ('info', 'notice', 'warning'))
+);
+
+create table if not exists public.access_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_id text,
+  actor_label text not null,
+  event text not null,
+  target_type text not null,
+  target_id text not null,
+  target_label text not null,
+  severity text not null,
+  ip_address inet,
+  user_agent text,
+  session_id text,
+  metadata jsonb not null default '{}'::jsonb,
+  occurred_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  constraint access_logs_severity_check
+    check (severity in ('info', 'notice', 'warning'))
+);
+
 create table if not exists public.lms_content_mappings (
   id uuid primary key default gen_random_uuid(),
   cohort_id uuid not null references public.cohorts(id) on delete cascade,
@@ -487,6 +522,18 @@ create index if not exists outcome_evidence_outcome_idx
 
 create index if not exists outcome_evidence_student_idx
   on public.outcome_evidence (student_id);
+
+create index if not exists audit_logs_occurred_idx
+  on public.audit_logs (occurred_at desc);
+
+create index if not exists audit_logs_target_idx
+  on public.audit_logs (target_type, target_id);
+
+create index if not exists access_logs_occurred_idx
+  on public.access_logs (occurred_at desc);
+
+create index if not exists access_logs_actor_idx
+  on public.access_logs (actor_id, occurred_at desc);
 
 create index if not exists lms_content_mappings_cohort_status_idx
   on public.lms_content_mappings (cohort_id, status);
@@ -650,6 +697,12 @@ comment on table public.evaluation_item_scores is
 
 comment on table public.outcome_evidence is
   'Evidence rows used to show how learning outcomes are demonstrated.';
+
+comment on table public.audit_logs is
+  'Administrative audit events for important configuration, permission, and domain mutations.';
+
+comment on table public.access_logs is
+  'Authentication and session access events. Retention policy should be approved before production launch.';
 
 comment on table public.lms_content_mappings is
   'Operator-managed mapping between PS Track learning pieces and LMS readonly content/course round records.';
