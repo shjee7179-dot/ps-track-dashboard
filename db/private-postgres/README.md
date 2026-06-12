@@ -14,6 +14,7 @@
 ```bash
 psql "$DATABASE_URL" -f db/private-postgres/schema/001_core_auth_scope.sql
 psql "$DATABASE_URL" -f db/private-postgres/seed/001_core_auth_scope_seed.sql
+psql "$DATABASE_URL" -v app_role=ps_track_app_runtime -f db/private-postgres/grants/001_app_runtime_user.sql
 ```
 
 ## Security Boundary
@@ -33,4 +34,4 @@ private PostgreSQL profile은 Supabase RLS에 의존하지 않는다.
 3. artifact tables: artifacts, submissions, feedback
 4. evaluation/outcome tables
 5. audit/access log tables
-6. app runtime user grants
+6. audit/access log tables
