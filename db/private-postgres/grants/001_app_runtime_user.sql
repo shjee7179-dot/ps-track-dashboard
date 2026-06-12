@@ -35,6 +35,8 @@ grant select on table
   public.evaluations,
   public.evaluation_item_scores,
   public.outcome_evidence,
+  public.audit_logs,
+  public.access_logs,
   public.lms_content_mappings
 to :"app_role";
 
@@ -46,6 +48,8 @@ grant insert, update on table
   public.evaluations,
   public.evaluation_item_scores,
   public.outcome_evidence,
+  public.audit_logs,
+  public.access_logs,
   public.lms_content_mappings
 to :"app_role";
 

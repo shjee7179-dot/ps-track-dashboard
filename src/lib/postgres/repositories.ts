@@ -3,6 +3,7 @@ import "server-only";
 import { mockRepositories } from "@/lib/mock-repositories";
 import { queryPostgres, transactionPostgres } from "@/lib/postgres/client";
 import type {
+  AdminRepository,
   ArtifactRepository,
   CohortRepository,
   EvaluationRepository,
@@ -32,6 +33,7 @@ import type {
   LearningPiece,
   LearningPieceStatus,
   LearningOutcome,
+  LogEvent,
   Module,
   OutcomeEvidence,
   Role,
@@ -228,6 +230,15 @@ type OutcomeSummaryRow = {
   evidence_count: number | string | null;
 };
 
+type LogEventRow = {
+  id: string;
+  actor_label: string;
+  event: string;
+  target_label: string;
+  severity: string;
+  occurred_at: Date | string;
+};
+
 const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
 const scopeTypes: ScopeType[] = ["system", "program", "cohort", "track", "team", "student"];
 const learningPieceStatuses: LearningPieceStatus[] = [
@@ -312,6 +323,7 @@ const outcomeEvidenceSourceTypes: OutcomeEvidence["sourceType"][] = [
   "evaluation",
   "feedback",
 ];
+const logSeverities: LogEvent["severity"][] = ["info", "notice", "warning"];
 
 function isPostgresRole(value: string | null | undefined): value is Role {
   return roles.includes(value as Role);
@@ -381,6 +393,10 @@ function isOutcomeEvidenceSourceType(value: string): value is OutcomeEvidence["s
   return outcomeEvidenceSourceTypes.includes(value as OutcomeEvidence["sourceType"]);
 }
 
+function isLogSeverity(value: string): value is LogEvent["severity"] {
+  return logSeverities.includes(value as LogEvent["severity"]);
+}
+
 function toIsoString(value: Date | string) {
   return value instanceof Date ? value.toISOString() : value;
 }
@@ -388,6 +404,23 @@ function toIsoString(value: Date | string) {
 function toDateString(value: Date | string | null) {
   if (!value) return "";
   return value instanceof Date ? value.toISOString().slice(0, 10) : value.slice(0, 10);
+}
+
+function toKoreanMinuteString(value: Date | string) {
+  const date = value instanceof Date ? value : new Date(value);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${getPart("year")}-${getPart("month")}-${getPart("day")} ${getPart("hour")}:${getPart("minute")}`;
 }
 
 function isUuid(value: string | undefined): value is string {
@@ -683,6 +716,21 @@ export function mapPostgresOutcomeEvidence(row: OutcomeEvidenceRow): OutcomeEvid
   };
 }
 
+export function mapPostgresLogEvent(row: LogEventRow): LogEvent | null {
+  if (!isLogSeverity(row.severity)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    actor: row.actor_label,
+    event: row.event,
+    target: row.target_label,
+    occurredAt: toKoreanMinuteString(row.occurred_at),
+    severity: row.severity,
+  };
+}
+
 const userSelect = `
   select id, external_subject, email, name, affiliation, default_role, status
   from public.users
@@ -832,6 +880,16 @@ const outcomeEvidenceSelect = `
     evidence_label,
     recorded_at
   from public.outcome_evidence
+`;
+
+const auditLogSelect = `
+  select id, actor_label, event, target_label, severity, occurred_at
+  from public.audit_logs
+`;
+
+const accessLogSelect = `
+  select id, actor_label, event, target_label, severity, occurred_at
+  from public.access_logs
 `;
 
 async function resolvePostgresUserId(userIdOrAlias: string): Promise<string | undefined> {
@@ -1612,6 +1670,30 @@ export const postgresLmsContentMappingRepository: LmsContentMappingRepository = 
   },
 };
 
+export const postgresAdminRepository: AdminRepository = {
+  ...mockRepositories.admin,
+  async listAuditLogs(query) {
+    const result = await queryPostgres<LogEventRow>(
+      `${auditLogSelect} order by occurred_at desc, id desc limit $1`,
+      [query?.limit ?? 100],
+    );
+
+    return result.rows
+      .map((row) => mapPostgresLogEvent(row))
+      .filter((event): event is LogEvent => Boolean(event));
+  },
+  async listAccessLogs(query) {
+    const result = await queryPostgres<LogEventRow>(
+      `${accessLogSelect} order by occurred_at desc, id desc limit $1`,
+      [query?.limit ?? 100],
+    );
+
+    return result.rows
+      .map((row) => mapPostgresLogEvent(row))
+      .filter((event): event is LogEvent => Boolean(event));
+  },
+};
+
 export const postgresRepositories = {
   ...mockRepositories,
   users: postgresUserRepository,
@@ -1619,6 +1701,7 @@ export const postgresRepositories = {
   cohorts: postgresCohortRepository,
   artifacts: postgresArtifactRepository,
   evaluations: postgresEvaluationRepository,
+  admin: postgresAdminRepository,
   lms: {
     ...mockRepositories.lms,
     contentMappings: postgresLmsContentMappingRepository,

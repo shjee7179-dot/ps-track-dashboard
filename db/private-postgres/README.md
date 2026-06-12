@@ -30,7 +30,7 @@ private PostgreSQL profile은 Supabase RLS에 의존하지 않는다.
 ## Future Work
 
 1. journey tables: activity_logs
-2. audit/access log tables and retention policy
+2. audit/access log write helpers and retention policy
 3. Keycloak subject sync/import procedure
 4. LMS readonly view adapter once the final view contract arrives
 5. production backup/restore and migration rollback runbook

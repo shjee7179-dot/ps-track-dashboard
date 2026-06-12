@@ -729,6 +729,29 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - 2026 프로그램 seed 평가일이 로컬 테스트 일자보다 미래라 `evaluated_at` 기준 최신 정렬만 쓰면 새 제출 평가가 최신 카드에 보이지 않았다.
   - 운영에서는 실제 평가 시각과 DB 생성 시각의 의미를 분리해야 하며, 화면의 최신 제출 판단은 저장 이벤트 기준인 `created_at`을 우선해야 한다.
 
+### Postgres admin audit/access log read path
+
+- 목적: 1차 MVP 필수 관리자 화면인 감사 로그와 접속 로그를 private PostgreSQL read path로 전환
+- 산출물:
+  - private PostgreSQL schema에 `audit_logs`, `access_logs` table, index, comments 추가
+  - private PostgreSQL seed에 기존 mock 화면과 동일한 감사 이벤트 2건, 접속 이벤트 2건 추가
+  - app runtime grant SQL에 audit/access log select 및 향후 server-side insert/update 권한 추가
+  - `postgresAdminRepository`에서 `listAuditLogs`, `listAccessLogs`를 Postgres read로 구현
+  - `/admin/audit-logs`, `/admin/access-logs` 화면을 repository 기반 async page로 전환
+- 설계 판단:
+  - 모든 server action에 audit write를 한 번에 붙이면 범위가 커지므로, 이번 단계는 저장소와 관리자 조회 경로를 먼저 안정화한다.
+  - `actor_id`는 full auth cutover 전까지 text로 두어 mock alias, Keycloak subject, 내부 user id를 모두 수용한다.
+  - 보존 기간과 상세 개인정보 항목은 운영/보안 정책 확정 후 별도 migration으로 다룬다.
+- 검증:
+  - `npm run typecheck`, `npm run lint` 통과
+  - local Postgres container에 schema/seed/grant SQL 적용 성공
+  - DB count 확인: `audit_logs=2`, `access_logs=2`
+  - `/admin/audit-logs?role=admin`에서 감사 이벤트 2건 렌더링 확인
+  - `/admin/access-logs?role=admin`에서 접속 이벤트 2건 렌더링 확인
+- 다음:
+  - mutation server action별 audit write helper 연결
+  - login/logout/role switch/session refresh의 access log 기록 정책 확정
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

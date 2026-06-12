@@ -892,6 +892,106 @@ on conflict (id) do update
       recorded_at = excluded.recorded_at,
       updated_at = now();
 
+insert into public.audit_logs (
+  id,
+  actor_id,
+  actor_label,
+  event,
+  target_type,
+  target_id,
+  target_label,
+  severity,
+  metadata,
+  occurred_at
+)
+values
+  (
+    '00000000-0000-4000-8000-000000000401',
+    'admin-001',
+    '시스템 총괄',
+    'PWA 설정 초안 생성',
+    'pwa_settings',
+    'pwa_settings',
+    'pwa_settings',
+    'info',
+    '{"source":"seed"}'::jsonb,
+    timestamptz '2026-05-31 01:20:00+09'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000402',
+    'operator-001',
+    '운영자',
+    '2026년 1기 seed 데이터 확인',
+    'cohort',
+    'cohort-2026-1',
+    '2026년 1기',
+    'notice',
+    '{"source":"seed"}'::jsonb,
+    timestamptz '2026-05-31 01:18:00+09'
+  )
+on conflict (id) do update
+  set actor_id = excluded.actor_id,
+      actor_label = excluded.actor_label,
+      event = excluded.event,
+      target_type = excluded.target_type,
+      target_id = excluded.target_id,
+      target_label = excluded.target_label,
+      severity = excluded.severity,
+      metadata = excluded.metadata,
+      occurred_at = excluded.occurred_at;
+
+insert into public.access_logs (
+  id,
+  actor_id,
+  actor_label,
+  event,
+  target_type,
+  target_id,
+  target_label,
+  severity,
+  session_id,
+  metadata,
+  occurred_at
+)
+values
+  (
+    '00000000-0000-4000-8000-000000000501',
+    'admin-001',
+    '시스템 총괄',
+    '로그인',
+    'route',
+    '/admin',
+    'admin dashboard',
+    'info',
+    'seed-session-admin',
+    '{"source":"seed"}'::jsonb,
+    timestamptz '2026-05-31 01:16:00+09'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000502',
+    'operator-001',
+    '운영자',
+    '역할 선택',
+    'role',
+    'operator',
+    'operator / cohort-2026-1',
+    'info',
+    'seed-session-operator',
+    '{"source":"seed"}'::jsonb,
+    timestamptz '2026-05-31 01:17:00+09'
+  )
+on conflict (id) do update
+  set actor_id = excluded.actor_id,
+      actor_label = excluded.actor_label,
+      event = excluded.event,
+      target_type = excluded.target_type,
+      target_id = excluded.target_id,
+      target_label = excluded.target_label,
+      severity = excluded.severity,
+      session_id = excluded.session_id,
+      metadata = excluded.metadata,
+      occurred_at = excluded.occurred_at;
+
 insert into public.lms_content_mappings (
   cohort_id,
   module_id,
