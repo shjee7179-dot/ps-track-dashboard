@@ -700,6 +700,35 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
 - 오진/교훈:
   - UI read path만 repository로 바꾸면 충분해 보이지만, server action create path까지 같은 repository contract로 묶어야 Docker/Postgres E2E에서 실제 저장을 검증할 수 있다.
 
+### Postgres evaluation/outcome repository
+
+- 목적: 평가 루브릭, 평가 제출, 학습성과 증거/집계 화면을 private PostgreSQL repository 경유로 전환
+- 산출물:
+  - private PostgreSQL schema에 `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence` table, index, updated_at trigger, comments 추가
+  - private PostgreSQL seed에 MVP 학습성과 5건, 루브릭 2건, 루브릭 항목 7건, 평가 2건, 항목 점수 7건, 성과 증거 4건 추가
+  - app runtime grant SQL에 평가/성과 관련 table select 및 평가 제출에 필요한 insert/update 권한 추가
+  - `transactionPostgres` helper 추가
+  - `postgresEvaluationRepository`의 학습성과/루브릭/평가/점수/증거 read path와 평가 제출 write path 구현
+  - `/artifacts/[artifactId]/evaluation`, `/outcomes`, `/outcomes/[outcomeId]` read path를 repository 기반으로 전환
+  - 평가 제출 server action을 Postgres transaction 기반 create method로 연결
+- 설계 판단:
+  - 평가 제출은 evaluation, item scores, outcome evidence를 하나의 transaction으로 묶어 중간 저장 실패 시 성과 집계가 어긋나지 않게 한다.
+  - full Keycloak/Postgres session cutover 전까지 평가자/학생 식별자는 기존 mock alias와 DB UUID가 함께 존재하므로 repository boundary에서 최소 변환만 수행한다.
+  - 팀 산출물의 학생 성과 증거 귀속은 MVP 임시 fallback으로 `student-001`에 둔다. 실제 운영에서는 팀 멤버별 attribution 정책을 별도 확정해야 한다.
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - local Postgres container에 schema/seed/grant SQL 적용 성공
+  - DB count 확인: `learning_outcomes=5`, `rubrics=2`, `rubric_items=7`, `evaluations=2`, `evaluation_item_scores=7`, `outcome_evidence=4`
+  - `docker build --progress plain --build-arg NODE_IMAGE=ps-track-dashboard:local -t ps-track-dashboard:local .` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - `/artifacts/artifact-001/evaluation?role=admin`에서 seed 평가 `12/15` 렌더링 확인
+  - 평가 제출 action 호출 후 Postgres에 새 evaluation 1건, item score 3건, outcome evidence 3건 추가 확인
+  - 새 컨테이너에서 `/artifacts/artifact-001/evaluation?role=admin&update=submitted&audit=postgres-evaluation`가 최신 평가 `14/15`와 `Postgres evaluation action verification` 코멘트를 렌더링
+  - `/outcomes/outcome-001?role=admin`에서 새 증거 반영 후 평균 `87%`, 증거 `2건`, 점수 합계 `13/15` 렌더링
+- 오진/교훈:
+  - 2026 프로그램 seed 평가일이 로컬 테스트 일자보다 미래라 `evaluated_at` 기준 최신 정렬만 쓰면 새 제출 평가가 최신 카드에 보이지 않았다.
+  - 운영에서는 실제 평가 시각과 DB 생성 시각의 의미를 분리해야 하며, 화면의 최신 제출 판단은 저장 이벤트 기준인 `created_at`을 우선해야 한다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

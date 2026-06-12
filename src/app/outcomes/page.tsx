@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import type { LearningOutcome } from "@/lib/types";
 
 const categoryLabels: Record<LearningOutcome["category"], string> = {
@@ -13,14 +13,14 @@ const categoryLabels: Record<LearningOutcome["category"], string> = {
 
 export default async function OutcomesPage() {
   const [learningOutcomes, outcomeEvidence, rubricItems] = await Promise.all([
-    mockRepositories.evaluations.listLearningOutcomes(),
-    mockRepositories.evaluations.listOutcomeEvidence(),
-    mockRepositories.evaluations.listRubricItems(),
+    repositories.evaluations.listLearningOutcomes(),
+    repositories.evaluations.listOutcomeEvidence(),
+    repositories.evaluations.listRubricItems(),
   ]);
   const summaries = await Promise.all(
     learningOutcomes.map(async (outcome) => [
       outcome.id,
-      await mockRepositories.evaluations.getOutcomeScoreSummary(outcome.id),
+      await repositories.evaluations.getOutcomeScoreSummary(outcome.id),
     ] as const),
   );
   const summaryByOutcomeId = new Map(summaries);

@@ -581,6 +581,317 @@ on conflict (id) do update
       status = excluded.status,
       updated_at = now();
 
+insert into public.learning_outcomes (
+  id,
+  code,
+  title,
+  description,
+  category
+)
+values
+  (
+    'outcome-001',
+    'LO-01',
+    '문제 인식과 연구 질문',
+    '임상 또는 바이오메디컬 맥락의 문제를 연구 가능한 질문으로 전환한다.',
+    'research_foundation'
+  ),
+  (
+    'outcome-002',
+    'LO-02',
+    '문헌 탐색과 근거 해석',
+    '핵심 문헌을 탐색하고 연구 질문과 연결되는 근거를 정리한다.',
+    'research_foundation'
+  ),
+  (
+    'outcome-003',
+    'LO-03',
+    '연구 설계',
+    '대상, 변수, 방법을 포함한 실행 가능한 연구계획을 구성한다.',
+    'research_design'
+  ),
+  (
+    'outcome-004',
+    'LO-04',
+    '과학 커뮤니케이션',
+    '연구 아이디어와 산출물을 명확한 글과 발표 구조로 전달한다.',
+    'communication'
+  ),
+  (
+    'outcome-005',
+    'LO-05',
+    '의사과학자 진로 성찰',
+    '개인의 관심, 역량, 진로 동기를 의사과학자 성장 경로와 연결한다.',
+    'career'
+  )
+on conflict (id) do update
+  set code = excluded.code,
+      title = excluded.title,
+      description = excluded.description,
+      category = excluded.category,
+      updated_at = now();
+
+insert into public.rubrics (
+  id,
+  artifact_type,
+  title,
+  max_score,
+  status
+)
+values
+  ('rubric-001', 'profile', '연구 관심사 자기소개 루브릭', 15, 'active'),
+  ('rubric-002', 'research_plan', '연구계획서 초안 루브릭', 20, 'active')
+on conflict (id) do update
+  set artifact_type = excluded.artifact_type,
+      title = excluded.title,
+      max_score = excluded.max_score,
+      status = excluded.status,
+      updated_at = now();
+
+insert into public.rubric_items (
+  id,
+  rubric_id,
+  title,
+  description,
+  max_score,
+  outcome_ids,
+  order_index
+)
+values
+  (
+    'rubric-item-001',
+    'rubric-001',
+    '문제 맥락',
+    '관심 주제의 배경과 문제 상황을 구체적으로 설명한다.',
+    5,
+    array['outcome-001'],
+    1
+  ),
+  (
+    'rubric-item-002',
+    'rubric-001',
+    '진로 성찰',
+    '개인의 관심과 의사과학자 진로 동기를 연결한다.',
+    5,
+    array['outcome-005'],
+    2
+  ),
+  (
+    'rubric-item-003',
+    'rubric-001',
+    '표현 명료성',
+    '핵심 메시지를 읽기 쉬운 구조로 전달한다.',
+    5,
+    array['outcome-004'],
+    3
+  ),
+  (
+    'rubric-item-004',
+    'rubric-002',
+    '연구 질문의 초점',
+    '연구 질문이 측정 가능하고 범위가 적절하다.',
+    5,
+    array['outcome-001', 'outcome-003'],
+    1
+  ),
+  (
+    'rubric-item-005',
+    'rubric-002',
+    '근거와 문헌 연결',
+    '선행 근거가 연구 필요성과 자연스럽게 연결된다.',
+    5,
+    array['outcome-002'],
+    2
+  ),
+  (
+    'rubric-item-006',
+    'rubric-002',
+    '방법 설계',
+    '대상, 변수, 분석 방향이 실행 가능한 수준으로 제시된다.',
+    5,
+    array['outcome-003'],
+    3
+  ),
+  (
+    'rubric-item-007',
+    'rubric-002',
+    '계획서 구성',
+    '연구계획서의 구조와 표현이 명확하다.',
+    5,
+    array['outcome-004'],
+    4
+  )
+on conflict (id) do update
+  set rubric_id = excluded.rubric_id,
+      title = excluded.title,
+      description = excluded.description,
+      max_score = excluded.max_score,
+      outcome_ids = excluded.outcome_ids,
+      order_index = excluded.order_index,
+      updated_at = now();
+
+insert into public.evaluations (
+  id,
+  artifact_id,
+  rubric_id,
+  evaluator_id,
+  evaluated_at,
+  total_score,
+  max_score,
+  overall_comment,
+  status
+)
+values
+  (
+    'evaluation-001',
+    'artifact-001',
+    'rubric-001',
+    'mentor-001',
+    timestamptz '2026-07-19 10:30:00+09',
+    12,
+    15,
+    '관심 주제와 진로 동기는 잘 드러나며, 연구 질문 형태로 더 좁히면 좋겠습니다.',
+    'submitted'
+  ),
+  (
+    'evaluation-002',
+    'artifact-003',
+    'rubric-002',
+    'pi-001',
+    timestamptz '2026-08-13 14:00:00+09',
+    15,
+    20,
+    '연구 질문의 방향은 좋고, 변수 정의와 방법 설계 보완이 필요합니다.',
+    'submitted'
+  )
+on conflict (id) do update
+  set artifact_id = excluded.artifact_id,
+      rubric_id = excluded.rubric_id,
+      evaluator_id = excluded.evaluator_id,
+      evaluated_at = excluded.evaluated_at,
+      total_score = excluded.total_score,
+      max_score = excluded.max_score,
+      overall_comment = excluded.overall_comment,
+      status = excluded.status,
+      updated_at = now();
+
+insert into public.evaluation_item_scores (
+  id,
+  evaluation_id,
+  rubric_item_id,
+  score,
+  comment
+)
+values
+  (
+    'score-001',
+    'evaluation-001',
+    'rubric-item-001',
+    4,
+    '문제 상황은 구체적이나 연구 질문으로 더 정제해야 합니다.'
+  ),
+  (
+    'score-002',
+    'evaluation-001',
+    'rubric-item-002',
+    5,
+    '진로 동기와 개인 경험 연결이 좋습니다.'
+  ),
+  (
+    'score-003',
+    'evaluation-001',
+    'rubric-item-003',
+    3,
+    '문단 구조를 조금 더 명확히 다듬으면 좋겠습니다.'
+  ),
+  (
+    'score-004',
+    'evaluation-002',
+    'rubric-item-004',
+    4,
+    '질문 방향은 적절하며 대상 범위를 좁힐 필요가 있습니다.'
+  ),
+  (
+    'score-005',
+    'evaluation-002',
+    'rubric-item-005',
+    3,
+    '핵심 문헌과 연구 필요성의 연결을 보강해야 합니다.'
+  ),
+  (
+    'score-006',
+    'evaluation-002',
+    'rubric-item-006',
+    4,
+    '변수 정의가 일부 필요하지만 실행 방향은 보입니다.'
+  ),
+  (
+    'score-007',
+    'evaluation-002',
+    'rubric-item-007',
+    4,
+    '계획서 흐름은 읽기 좋습니다.'
+  )
+on conflict (evaluation_id, rubric_item_id) do update
+  set score = excluded.score,
+      comment = excluded.comment,
+      updated_at = now();
+
+insert into public.outcome_evidence (
+  id,
+  outcome_id,
+  student_id,
+  source_type,
+  source_id,
+  evidence_label,
+  recorded_at
+)
+values
+  (
+    'evidence-001',
+    'outcome-005',
+    'student-001',
+    'artifact',
+    'artifact-001',
+    '연구 관심사 자기소개 제출',
+    timestamptz '2026-07-07 21:10:00+09'
+  ),
+  (
+    'evidence-002',
+    'outcome-001',
+    'student-001',
+    'evaluation',
+    'evaluation-001',
+    '문제 맥락 루브릭 점수 4/5',
+    timestamptz '2026-07-19 10:30:00+09'
+  ),
+  (
+    'evidence-003',
+    'outcome-004',
+    'student-001',
+    'feedback',
+    '00000000-0000-4000-8000-000000000201',
+    '관심 주제 설명에 대한 멘토 피드백',
+    timestamptz '2026-07-18 20:05:00+09'
+  ),
+  (
+    'evidence-004',
+    'outcome-003',
+    'student-001',
+    'evaluation',
+    'evaluation-002',
+    '연구계획서 방법 설계 점수 4/5',
+    timestamptz '2026-08-13 14:00:00+09'
+  )
+on conflict (id) do update
+  set outcome_id = excluded.outcome_id,
+      student_id = excluded.student_id,
+      source_type = excluded.source_type,
+      source_id = excluded.source_id,
+      evidence_label = excluded.evidence_label,
+      recorded_at = excluded.recorded_at,
+      updated_at = now();
+
 insert into public.lms_content_mappings (
   cohort_id,
   module_id,

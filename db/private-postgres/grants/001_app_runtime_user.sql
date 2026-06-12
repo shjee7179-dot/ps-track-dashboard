@@ -29,6 +29,12 @@ grant select on table
   public.artifacts,
   public.submissions,
   public.feedback,
+  public.learning_outcomes,
+  public.rubrics,
+  public.rubric_items,
+  public.evaluations,
+  public.evaluation_item_scores,
+  public.outcome_evidence,
   public.lms_content_mappings
 to :"app_role";
 
@@ -37,6 +43,9 @@ grant insert, update on table
   public.artifacts,
   public.submissions,
   public.feedback,
+  public.evaluations,
+  public.evaluation_item_scores,
+  public.outcome_evidence,
   public.lms_content_mappings
 to :"app_role";
 
