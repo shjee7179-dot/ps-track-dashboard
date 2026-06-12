@@ -231,6 +231,159 @@ where users.email = 'student@example.kr'
 on conflict (user_id, role, scope_type, scope_id) where status = 'active'
 do update set status = excluded.status, updated_at = now();
 
+insert into public.modules (
+  id,
+  title,
+  description,
+  order_index,
+  status
+)
+values
+  (
+    'module-001',
+    '오리엔테이션과 연구 여정 설계',
+    '프로그램 구조를 이해하고 개인 연구 관심사를 정리한다.',
+    1,
+    'open'
+  ),
+  (
+    'module-002',
+    '의사과학자 연구 기초',
+    '문제 정의, 연구 질문, 문헌 탐색의 기초를 학습한다.',
+    2,
+    'open'
+  ),
+  (
+    'module-003',
+    '중간 산출물 작성',
+    '연구계획서 초안을 작성하고 멘토 피드백을 반영한다.',
+    3,
+    'draft'
+  )
+on conflict (id) do update
+  set title = excluded.title,
+      description = excluded.description,
+      order_index = excluded.order_index,
+      status = excluded.status,
+      updated_at = now();
+
+insert into public.contents (
+  id,
+  module_id,
+  title,
+  content_type
+)
+values
+  ('content-001', 'module-001', '챌린지 트랙 오리엔테이션', 'workshop'),
+  ('content-002', 'module-001', '나의 연구 관심사 진단', 'assignment'),
+  ('content-003', 'module-002', '연구 질문을 만드는 방법', 'video'),
+  ('content-004', 'module-002', '문헌 탐색 실습', 'practice'),
+  ('content-005', 'module-003', '연구계획서 초안 가이드', 'assignment')
+on conflict (id) do update
+  set module_id = excluded.module_id,
+      title = excluded.title,
+      content_type = excluded.content_type,
+      updated_at = now();
+
+insert into public.learning_pieces (
+  id,
+  module_id,
+  content_id,
+  title,
+  piece_type,
+  completion_rule,
+  opens_at,
+  due_at,
+  requires_submission,
+  requires_approval,
+  requires_evaluation,
+  outcome_tags
+)
+values
+  (
+    'lp-001',
+    'module-001',
+    'content-001',
+    '오리엔테이션 참석 확인',
+    'workshop',
+    '운영자가 참석 여부를 확인하면 완료',
+    date '2026-07-01',
+    date '2026-07-03',
+    false,
+    true,
+    false,
+    array['프로그램 이해', '학습 계획']
+  ),
+  (
+    'lp-002',
+    'module-001',
+    'content-002',
+    '연구 관심사 자기소개 제출',
+    'assignment',
+    '학생이 자기소개와 관심 주제를 제출하면 완료',
+    date '2026-07-01',
+    date '2026-07-08',
+    true,
+    false,
+    false,
+    array['진로탐색', '문제 인식']
+  ),
+  (
+    'lp-003',
+    'module-002',
+    'content-003',
+    '연구 질문 강의 시청',
+    'video',
+    '영상 시청 완료 체크',
+    date '2026-07-09',
+    date '2026-07-15',
+    false,
+    false,
+    false,
+    array['연구 이해', '문제 정의']
+  ),
+  (
+    'lp-004',
+    'module-002',
+    'content-004',
+    '핵심 논문 3편 탐색 기록',
+    'practice',
+    '논문 탐색 기록을 제출하면 완료',
+    date '2026-07-16',
+    date '2026-07-24',
+    true,
+    true,
+    false,
+    array['문헌 탐색', '근거 기반 사고']
+  ),
+  (
+    'lp-005',
+    'module-003',
+    'content-005',
+    '연구계획서 초안 제출',
+    'mid_artifact',
+    '초안 제출 후 멘토 피드백을 받으면 완료',
+    date '2026-08-01',
+    date '2026-08-12',
+    true,
+    true,
+    true,
+    array['연구 설계', '산출물 작성']
+  )
+on conflict (id) do update
+  set module_id = excluded.module_id,
+      content_id = excluded.content_id,
+      title = excluded.title,
+      piece_type = excluded.piece_type,
+      completion_rule = excluded.completion_rule,
+      opens_at = excluded.opens_at,
+      due_at = excluded.due_at,
+      requires_submission = excluded.requires_submission,
+      requires_approval = excluded.requires_approval,
+      requires_evaluation = excluded.requires_evaluation,
+      outcome_tags = excluded.outcome_tags,
+      updated_at = now();
+
 insert into public.learning_piece_statuses (
   student_id,
   learning_piece_id,

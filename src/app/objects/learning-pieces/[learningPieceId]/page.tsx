@@ -27,9 +27,7 @@ export default async function LearningPieceDetailPage({
     repositories.learning.listStudentLearningPieceStatuses({ studentId }),
     getJourneyLmsRecordMap(studentId),
   ]);
-  const status = statuses.find(
-    (item) => item.studentId === studentId && item.learningPieceId === learningPiece.id,
-  );
+  const status = statuses.find((item) => item.learningPieceId === learningPiece.id);
   const lmsRecord = lmsRecordMap.get(learningPiece.id);
 
   return (

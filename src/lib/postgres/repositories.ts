@@ -19,9 +19,11 @@ import type {
   LmsContentType,
 } from "@/lib/lms/contracts";
 import type {
+  Content,
   Cohort,
   LearningPiece,
   LearningPieceStatus,
+  Module,
   Role,
   RoleAssignment,
   ScopeType,
@@ -85,6 +87,36 @@ type LearningPieceStatusRow = {
   note: string | null;
 };
 
+type ModuleRow = {
+  id: string;
+  title: string;
+  description: string;
+  order_index: number;
+  status: string;
+};
+
+type ContentRow = {
+  id: string;
+  module_id: string;
+  title: string;
+  content_type: string;
+};
+
+type LearningPieceRow = {
+  id: string;
+  module_id: string;
+  content_id: string | null;
+  title: string;
+  piece_type: string;
+  completion_rule: string;
+  opens_at: Date | string;
+  due_at: Date | string;
+  requires_submission: boolean;
+  requires_approval: boolean;
+  requires_evaluation: boolean;
+  outcome_tags: string[] | null;
+};
+
 const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
 const scopeTypes: ScopeType[] = ["system", "program", "cohort", "track", "team", "student"];
 const learningPieceStatuses: LearningPieceStatus[] = [
@@ -115,6 +147,28 @@ const lmsActivationRules: LmsContentMappingActivationRule[] = [
   "completion_completed",
 ];
 const lmsMappingStatuses: LmsContentMappingStatus[] = ["draft", "active", "inactive"];
+const moduleStatuses: Module["status"][] = ["draft", "open", "closed"];
+const contentTypes: Content["contentType"][] = [
+  "video",
+  "reading",
+  "workshop",
+  "assignment",
+  "practice",
+  "link",
+  "offline",
+  "mentoring_guide",
+];
+const learningPieceTypes: LearningPiece["pieceType"][] = [
+  "reading",
+  "video",
+  "workshop",
+  "assignment",
+  "mentoring",
+  "practice",
+  "mid_artifact",
+  "final_artifact",
+  "survey",
+];
 
 function isPostgresRole(value: string | null | undefined): value is Role {
   return roles.includes(value as Role);
@@ -142,6 +196,18 @@ function isLmsActivationRule(value: string): value is LmsContentMappingActivatio
 
 function isLmsMappingStatus(value: string): value is LmsContentMappingStatus {
   return lmsMappingStatuses.includes(value as LmsContentMappingStatus);
+}
+
+function isModuleStatus(value: string): value is Module["status"] {
+  return moduleStatuses.includes(value as Module["status"]);
+}
+
+function isContentType(value: string): value is Content["contentType"] {
+  return contentTypes.includes(value as Content["contentType"]);
+}
+
+function isLearningPieceType(value: string): value is LearningPiece["pieceType"] {
+  return learningPieceTypes.includes(value as LearningPiece["pieceType"]);
 }
 
 function toIsoString(value: Date | string) {
@@ -258,6 +324,54 @@ export function mapPostgresLearningPieceStatus(
   };
 }
 
+export function mapPostgresModule(row: ModuleRow): Module | null {
+  if (!isModuleStatus(row.status)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    orderIndex: row.order_index,
+    status: row.status,
+  };
+}
+
+export function mapPostgresContent(row: ContentRow): Content | null {
+  if (!isContentType(row.content_type)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    moduleId: row.module_id,
+    title: row.title,
+    contentType: row.content_type,
+  };
+}
+
+export function mapPostgresLearningPiece(row: LearningPieceRow): LearningPiece | null {
+  if (!isLearningPieceType(row.piece_type)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    moduleId: row.module_id,
+    contentId: row.content_id ?? undefined,
+    title: row.title,
+    pieceType: row.piece_type,
+    completionRule: row.completion_rule,
+    opensAt: toDateString(row.opens_at),
+    dueAt: toDateString(row.due_at),
+    requiresSubmission: row.requires_submission,
+    requiresApproval: row.requires_approval,
+    requiresEvaluation: row.requires_evaluation,
+    outcomeTags: row.outcome_tags ?? [],
+  };
+}
+
 const userSelect = `
   select id, external_subject, email, name, affiliation, default_role, status
   from public.users
@@ -291,6 +405,33 @@ const cohortSelect = `
 const learningPieceStatusSelect = `
   select id, student_id, learning_piece_id, status, updated_at, completed_at, note
   from public.learning_piece_statuses
+`;
+
+const moduleSelect = `
+  select id, title, description, order_index, status
+  from public.modules
+`;
+
+const contentSelect = `
+  select id, module_id, title, content_type
+  from public.contents
+`;
+
+const learningPieceSelect = `
+  select
+    id,
+    module_id,
+    content_id,
+    title,
+    piece_type,
+    completion_rule,
+    opens_at,
+    due_at,
+    requires_submission,
+    requires_approval,
+    requires_evaluation,
+    outcome_tags
+  from public.learning_pieces
 `;
 
 async function resolvePostgresUserId(userIdOrAlias: string): Promise<string | undefined> {
@@ -401,10 +542,64 @@ export const postgresUserRepository: UserRepository = {
 };
 
 export const postgresLearningRepository: LearningRepository = {
-  listModules: mockRepositories.learning.listModules,
-  listContents: mockRepositories.learning.listContents,
-  listLearningPieces: mockRepositories.learning.listLearningPieces,
-  getLearningPieceById: mockRepositories.learning.getLearningPieceById,
+  async listModules(query) {
+    const result = await queryPostgres<ModuleRow>(
+      `${moduleSelect} order by order_index asc, title asc limit $1`,
+      [query?.limit ?? 100],
+    );
+
+    return result.rows
+      .map((row) => mapPostgresModule(row))
+      .filter((module): module is Module => Boolean(module));
+  },
+  async listContents(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      // Contents are currently global domain objects; cohort-specific
+      // ownership can be added when cohort templates move into Postgres.
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<ContentRow>(
+      `${contentSelect}${whereClause} order by module_id asc, title asc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresContent(row))
+      .filter((content): content is Content => Boolean(content));
+  },
+  async listLearningPieces(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      // Learning piece definitions are global in the first Postgres cut.
+      // Cohort/template scoping will be added once template cloning moves to DB.
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<LearningPieceRow>(
+      `${learningPieceSelect}${whereClause} order by opens_at asc, due_at asc, id asc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresLearningPiece(row))
+      .filter((piece): piece is LearningPiece => Boolean(piece));
+  },
+  async getLearningPieceById(learningPieceId) {
+    const result = await queryPostgres<LearningPieceRow>(
+      `${learningPieceSelect} where id = $1 limit 1`,
+      [learningPieceId],
+    );
+
+    return result.rows[0] ? mapPostgresLearningPiece(result.rows[0]) ?? undefined : undefined;
+  },
   async listStudentLearningPieceStatuses(query) {
     const values: unknown[] = [];
     const filters: string[] = [];

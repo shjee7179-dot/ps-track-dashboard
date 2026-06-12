@@ -644,6 +644,27 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - `/api/health`가 repository provider만 보여주면 LMS provider 누락을 놓치기 쉬우므로 provider 진단값을 함께 노출한다.
   - Docker Hub 접근이 불안정하거나 폐쇄망에 가까운 환경에서는 base image 사전 반입과 build arg 경로가 필요하다.
 
+### Postgres domain object read tables
+
+- 목적: `modules`, `contents`, `learning_pieces` 정의를 mock fallback에서 private PostgreSQL read path로 전환
+- 산출물:
+  - private PostgreSQL schema에 `modules`, `contents`, `learning_pieces` table, index, updated_at trigger, comments 추가
+  - private PostgreSQL seed에 MVP 기본 module 3건, content 5건, learning piece 5건 추가
+  - `postgresLearningRepository`의 `listModules`, `listContents`, `listLearningPieces`, `getLearningPieceById`를 DB read로 전환
+  - `/objects/learning-pieces` 목록 화면을 repository 기반으로 전환
+  - Postgres 상태 row의 실제 UUID와 mock route alias(`student-001`) 비교 불일치로 `미지정`이 뜨던 상세/목록 표시를 수정
+- 검증:
+  - local Postgres container에 schema/seed 적용 성공
+  - DB count 확인: `modules=3`, `contents=5`, `learning_pieces=5`
+  - `npm run lint`, `npm run typecheck`, `npm run build` 통과
+  - `docker build --progress plain --build-arg NODE_IMAGE=ps-track-dashboard:local -t ps-track-dashboard:local .` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `LMS_PROVIDER=mock-view` 컨테이너 재기동 후 `/api/health` 정상
+  - `/objects/learning-pieces`에서 5개 학습피스와 상태 badge 렌더링 확인
+  - `/objects/learning-pieces/lp-003?role=admin`에서 모듈/콘텐츠/성과태그와 `진행 중` 상태 렌더링 확인
+- 오진/교훈:
+  - repository가 alias를 받아 DB UUID로 조회하더라도 반환 객체의 `studentId`는 실제 DB UUID다.
+  - 이미 studentId로 필터된 결과를 화면에서 다시 mock alias와 비교하면 Postgres 전환 후 상태가 사라진다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

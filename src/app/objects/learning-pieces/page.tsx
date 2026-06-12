@@ -1,14 +1,14 @@
 import { AppShell } from "@/components/app-shell";
 import { LearningPieceCard } from "@/components/journey";
 import { Stat } from "@/components/ui";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 
 const studentId = "student-001";
 
 export default async function LearningPiecesPage() {
   const [learningPieces, studentLearningPieceStatuses] = await Promise.all([
-    mockRepositories.learning.listLearningPieces(),
-    mockRepositories.learning.listStudentLearningPieceStatuses({ studentId }),
+    repositories.learning.listLearningPieces(),
+    repositories.learning.listStudentLearningPieceStatuses({ studentId }),
   ]);
 
   return (
@@ -35,8 +35,7 @@ export default async function LearningPiecesPage() {
             key={learningPiece.id}
             learningPiece={learningPiece}
             status={studentLearningPieceStatuses.find(
-              (status) =>
-                status.studentId === studentId && status.learningPieceId === learningPiece.id,
+              (status) => status.learningPieceId === learningPiece.id,
             )}
           />
         ))}
