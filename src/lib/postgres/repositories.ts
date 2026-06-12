@@ -3,6 +3,7 @@ import "server-only";
 import { mockRepositories } from "@/lib/mock-repositories";
 import { queryPostgres } from "@/lib/postgres/client";
 import type {
+  ArtifactRepository,
   CohortRepository,
   JourneySummary,
   LearningRepository,
@@ -19,8 +20,11 @@ import type {
   LmsContentType,
 } from "@/lib/lms/contracts";
 import type {
+  Artifact,
+  ArtifactStatus,
   Content,
   Cohort,
+  Feedback,
   LearningPiece,
   LearningPieceStatus,
   Module,
@@ -28,6 +32,7 @@ import type {
   RoleAssignment,
   ScopeType,
   StudentLearningPieceStatus,
+  Submission,
   User,
 } from "@/lib/types";
 
@@ -117,6 +122,43 @@ type LearningPieceRow = {
   outcome_tags: string[] | null;
 };
 
+type ArtifactRow = {
+  id: string;
+  cohort_id: string;
+  artifact_type: string;
+  title: string;
+  owner_type: string;
+  owner_id: string;
+  learning_piece_id: string | null;
+  status: string;
+  due_at: Date | string;
+  final_confirmed: boolean;
+  outcome_tags: string[] | null;
+};
+
+type SubmissionRow = {
+  id: string;
+  artifact_id: string;
+  submitted_by: string;
+  version: number;
+  submitted_at: Date | string;
+  file_name: string | null;
+  external_url: string | null;
+  note: string;
+};
+
+type FeedbackRow = {
+  id: string;
+  artifact_id: string | null;
+  mentoring_session_id: string | null;
+  author_id: string;
+  target_user_id: string | null;
+  target_team_id: string | null;
+  body: string;
+  status: string;
+  created_at: Date | string;
+};
+
 const roles: Role[] = ["student", "operator", "mentor", "pi", "admin"];
 const scopeTypes: ScopeType[] = ["system", "program", "cohort", "track", "team", "student"];
 const learningPieceStatuses: LearningPieceStatus[] = [
@@ -169,6 +211,24 @@ const learningPieceTypes: LearningPiece["pieceType"][] = [
   "final_artifact",
   "survey",
 ];
+const artifactTypes: Artifact["artifactType"][] = [
+  "profile",
+  "literature_log",
+  "research_plan",
+  "presentation",
+  "final_report",
+];
+const artifactOwnerTypes: Artifact["ownerType"][] = ["student", "team"];
+const artifactStatuses: ArtifactStatus[] = [
+  "not_started",
+  "drafting",
+  "submitted",
+  "in_review",
+  "revision_requested",
+  "pending_evaluation",
+  "evaluated",
+  "final_confirmed",
+];
 
 function isPostgresRole(value: string | null | undefined): value is Role {
   return roles.includes(value as Role);
@@ -208,6 +268,18 @@ function isContentType(value: string): value is Content["contentType"] {
 
 function isLearningPieceType(value: string): value is LearningPiece["pieceType"] {
   return learningPieceTypes.includes(value as LearningPiece["pieceType"]);
+}
+
+function isArtifactType(value: string): value is Artifact["artifactType"] {
+  return artifactTypes.includes(value as Artifact["artifactType"]);
+}
+
+function isArtifactOwnerType(value: string): value is Artifact["ownerType"] {
+  return artifactOwnerTypes.includes(value as Artifact["ownerType"]);
+}
+
+function isArtifactStatus(value: string): value is ArtifactStatus {
+  return artifactStatuses.includes(value as ArtifactStatus);
 }
 
 function toIsoString(value: Date | string) {
@@ -372,6 +444,61 @@ export function mapPostgresLearningPiece(row: LearningPieceRow): LearningPiece |
   };
 }
 
+export function mapPostgresArtifact(row: ArtifactRow): Artifact | null {
+  if (
+    !isArtifactType(row.artifact_type) ||
+    !isArtifactOwnerType(row.owner_type) ||
+    !isArtifactStatus(row.status)
+  ) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    cohortId: row.cohort_id,
+    artifactType: row.artifact_type,
+    title: row.title,
+    ownerType: row.owner_type,
+    ownerId: row.owner_id,
+    learningPieceId: row.learning_piece_id ?? undefined,
+    status: row.status,
+    dueAt: toDateString(row.due_at),
+    finalConfirmed: row.final_confirmed,
+    outcomeTags: row.outcome_tags ?? [],
+  };
+}
+
+export function mapPostgresSubmission(row: SubmissionRow): Submission {
+  return {
+    id: row.id,
+    artifactId: row.artifact_id,
+    submittedBy: row.submitted_by,
+    version: row.version,
+    submittedAt: toIsoString(row.submitted_at),
+    fileName: row.file_name ?? undefined,
+    externalUrl: row.external_url ?? undefined,
+    note: row.note,
+  };
+}
+
+export function mapPostgresFeedback(row: FeedbackRow): Feedback | null {
+  if (row.status !== "open" && row.status !== "resolved") {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    artifactId: row.artifact_id ?? undefined,
+    mentoringSessionId: row.mentoring_session_id ?? undefined,
+    authorId: row.author_id,
+    targetUserId: row.target_user_id ?? undefined,
+    targetTeamId: row.target_team_id ?? undefined,
+    body: row.body,
+    status: row.status,
+    createdAt: toIsoString(row.created_at),
+  };
+}
+
 const userSelect = `
   select id, external_subject, email, name, affiliation, default_role, status
   from public.users
@@ -432,6 +559,49 @@ const learningPieceSelect = `
     requires_evaluation,
     outcome_tags
   from public.learning_pieces
+`;
+
+const artifactSelect = `
+  select
+    id,
+    cohort_id,
+    artifact_type,
+    title,
+    owner_type,
+    owner_id,
+    learning_piece_id,
+    status,
+    due_at,
+    final_confirmed,
+    outcome_tags
+  from public.artifacts
+`;
+
+const submissionSelect = `
+  select
+    id,
+    artifact_id,
+    submitted_by,
+    version,
+    submitted_at,
+    file_name,
+    external_url,
+    note
+  from public.submissions
+`;
+
+const feedbackSelect = `
+  select
+    id,
+    artifact_id,
+    mentoring_session_id,
+    author_id,
+    target_user_id,
+    target_team_id,
+    body,
+    status,
+    created_at
+  from public.feedback
 `;
 
 async function resolvePostgresUserId(userIdOrAlias: string): Promise<string | undefined> {
@@ -679,6 +849,157 @@ export const postgresCohortRepository: CohortRepository = {
   getTeamById: mockRepositories.cohorts.getTeamById,
 };
 
+export const postgresArtifactRepository: ArtifactRepository = {
+  async listArtifacts(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      values.push(query.cohortId);
+      filters.push(`cohort_id = $${values.length}`);
+    }
+    if (query?.studentId) {
+      values.push(query.studentId);
+      filters.push(`owner_type = 'student' and owner_id = $${values.length}`);
+    }
+    if (query?.teamId) {
+      values.push(query.teamId);
+      filters.push(`owner_type = 'team' and owner_id = $${values.length}`);
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<ArtifactRow>(
+      `${artifactSelect}${whereClause} order by due_at asc, id asc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresArtifact(row))
+      .filter((artifact): artifact is Artifact => Boolean(artifact));
+  },
+  async getArtifactById(artifactId) {
+    const result = await queryPostgres<ArtifactRow>(
+      `${artifactSelect} where id = $1 limit 1`,
+      [artifactId],
+    );
+
+    return result.rows[0] ? mapPostgresArtifact(result.rows[0]) ?? undefined : undefined;
+  },
+  async listSubmissions(artifactId) {
+    const result = await queryPostgres<SubmissionRow>(
+      `${submissionSelect} where artifact_id = $1 order by version asc`,
+      [artifactId],
+    );
+
+    return result.rows.map((row) => mapPostgresSubmission(row));
+  },
+  async listFeedback(artifactId) {
+    const result = await queryPostgres<FeedbackRow>(
+      `${feedbackSelect} where artifact_id = $1 order by created_at asc`,
+      [artifactId],
+    );
+
+    return result.rows
+      .map((row) => mapPostgresFeedback(row))
+      .filter((feedback): feedback is Feedback => Boolean(feedback));
+  },
+  async createSubmission(input) {
+    const result = await queryPostgres<SubmissionRow>(
+      `
+        insert into public.submissions (
+          artifact_id,
+          submitted_by,
+          version,
+          submitted_at,
+          file_name,
+          external_url,
+          note
+        )
+        select
+          $1,
+          $2,
+          coalesce(max(version), 0) + 1,
+          now(),
+          $3,
+          $4,
+          $5
+        from public.submissions
+        where artifact_id = $1
+        returning
+          id,
+          artifact_id,
+          submitted_by,
+          version,
+          submitted_at,
+          file_name,
+          external_url,
+          note
+      `,
+      [
+        input.artifactId,
+        input.submittedBy,
+        input.fileName ?? null,
+        input.externalUrl ?? null,
+        input.note,
+      ],
+    );
+
+    const submission = result.rows[0] ? mapPostgresSubmission(result.rows[0]) : null;
+    if (!submission) {
+      throw new Error("Failed to create artifact submission");
+    }
+
+    return {
+      data: submission,
+      auditLogId: "postgres-submission",
+    } satisfies MutationResult<Submission>;
+  },
+  async createFeedback(input) {
+    const result = await queryPostgres<FeedbackRow>(
+      `
+        insert into public.feedback (
+          artifact_id,
+          mentoring_session_id,
+          author_id,
+          target_user_id,
+          target_team_id,
+          body,
+          status
+        )
+        values ($1, $2, $3, $4, $5, $6, 'open')
+        returning
+          id,
+          artifact_id,
+          mentoring_session_id,
+          author_id,
+          target_user_id,
+          target_team_id,
+          body,
+          status,
+          created_at
+      `,
+      [
+        input.artifactId ?? null,
+        input.mentoringSessionId ?? null,
+        input.authorId,
+        input.targetUserId ?? null,
+        input.targetTeamId ?? null,
+        input.body,
+      ],
+    );
+    const feedback = result.rows[0] ? mapPostgresFeedback(result.rows[0]) : null;
+    if (!feedback) {
+      throw new Error("Failed to create artifact feedback");
+    }
+
+    return {
+      data: feedback,
+      auditLogId: "postgres-feedback",
+    } satisfies MutationResult<Feedback>;
+  },
+};
+
 export const postgresLmsContentMappingRepository: LmsContentMappingRepository = {
   async listMappings(query) {
     const values: unknown[] = [];
@@ -822,6 +1143,7 @@ export const postgresRepositories = {
   users: postgresUserRepository,
   learning: postgresLearningRepository,
   cohorts: postgresCohortRepository,
+  artifacts: postgresArtifactRepository,
   lms: {
     ...mockRepositories.lms,
     contentMappings: postgresLmsContentMappingRepository,

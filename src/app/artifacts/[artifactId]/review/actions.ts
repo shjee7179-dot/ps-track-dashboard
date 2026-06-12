@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
 
 function normalizeText(value: FormDataEntryValue | null) {
@@ -26,7 +26,7 @@ export async function createArtifactFeedbackAction(formData: FormData) {
     redirect("/artifacts?update=invalid");
   }
 
-  const artifact = await mockRepositories.artifacts.getArtifactById(artifactId);
+  const artifact = await repositories.artifacts.getArtifactById(artifactId);
   if (!artifact) {
     redirect("/artifacts?update=missing");
   }
@@ -44,7 +44,7 @@ export async function createArtifactFeedbackAction(formData: FormData) {
     redirect(buildRedirectPath(artifact.id, "denied"));
   }
 
-  const result = await mockRepositories.artifacts.createFeedback({
+  const result = await repositories.artifacts.createFeedback({
     artifactId: artifact.id,
     authorId: session.user.id,
     body,
@@ -54,5 +54,5 @@ export async function createArtifactFeedbackAction(formData: FormData) {
 
   revalidatePath(`/artifacts/${artifact.id}/review`);
   revalidatePath(`/artifacts/${artifact.id}`);
-  redirect(buildRedirectPath(artifact.id, "created", result.auditLogId ?? "mock"));
+  redirect(buildRedirectPath(artifact.id, "created", result.auditLogId));
 }
