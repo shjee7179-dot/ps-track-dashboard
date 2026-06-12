@@ -22,6 +22,7 @@
 ```bash
 psql "$DATABASE_URL" -f db/private-postgres/schema/001_core_auth_scope.sql
 psql "$DATABASE_URL" -f db/private-postgres/seed/001_core_auth_scope_seed.sql
+psql "$DATABASE_URL" -v app_role=ps_track_app_runtime -f db/private-postgres/grants/001_app_runtime_user.sql
 ```
 
 If host `psql` is unavailable, use the local Docker PostgreSQL profile:
@@ -30,8 +31,10 @@ If host `psql` is unavailable, use the local Docker PostgreSQL profile:
 docker compose --profile postgres up -d postgres
 docker compose cp db/private-postgres/schema/001_core_auth_scope.sql postgres:/tmp/001_core_auth_scope.sql
 docker compose cp db/private-postgres/seed/001_core_auth_scope_seed.sql postgres:/tmp/001_core_auth_scope_seed.sql
+docker compose cp db/private-postgres/grants/001_app_runtime_user.sql postgres:/tmp/001_app_runtime_user.sql
 docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope.sql
 docker compose exec -T postgres psql -U ps_track_app -d ps_track -f /tmp/001_core_auth_scope_seed.sql
+docker compose exec -T postgres psql -U ps_track_app -d ps_track -v app_role=ps_track_app -f /tmp/001_app_runtime_user.sql
 ```
 
 App-container smoke command after the PostgreSQL profile is healthy:
@@ -142,4 +145,4 @@ Domain object table expansion on 2026-06-12:
 
 1. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
 2. artifact/evaluation/outcome repository를 순차적으로 postgres-backed로 전환
-3. app runtime user grant SQL 작성
+3. audit/access log table과 retention policy 작성

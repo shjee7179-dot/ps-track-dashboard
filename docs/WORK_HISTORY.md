@@ -665,6 +665,16 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - repository가 alias를 받아 DB UUID로 조회하더라도 반환 객체의 `studentId`는 실제 DB UUID다.
   - 이미 studentId로 필터된 결과를 화면에서 다시 mock alias와 비교하면 Postgres 전환 후 상태가 사라진다.
 
+### Private Postgres app runtime grants
+
+- 목적: migration owner와 app runtime DB user를 분리하기 위한 최소 권한 grant SQL 작성
+- 산출물:
+  - `db/private-postgres/grants/001_app_runtime_user.sql` 추가
+  - SQL은 `-v app_role=...`로 기존 runtime role을 받아 grant만 수행하고, 계정 생성/비밀번호 저장은 하지 않는다.
+  - 현재 repository read 대상 테이블에 `select` 권한을 부여한다.
+  - 현재 mutation 대상인 `learning_piece_statuses`, `lms_content_mappings`에만 `insert`, `update` 권한을 부여한다.
+  - private Postgres README, policy note, migration 문서에 적용 순서와 원칙 반영
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
