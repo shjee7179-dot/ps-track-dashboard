@@ -752,6 +752,31 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - mutation server action별 audit write helper 연결
   - login/logout/role switch/session refresh의 access log 기록 정책 확정
 
+### Postgres audit write helper
+
+- 목적: Postgres-backed server action mutation이 실제 `audit_logs` row를 생성하도록 연결
+- 산출물:
+  - repository contract에 `AuditWriteContext`, `AuditLogDraft`, `AdminRepository.createAuditLog` 추가
+  - mock repository에 `createAuditLog` fallback 추가
+  - Postgres repository에 `createPostgresAuditLog` helper 추가
+  - 학습피스 상태 변경, 산출물 제출, 산출물 피드백 작성, 산출물 평가 제출 mutation에 audit context 연결
+  - 위 Postgres mutation은 domain write와 audit insert를 같은 transaction으로 처리하도록 보강
+  - 관련 server action이 `session.user.id`, `session.user.name`, role/source metadata를 audit context로 전달
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - `docker build --progress plain --build-arg NODE_IMAGE=ps-track-dashboard:local -t ps-track-dashboard:local .` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - 산출물 제출 action 호출 후 redirect audit 값이 실제 UUID `e64e9e3f-1261-4ec3-b90c-bee345a32183`로 반환됨
+  - DB `audit_logs`에서 `김서연 / 산출물 제출 / artifact-002` row 확인
+  - 피드백 작성 action 호출 후 redirect audit 값이 실제 UUID `0ae50f58-92a4-45fb-bdac-5a73eb7af414`로 반환됨
+  - `/admin/audit-logs?role=admin`에서 `감사 이벤트 4건`, `산출물 피드백 작성`, `artifact-001` 렌더링 확인
+- 오진/교훈:
+  - domain mutation과 audit insert를 별도 쿼리로 두면 audit insert 실패 시 사용자는 실패를 보지만 domain write는 남을 수 있다.
+  - 감사 로그가 운영 증적이면 domain write와 audit write는 같은 transaction으로 묶는 편이 맞다.
+- 남은 범위:
+  - LMS mapping action은 현재 `LmsContentMappingRepository`가 `MutationResult` 계약을 쓰지 않으므로 별도 계약 정리 후 audit write를 붙인다.
+  - mentoring, notice, risk/reminder는 아직 mock-backed mutation이므로 Postgres 전환 또는 별도 audit action helper가 필요하다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

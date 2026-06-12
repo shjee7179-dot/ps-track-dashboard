@@ -62,7 +62,19 @@ export async function applyLmsCompletionToLearningPieceStatusAction(formData: Fo
     redirectToStudentJourney(studentId, "already-completed", role);
   }
 
-  const result = await repositories.learning.updateStudentLearningPieceStatus(statusId, "completed");
+  const result = await repositories.learning.updateStudentLearningPieceStatus(
+    statusId,
+    "completed",
+    {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+        reason: "lms_completion_apply",
+      },
+    },
+  );
 
   revalidatePath("/journeys/students");
   revalidatePath(`/journeys/students/${studentId}`);

@@ -71,8 +71,8 @@ export const repositories: AppRepositories = {
     getJourneySummary(studentId) {
       return getRepositories().learning.getJourneySummary(studentId);
     },
-    updateStudentLearningPieceStatus(statusId, status) {
-      return getRepositories().learning.updateStudentLearningPieceStatus(statusId, status);
+    updateStudentLearningPieceStatus(statusId, status, audit) {
+      return getRepositories().learning.updateStudentLearningPieceStatus(statusId, status, audit);
     },
   },
   cohorts: {
@@ -181,6 +181,9 @@ export const repositories: AppRepositories = {
     },
     listAccessLogs(query) {
       return getRepositories().admin.listAccessLogs(query);
+    },
+    createAuditLog(input) {
+      return getRepositories().admin.createAuditLog(input);
     },
     listNotices(query) {
       return getRepositories().admin.listNotices(query);

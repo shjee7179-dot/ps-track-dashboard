@@ -440,6 +440,16 @@ export const mockRepositories: AppRepositories = {
     async listAccessLogs(query) {
       return applyLimit(accessLogs, query);
     },
+    async createAuditLog(input) {
+      return {
+        id: nextMockId("audit"),
+        actor: input.actorLabel,
+        event: input.event,
+        target: input.targetLabel,
+        occurredAt: new Date().toISOString(),
+        severity: input.severity ?? "notice",
+      };
+    },
     async listNotices(query) {
       const rows = notices.filter((notice) => (query?.cohortId ? notice.cohortId === query.cohortId : true));
       return applyLimit(rows, query);

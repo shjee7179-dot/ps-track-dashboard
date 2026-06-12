@@ -42,6 +42,20 @@ export type MutationResult<T> = {
   auditLogId?: string;
 };
 
+export type AuditWriteContext = {
+  actorId: string;
+  actorLabel: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type AuditLogDraft = AuditWriteContext & {
+  event: string;
+  targetType: string;
+  targetId: string;
+  targetLabel: string;
+  severity?: LogEvent["severity"];
+};
+
 export type StudentJourneyItem = {
   status: StudentLearningPieceStatus;
   learningPiece: LearningPiece;
@@ -80,6 +94,7 @@ export type LearningRepository = {
   updateStudentLearningPieceStatus(
     statusId: string,
     status: StudentLearningPieceStatus["status"],
+    audit?: AuditWriteContext,
   ): RepositoryResult<MutationResult<StudentLearningPieceStatus>>;
 };
 
@@ -100,6 +115,7 @@ export type ArtifactRepository = {
     externalUrl?: string;
     fileName?: string;
     note: string;
+    audit?: AuditWriteContext;
   }): RepositoryResult<MutationResult<Submission>>;
   createFeedback(input: {
     artifactId?: string;
@@ -108,6 +124,7 @@ export type ArtifactRepository = {
     body: string;
     targetUserId?: string;
     targetTeamId?: string;
+    audit?: AuditWriteContext;
   }): RepositoryResult<MutationResult<Feedback>>;
 };
 
@@ -127,6 +144,7 @@ export type EvaluationRepository = {
       score: number;
       comment: string;
     }>;
+    audit?: AuditWriteContext;
   }): RepositoryResult<MutationResult<Evaluation>>;
   listLearningOutcomes(): RepositoryResult<LearningOutcome[]>;
   getLearningOutcomeById(outcomeId: string): RepositoryResult<LearningOutcome | undefined>;
@@ -165,6 +183,7 @@ export type AdminRepository = {
   listActivityLogs(query?: ListQuery): RepositoryResult<ActivityLog[]>;
   listAuditLogs(query?: ListQuery): RepositoryResult<LogEvent[]>;
   listAccessLogs(query?: ListQuery): RepositoryResult<LogEvent[]>;
+  createAuditLog(input: AuditLogDraft): RepositoryResult<LogEvent>;
   listNotices(query?: ListQuery): RepositoryResult<Notice[]>;
   createNotice(input: {
     cohortId: string;

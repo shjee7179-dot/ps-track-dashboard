@@ -50,6 +50,14 @@ export async function createArtifactFeedbackAction(formData: FormData) {
     body,
     targetUserId: artifact.ownerType === "student" ? artifact.ownerId : undefined,
     targetTeamId: artifact.ownerType === "team" ? artifact.ownerId : undefined,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
   });
 
   revalidatePath(`/artifacts/${artifact.id}/review`);

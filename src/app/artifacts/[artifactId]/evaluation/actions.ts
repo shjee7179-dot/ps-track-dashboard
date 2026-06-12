@@ -78,6 +78,14 @@ export async function submitArtifactEvaluationAction(formData: FormData) {
       score: item.score,
       comment: item.comment,
     })),
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
   });
 
   revalidatePath(`/artifacts/${artifact.id}/evaluation`);
