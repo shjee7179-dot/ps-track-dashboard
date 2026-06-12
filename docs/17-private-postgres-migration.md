@@ -128,11 +128,18 @@ Operational mapping policy:
 
 현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses` repository다.
 
-`learning_piece_statuses`는 Postgres가 소유하지만, `modules`, `contents`, `learning_pieces` 정의는 아직 mock domain seed를 fallback으로 사용한다. 이 중간 단계는 LMS 완료 수동 반영 action이 실제 상태 row를 갱신하도록 하기 위한 최소 persistence 전환이다.
+`learning_piece_statuses`는 Postgres가 소유하고, `modules`, `contents`, `learning_pieces` 정의도 Postgres read path로 전환했다. 아직 cohort/template cloning ownership은 별도 table로 분리하지 않았고, 첫 전환에서는 기존 mock id(`module-001`, `content-003`, `lp-003`)를 유지하는 text primary key를 사용한다.
+
+Domain object table expansion on 2026-06-12:
+
+- added `modules`, `contents`, `learning_pieces` tables to private PostgreSQL schema.
+- seeded MVP domain object definitions: 3 modules, 5 contents, 5 learning pieces.
+- `postgresLearningRepository` now reads module/content/learning piece definitions from Postgres.
+- `/objects/learning-pieces` and `/objects/learning-pieces/[learningPieceId]` render through repository reads under `REPOSITORY_PROVIDER=postgres`.
+- diagnostic correction: status rows returned from Postgres contain DB UUID `studentId`, so UI code must not re-compare those rows against mock alias `student-001` after repository-level filtering.
 
 ## Next Implementation Step
 
-1. `modules`, `contents`, `learning_pieces` domain table migration 확대
-2. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
-3. artifact/evaluation/outcome repository를 순차적으로 postgres-backed로 전환
-4. app runtime user grant SQL 작성
+1. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
+2. artifact/evaluation/outcome repository를 순차적으로 postgres-backed로 전환
+3. app runtime user grant SQL 작성

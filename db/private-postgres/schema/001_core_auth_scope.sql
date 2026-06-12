@@ -110,6 +110,69 @@ create table if not exists public.role_assignments (
     check (ends_at is null or ends_at > starts_at)
 );
 
+create table if not exists public.modules (
+  id text primary key,
+  title text not null,
+  description text not null default '',
+  order_index int not null default 0,
+  status text not null default 'draft',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint modules_status_check
+    check (status in ('draft', 'open', 'closed'))
+);
+
+create table if not exists public.contents (
+  id text primary key,
+  module_id text not null references public.modules(id) on delete cascade,
+  title text not null,
+  content_type text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint contents_content_type_check
+    check (content_type in (
+      'video',
+      'reading',
+      'workshop',
+      'assignment',
+      'practice',
+      'link',
+      'offline',
+      'mentoring_guide'
+    ))
+);
+
+create table if not exists public.learning_pieces (
+  id text primary key,
+  module_id text not null references public.modules(id) on delete cascade,
+  content_id text references public.contents(id) on delete set null,
+  title text not null,
+  piece_type text not null,
+  completion_rule text not null default '',
+  opens_at date not null,
+  due_at date not null,
+  requires_submission boolean not null default false,
+  requires_approval boolean not null default false,
+  requires_evaluation boolean not null default false,
+  outcome_tags text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint learning_pieces_piece_type_check
+    check (piece_type in (
+      'reading',
+      'video',
+      'workshop',
+      'assignment',
+      'mentoring',
+      'practice',
+      'mid_artifact',
+      'final_artifact',
+      'survey'
+    )),
+  constraint learning_pieces_date_range_check
+    check (due_at >= opens_at)
+);
+
 create table if not exists public.learning_piece_statuses (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.users(id) on delete cascade,
@@ -200,6 +263,21 @@ create index if not exists role_assignments_user_status_idx
 create index if not exists role_assignments_scope_status_idx
   on public.role_assignments (scope_type, scope_id, status);
 
+create index if not exists modules_status_order_idx
+  on public.modules (status, order_index);
+
+create index if not exists contents_module_idx
+  on public.contents (module_id);
+
+create index if not exists learning_pieces_module_idx
+  on public.learning_pieces (module_id);
+
+create index if not exists learning_pieces_content_idx
+  on public.learning_pieces (content_id);
+
+create index if not exists learning_pieces_due_at_idx
+  on public.learning_pieces (due_at);
+
 create index if not exists learning_piece_statuses_student_idx
   on public.learning_piece_statuses (student_id);
 
@@ -251,6 +329,21 @@ create trigger set_role_assignments_updated_at
 before update on public.role_assignments
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_modules_updated_at on public.modules;
+create trigger set_modules_updated_at
+before update on public.modules
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_contents_updated_at on public.contents;
+create trigger set_contents_updated_at
+before update on public.contents
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_learning_pieces_updated_at on public.learning_pieces;
+create trigger set_learning_pieces_updated_at
+before update on public.learning_pieces
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_learning_piece_statuses_updated_at on public.learning_piece_statuses;
 create trigger set_learning_piece_statuses_updated_at
 before update on public.learning_piece_statuses
@@ -275,6 +368,15 @@ comment on column public.role_assignments.scope_id is
 
 comment on table public.learning_piece_statuses is
   'Per-student PS Track learning piece state. LMS readonly completion can be manually applied into this table.';
+
+comment on table public.modules is
+  'Reusable PS Track journey module definitions for a cohort template or active cohort.';
+
+comment on table public.contents is
+  'PS Track content objects grouped under modules. LMS mappings may point at these content records.';
+
+comment on table public.learning_pieces is
+  'Atomic learning tasks shown on a student journey and connected to status, LMS mappings, artifacts, and outcomes.';
 
 comment on table public.lms_content_mappings is
   'Operator-managed mapping between PS Track learning pieces and LMS readonly content/course round records.';
