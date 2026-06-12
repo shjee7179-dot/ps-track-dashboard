@@ -5,6 +5,7 @@ import { Card, Stat, StatusBadge } from "@/components/ui";
 import { createArtifactSubmissionAction } from "@/app/artifacts/[artifactId]/actions";
 import { getArtifactStatusLabel } from "@/lib/domain";
 import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import type { Artifact, Team, User } from "@/lib/types";
 
 function getArtifactOwnerName(artifact: Artifact, users: User[], teams: Team[]) {
@@ -24,9 +25,9 @@ export default async function ArtifactDetailPage({
   const { artifactId } = await params;
   const query = await searchParams;
   const [artifact, submissions, feedback, evaluations, users, teams] = await Promise.all([
-    mockRepositories.artifacts.getArtifactById(artifactId),
-    mockRepositories.artifacts.listSubmissions(artifactId),
-    mockRepositories.artifacts.listFeedback(artifactId),
+    repositories.artifacts.getArtifactById(artifactId),
+    repositories.artifacts.listSubmissions(artifactId),
+    repositories.artifacts.listFeedback(artifactId),
     mockRepositories.evaluations.listEvaluations(artifactId),
     mockRepositories.users.listUsers(),
     mockRepositories.cohorts.listTeams(),
@@ -34,12 +35,12 @@ export default async function ArtifactDetailPage({
   if (!artifact) notFound();
 
   const learningPiece = artifact.learningPieceId
-    ? await mockRepositories.learning.getLearningPieceById(artifact.learningPieceId)
+    ? await repositories.learning.getLearningPieceById(artifact.learningPieceId)
     : undefined;
   const userById = new Map(users.map((user) => [user.id, user]));
   const ownerName = getArtifactOwnerName(artifact, users, teams);
   const updateMessages: Record<string, string> = {
-    submitted: "산출물 제출 요청이 mock repository를 통해 접수되었습니다.",
+    submitted: "산출물 제출 요청이 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 산출물을 제출할 수 없습니다.",
     invalid: "제출 메모와 파일명 또는 외부 링크를 확인해 주세요.",
     missing: "산출물 레코드를 찾을 수 없습니다.",

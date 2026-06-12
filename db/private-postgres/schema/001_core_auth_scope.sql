@@ -198,6 +198,71 @@ create table if not exists public.learning_piece_statuses (
     unique (student_id, learning_piece_id)
 );
 
+create table if not exists public.artifacts (
+  id text primary key,
+  cohort_id uuid not null references public.cohorts(id) on delete cascade,
+  artifact_type text not null,
+  title text not null,
+  owner_type text not null,
+  owner_id text not null,
+  learning_piece_id text references public.learning_pieces(id) on delete set null,
+  status text not null default 'not_started',
+  due_at date not null,
+  final_confirmed boolean not null default false,
+  outcome_tags text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint artifacts_artifact_type_check
+    check (artifact_type in ('profile', 'literature_log', 'research_plan', 'presentation', 'final_report')),
+  constraint artifacts_owner_type_check
+    check (owner_type in ('student', 'team')),
+  constraint artifacts_status_check
+    check (status in (
+      'not_started',
+      'drafting',
+      'submitted',
+      'in_review',
+      'revision_requested',
+      'pending_evaluation',
+      'evaluated',
+      'final_confirmed'
+    ))
+);
+
+create table if not exists public.submissions (
+  id uuid primary key default gen_random_uuid(),
+  artifact_id text not null references public.artifacts(id) on delete cascade,
+  submitted_by text not null,
+  version int not null,
+  submitted_at timestamptz not null default now(),
+  file_name text,
+  external_url text,
+  note text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint submissions_artifact_version_unique
+    unique (artifact_id, version),
+  constraint submissions_file_or_url_check
+    check (file_name is not null or external_url is not null)
+);
+
+create table if not exists public.feedback (
+  id uuid primary key default gen_random_uuid(),
+  artifact_id text references public.artifacts(id) on delete cascade,
+  mentoring_session_id text,
+  author_id text not null,
+  target_user_id text,
+  target_team_id text,
+  body text not null,
+  status text not null default 'open',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint feedback_status_check
+    check (status in ('open', 'resolved')),
+  constraint feedback_target_check
+    check (target_user_id is not null or target_team_id is not null)
+);
+
 create table if not exists public.lms_content_mappings (
   id uuid primary key default gen_random_uuid(),
   cohort_id uuid not null references public.cohorts(id) on delete cascade,
@@ -287,6 +352,27 @@ create index if not exists learning_piece_statuses_learning_piece_idx
 create index if not exists learning_piece_statuses_status_idx
   on public.learning_piece_statuses (status);
 
+create index if not exists artifacts_cohort_status_idx
+  on public.artifacts (cohort_id, status);
+
+create index if not exists artifacts_owner_idx
+  on public.artifacts (owner_type, owner_id);
+
+create index if not exists artifacts_learning_piece_idx
+  on public.artifacts (learning_piece_id);
+
+create index if not exists submissions_artifact_version_idx
+  on public.submissions (artifact_id, version desc);
+
+create index if not exists submissions_submitted_by_idx
+  on public.submissions (submitted_by);
+
+create index if not exists feedback_artifact_status_idx
+  on public.feedback (artifact_id, status);
+
+create index if not exists feedback_author_idx
+  on public.feedback (author_id);
+
 create index if not exists lms_content_mappings_cohort_status_idx
   on public.lms_content_mappings (cohort_id, status);
 
@@ -349,6 +435,21 @@ create trigger set_learning_piece_statuses_updated_at
 before update on public.learning_piece_statuses
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_artifacts_updated_at on public.artifacts;
+create trigger set_artifacts_updated_at
+before update on public.artifacts
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_submissions_updated_at on public.submissions;
+create trigger set_submissions_updated_at
+before update on public.submissions
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_feedback_updated_at on public.feedback;
+create trigger set_feedback_updated_at
+before update on public.feedback
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_lms_content_mappings_updated_at on public.lms_content_mappings;
 create trigger set_lms_content_mappings_updated_at
 before update on public.lms_content_mappings
@@ -377,6 +478,15 @@ comment on table public.contents is
 
 comment on table public.learning_pieces is
   'Atomic learning tasks shown on a student journey and connected to status, LMS mappings, artifacts, and outcomes.';
+
+comment on table public.artifacts is
+  'Student or team outputs connected to learning pieces and learning outcomes.';
+
+comment on table public.submissions is
+  'Versioned metadata for artifact submissions. File storage is handled outside this table.';
+
+comment on table public.feedback is
+  'Artifact or mentoring feedback records shown in review workflows.';
 
 comment on table public.lms_content_mappings is
   'Operator-managed mapping between PS Track learning pieces and LMS readonly content/course round records.';

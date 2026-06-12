@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
 
 function normalizeOptionalText(value: FormDataEntryValue | null) {
@@ -28,7 +28,7 @@ export async function createArtifactSubmissionAction(formData: FormData) {
     redirect("/artifacts?update=invalid");
   }
 
-  const artifact = await mockRepositories.artifacts.getArtifactById(artifactId);
+  const artifact = await repositories.artifacts.getArtifactById(artifactId);
   if (!artifact) {
     redirect("/artifacts?update=missing");
   }
@@ -50,7 +50,7 @@ export async function createArtifactSubmissionAction(formData: FormData) {
     redirect(buildRedirectPath(artifact.id, "denied"));
   }
 
-  const result = await mockRepositories.artifacts.createSubmission({
+  const result = await repositories.artifacts.createSubmission({
     artifactId: artifact.id,
     submittedBy: session.user.id,
     externalUrl,
@@ -60,5 +60,5 @@ export async function createArtifactSubmissionAction(formData: FormData) {
 
   revalidatePath(`/artifacts/${artifact.id}`);
   revalidatePath("/artifacts");
-  redirect(buildRedirectPath(artifact.id, "submitted", result.auditLogId ?? "mock"));
+  redirect(buildRedirectPath(artifact.id, "submitted", result.auditLogId));
 }

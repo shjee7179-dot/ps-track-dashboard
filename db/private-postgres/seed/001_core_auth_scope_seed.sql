@@ -408,6 +408,179 @@ on conflict (student_id, learning_piece_id) do update
       note = excluded.note,
       updated_at = now();
 
+insert into public.artifacts (
+  id,
+  cohort_id,
+  artifact_type,
+  title,
+  owner_type,
+  owner_id,
+  learning_piece_id,
+  status,
+  due_at,
+  final_confirmed,
+  outcome_tags
+)
+select
+  seed.id,
+  cohorts.id,
+  seed.artifact_type,
+  seed.title,
+  seed.owner_type,
+  seed.owner_id,
+  seed.learning_piece_id,
+  seed.status,
+  seed.due_at,
+  seed.final_confirmed,
+  seed.outcome_tags
+from public.cohorts
+cross join (
+  values
+    (
+      'artifact-001',
+      'profile',
+      '연구 관심사 자기소개',
+      'student',
+      'student-001',
+      'lp-002',
+      'submitted',
+      date '2026-07-08',
+      false,
+      array['진로탐색', '문제 인식']
+    ),
+    (
+      'artifact-002',
+      'literature_log',
+      '핵심 논문 3편 탐색 기록',
+      'student',
+      'student-001',
+      'lp-004',
+      'drafting',
+      date '2026-07-24',
+      false,
+      array['문헌 탐색', '데이터 해석']
+    ),
+    (
+      'artifact-003',
+      'research_plan',
+      '팀 연구계획서 초안',
+      'team',
+      'team-001',
+      'lp-005',
+      'in_review',
+      date '2026-08-12',
+      false,
+      array['연구 설계', '과학 커뮤니케이션']
+    )
+) as seed(
+  id,
+  artifact_type,
+  title,
+  owner_type,
+  owner_id,
+  learning_piece_id,
+  status,
+  due_at,
+  final_confirmed,
+  outcome_tags
+)
+where cohorts.code = 'cohort-2026-1'
+on conflict (id) do update
+  set cohort_id = excluded.cohort_id,
+      artifact_type = excluded.artifact_type,
+      title = excluded.title,
+      owner_type = excluded.owner_type,
+      owner_id = excluded.owner_id,
+      learning_piece_id = excluded.learning_piece_id,
+      status = excluded.status,
+      due_at = excluded.due_at,
+      final_confirmed = excluded.final_confirmed,
+      outcome_tags = excluded.outcome_tags,
+      updated_at = now();
+
+insert into public.submissions (
+  id,
+  artifact_id,
+  submitted_by,
+  version,
+  submitted_at,
+  file_name,
+  external_url,
+  note
+)
+values
+  (
+    '00000000-0000-4000-8000-000000000101',
+    'artifact-001',
+    'student-001',
+    1,
+    timestamptz '2026-07-07 21:10:00+09',
+    null,
+    'https://example.com/submissions/research-interest',
+    '관심 연구 분야와 자기소개 제출'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000102',
+    'artifact-003',
+    'student-001',
+    1,
+    timestamptz '2026-08-09 20:40:00+09',
+    'research-plan-v1.pdf',
+    null,
+    '팀 연구계획서 1차 초안'
+  )
+on conflict (artifact_id, version) do update
+  set submitted_by = excluded.submitted_by,
+      submitted_at = excluded.submitted_at,
+      file_name = excluded.file_name,
+      external_url = excluded.external_url,
+      note = excluded.note,
+      updated_at = now();
+
+insert into public.feedback (
+  id,
+  artifact_id,
+  mentoring_session_id,
+  author_id,
+  target_user_id,
+  target_team_id,
+  body,
+  status,
+  created_at
+)
+values
+  (
+    '00000000-0000-4000-8000-000000000201',
+    'artifact-001',
+    'mentoring-001',
+    'mentor-001',
+    'student-001',
+    null,
+    '관심 주제는 좋지만 임상 문제와 연구 질문을 더 분리해서 써보면 좋겠습니다.',
+    'open',
+    timestamptz '2026-07-18 20:05:00+09'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000202',
+    'artifact-003',
+    'mentoring-002',
+    'mentor-001',
+    null,
+    'team-001',
+    '팀 연구계획서는 질문 범위를 좁히고 측정 가능한 변수 정의를 보강해야 합니다.',
+    'open',
+    timestamptz '2026-08-10 21:00:00+09'
+  )
+on conflict (id) do update
+  set artifact_id = excluded.artifact_id,
+      mentoring_session_id = excluded.mentoring_session_id,
+      author_id = excluded.author_id,
+      target_user_id = excluded.target_user_id,
+      target_team_id = excluded.target_team_id,
+      body = excluded.body,
+      status = excluded.status,
+      updated_at = now();
+
 insert into public.lms_content_mappings (
   cohort_id,
   module_id,

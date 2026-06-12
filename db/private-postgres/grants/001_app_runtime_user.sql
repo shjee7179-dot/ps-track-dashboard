@@ -26,11 +26,17 @@ grant select on table
   public.contents,
   public.learning_pieces,
   public.learning_piece_statuses,
+  public.artifacts,
+  public.submissions,
+  public.feedback,
   public.lms_content_mappings
 to :"app_role";
 
 grant insert, update on table
   public.learning_piece_statuses,
+  public.artifacts,
+  public.submissions,
+  public.feedback,
   public.lms_content_mappings
 to :"app_role";
 

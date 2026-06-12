@@ -29,9 +29,8 @@ private PostgreSQL profile은 Supabase RLS에 의존하지 않는다.
 
 ## Future Work
 
-1. domain tables: modules, contents, learning_pieces
-2. journey tables: activity_logs
-3. artifact tables: artifacts, submissions, feedback
-4. evaluation/outcome tables
-5. audit/access log tables
-6. audit/access log tables
+1. journey tables: activity_logs
+2. evaluation/outcome tables
+3. audit/access log tables and retention policy
+4. Keycloak subject sync/import procedure
+5. LMS readonly view adapter once the final view contract arrives

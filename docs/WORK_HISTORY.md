@@ -675,6 +675,31 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - 현재 mutation 대상인 `learning_piece_statuses`, `lms_content_mappings`에만 `insert`, `update` 권한을 부여한다.
   - private Postgres README, policy note, migration 문서에 적용 순서와 원칙 반영
 
+### Postgres artifact repository
+
+- 목적: 산출물 목록/상세/리뷰 화면과 제출/피드백 action을 private PostgreSQL repository 경유로 전환
+- 산출물:
+  - private PostgreSQL schema에 `artifacts`, `submissions`, `feedback` table, index, updated_at trigger, comments 추가
+  - private PostgreSQL seed에 MVP 산출물 3건, 제출 2건, 피드백 2건 추가
+  - app runtime grant SQL에 산출물 관련 table select/insert/update 권한 추가
+  - `postgresArtifactRepository`의 목록/상세/제출/피드백 read-write 구현
+  - `/artifacts`, `/artifacts/[artifactId]`, `/artifacts/[artifactId]/review` read path를 repository 기반으로 전환
+  - 제출/피드백 server action을 repository create method로 연결
+- 설계 판단:
+  - full Keycloak/Postgres session cutover 전까지 산출물 owner/submission/feedback 식별자는 `student-001`, `team-001`, `mentor-001` 같은 안정 alias text를 유지한다.
+  - 실제 운영 전환 시에는 `users.external_subject` 또는 내부 `users.id`로 별도 migration할 수 있도록 repository boundary 안에 격리한다.
+- 검증:
+  - local Postgres container에 schema/seed/grant SQL 적용 성공
+  - DB count 확인: `artifacts=3`, `submissions=2`, `feedback=2`
+  - `npm run lint`, `npm run typecheck`, `npm run build` 통과
+  - `docker build --progress plain --build-arg NODE_IMAGE=ps-track-dashboard:local -t ps-track-dashboard:local .` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - `/artifacts?role=admin`, `/artifacts/artifact-001?role=student`, `/artifacts/artifact-001/review?role=operator` 렌더링 확인
+  - artifact-002 제출 action 호출 후 `/artifacts/artifact-002?role=student`에서 `postgres-submission` audit와 제출 이력 표시 확인
+  - artifact-002 피드백 action 호출 후 `/artifacts/artifact-002/review?role=admin`에서 `postgres-feedback` audit와 리뷰 큐 표시 확인
+- 오진/교훈:
+  - UI read path만 repository로 바꾸면 충분해 보이지만, server action create path까지 같은 repository contract로 묶어야 Docker/Postgres E2E에서 실제 저장을 검증할 수 있다.
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

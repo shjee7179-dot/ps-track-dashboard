@@ -4,6 +4,7 @@ import { Card, Stat, StatusBadge } from "@/components/ui";
 import { createArtifactFeedbackAction } from "@/app/artifacts/[artifactId]/review/actions";
 import { getArtifactStatusLabel } from "@/lib/domain";
 import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import type { Artifact, Team, User } from "@/lib/types";
 
 function getArtifactOwnerName(artifact: Artifact, users: User[], teams: Team[]) {
@@ -23,8 +24,8 @@ export default async function ArtifactReviewPage({
   const { artifactId } = await params;
   const query = await searchParams;
   const [artifact, feedback, users, teams] = await Promise.all([
-    mockRepositories.artifacts.getArtifactById(artifactId),
-    mockRepositories.artifacts.listFeedback(artifactId),
+    repositories.artifacts.getArtifactById(artifactId),
+    repositories.artifacts.listFeedback(artifactId),
     mockRepositories.users.listUsers(),
     mockRepositories.cohorts.listTeams(),
   ]);
@@ -32,7 +33,7 @@ export default async function ArtifactReviewPage({
   const userById = new Map(users.map((user) => [user.id, user]));
   const ownerName = getArtifactOwnerName(artifact, users, teams);
   const updateMessages: Record<string, string> = {
-    created: "피드백 생성 요청이 mock repository를 통해 접수되었습니다.",
+    created: "피드백 생성 요청이 접수되었습니다.",
     denied: "현재 역할/scope에서는 이 산출물에 피드백을 남길 수 없습니다.",
     invalid: "피드백 본문을 입력해 주세요.",
     missing: "산출물 레코드를 찾을 수 없습니다.",
@@ -56,7 +57,7 @@ export default async function ArtifactReviewPage({
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card title="리뷰 큐" subtitle="피드백 흐름과 후속 액션을 mock action으로 기록">
+        <Card title="리뷰 큐" subtitle="피드백 흐름과 후속 액션을 기록">
           <div className="space-y-4">
             {feedback.map((item) => (
               <div key={item.id} className="rounded-lg border border-stone-200 p-4">
