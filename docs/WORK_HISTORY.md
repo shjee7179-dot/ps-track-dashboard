@@ -1003,3 +1003,14 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - readiness 실패 또는 degraded 상태는 HTTP 503으로 반환
 - 설계 판단:
   - `/api/health`는 컨테이너 생존 확인으로 유지하고, `/api/ready`는 운영 트래픽을 받을 준비가 되었는지 확인하는 용도로 분리한다.
+
+### LMS diagnostics admin page
+
+- 목적: 운영자가 브라우저에서 LMS provider, readiness, readonly catalog 조회 상태를 확인할 수 있는 진단 화면 추가
+- 산출물:
+  - `/admin/lms-diagnostics` 화면 추가
+  - 관리자 내비게이션에 `LMS 진단` 추가
+  - `/api/ready`와 같은 readiness helper를 화면에서 재사용
+  - 현재 LMS provider catalog sample 최대 8건 표시
+- 설계 판단:
+  - 인증 진단과 LMS 진단을 분리해 Keycloak/gateway 이슈와 LMS readonly view 이슈를 따로 확인한다.

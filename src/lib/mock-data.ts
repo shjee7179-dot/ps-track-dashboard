@@ -1109,6 +1109,14 @@ export const routeAccessPolicies: RouteAccessPolicy[] = [
     navGroup: "admin",
   },
   {
+    href: "/admin/lms-diagnostics",
+    label: "LMS 진단",
+    roles: ["admin"],
+    targetScopeType: "system",
+    targetScopeId: "system",
+    navGroup: "admin",
+  },
+  {
     href: "/admin/audit-logs",
     label: "감사 로그",
     roles: ["admin"],
