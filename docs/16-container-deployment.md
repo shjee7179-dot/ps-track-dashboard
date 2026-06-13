@@ -106,6 +106,8 @@ Build note:
 - Public runtime config should be provided as environment variables.
 - Secrets must be injected by the deployment platform and never baked into the image.
 - NHN Cloud public deployment should place database access on a private network path.
+- `LMS_PROVIDER=readonly-db` uses a separate readonly LMS connection through `LMS_DATABASE_URL`. This connection must target LMS-provided readonly views only, not original LMS tables.
+- The default readonly view names are `lms_content_catalog_view` and `lms_learning_record_view`; override them with `LMS_CONTENT_CATALOG_VIEW` and `LMS_LEARNING_RECORD_VIEW` after the LMS operations team confirms the final names.
 
 ## Follow-Up
 

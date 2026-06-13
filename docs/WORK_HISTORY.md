@@ -937,3 +937,32 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
 - 현재 구현은 mock 기반 MVP이며, 실제 운영 제품화를 위해 Auth, DB, 저장, 업로드, 이벤트 로그 자동 기록, 배포가 필요하다.
 - UI 디자인 고도화는 후순위로 두고, 우선 구조와 기능 경계를 안정화한다.
+
+### Legacy cooperation architecture proposal repositioning
+
+- 목적: `docs/21-codex-architecture-proposal.md`를 폐기할지 여부를 판단하고, 레거시 협력 및 공공망 전환 후보 문서로 재정리
+- 결정:
+  - 문서는 폐기하지 않고 Future Integration Track / Legacy Cooperation Proposal로 보관
+  - 현재 MVP 본선 설계를 대체하지 않으며, LMS 운영팀/DBA/SI 협력 조건이 확정된 뒤 검토할 후보안으로 위치 조정
+  - WAS readonly adapter를 1차 실연계 기본 후보로 두고, FDW는 운영팀과 DBA가 승인할 경우 선택할 수 있는 후보로 정리
+  - Drizzle ORM은 현재 MVP 본선에 섞지 않고, 신규 스키마나 향후 schema tooling 후보로 제한
+- 바이브코딩 유지보수 판단:
+  - 화면 개선, 지표 추가, repository contract 기반 읽기 화면, 문서/가이드, mock/local Docker 검증, LMS adapter mapping 보강은 바이브코딩으로 지속 관리 가능
+  - 운영 DB schema 직접 변경, Keycloak/gateway 정책 변경, 개인정보 범위 확대, production migration 자동 적용, 보안 심의 최종 답변은 운영 승인과 전문 검토가 필요한 범위로 분리
+- 설계 영향:
+  - 현재 본선 방향인 독립 MVP, private PostgreSQL, provider switch, repository contract, mock LMS view 기반 개발을 유지
+  - 향후 공공망 전환 시 Docker, private PostgreSQL, Keycloak trusted header/session, LMS readonly view adapter를 기준으로 마이그레이션
+
+### LMS readonly-db adapter preparation
+
+- 목적: 실제 LMS 접속 정보 수령 전에도 `LMS_PROVIDER=readonly-db` 전환 경로를 코드와 문서에 준비
+- 산출물:
+  - `LmsProviderName`에 `readonly-db` 추가
+  - `src/lib/lms/readonly-db-env.ts`에 LMS 전용 readonly DB env contract 추가
+  - `src/lib/lms/readonly-db-adapter.ts`에 contract view 기반 catalog/learning record 조회 adapter 추가
+  - view 이름은 `LMS_CONTENT_CATALOG_VIEW`, `LMS_LEARNING_RECORD_VIEW`로 override 가능하며 PostgreSQL identifier segment만 허용
+  - `docs/19-lms-readonly-view-contract.md`, `docs/16-container-deployment.md`에 readonly-db provider와 운영 정지선 보강
+- 설계 판단:
+  - PS Track private DB `DATABASE_URL`과 LMS readonly DB `LMS_DATABASE_URL`을 분리해 운영 경계를 명확히 둔다.
+  - 실제 운영 DB 접속 활성화는 LMS 운영팀이 제공한 readonly view가 contract column을 만족하는지 확인한 뒤 진행한다.
+  - 원본 LMS table 직접 조회는 여전히 금지한다.
