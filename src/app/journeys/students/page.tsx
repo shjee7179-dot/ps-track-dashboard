@@ -4,6 +4,8 @@ import { Card, Stat, StatusBadge } from "@/components/ui";
 import { getStudentJourneyLmsSummary } from "@/lib/lms/journey-overlay";
 import { repositories } from "@/lib/repositories";
 
+export const dynamic = "force-dynamic";
+
 export default async function StudentJourneysPage() {
   const users = await repositories.users.listUsers();
   const students = users.filter((user) => user.defaultRole === "student");

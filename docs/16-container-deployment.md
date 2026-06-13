@@ -101,13 +101,15 @@ Build note:
 - The first container target does not require Supabase, PostgreSQL, or Keycloak.
 - The local `postgres` compose service is optional and is not started unless `--profile postgres` is used.
 - Compose defines simulated `public_zone`, `was_zone`, `db_zone`, `auth_zone`, and `lms_private_zone` networks for local operations-readiness testing. The app container is attached to the reserved auth/LMS networks so the local peering skeleton is actually created even before Keycloak/LMS services are added.
-- Keycloak and LMS services are intentionally not added yet; their versions, DBMS, and table shape need external confirmation first.
+- Keycloak is intentionally not added yet; its local usefulness depends on realm/client simulation needs.
+- `lms-postgres` is a local-only mock LMS service for readonly-db smoke tests, not an operational LMS migration.
 - PostgreSQL is attached only to `db_zone` and is not published to the host. Apply SQL through container `psql` or from services attached to `db_zone`.
 - Public runtime config should be provided as environment variables.
 - Secrets must be injected by the deployment platform and never baked into the image.
 - NHN Cloud public deployment should place database access on a private network path.
 - `LMS_PROVIDER=readonly-db` uses a separate readonly LMS connection through `LMS_DATABASE_URL`. This connection must target LMS-provided readonly views only, not original LMS tables.
 - The default readonly view names are `lms_content_catalog_view` and `lms_learning_record_view`; override them with `LMS_CONTENT_CATALOG_VIEW` and `LMS_LEARNING_RECORD_VIEW` after the LMS operations team confirms the final names.
+- Local readonly-db smoke tests can use `docker compose --profile lms up -d lms-postgres`. The mock LMS database exposes the same contract view names and is attached only to `lms_private_zone`.
 
 ## Follow-Up
 

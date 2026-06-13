@@ -966,3 +966,28 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - PS Track private DB `DATABASE_URL`과 LMS readonly DB `LMS_DATABASE_URL`을 분리해 운영 경계를 명확히 둔다.
   - 실제 운영 DB 접속 활성화는 LMS 운영팀이 제공한 readonly view가 contract column을 만족하는지 확인한 뒤 진행한다.
   - 원본 LMS table 직접 조회는 여전히 금지한다.
+
+### Local LMS readonly-db Docker smoke
+
+- 목적: 실제 LMS 운영 DB 없이 로컬 Docker의 mock LMS PostgreSQL view로 `LMS_PROVIDER=readonly-db` adapter 경로를 검증
+- 산출물:
+  - `docker-compose.yml`에 `lms-postgres` service와 `lms` profile 추가
+  - `db/lms-mock/init/001_readonly_views.sql`에 local-only source table, `lms_content_catalog_view`, `lms_learning_record_view`, synthetic sample rows 추가
+  - `db/lms-mock/README.md`에 local LMS mock DB 사용법 추가
+  - local LMS DB owner(`lms_mock_owner`)와 readonly app 계정(`lms_readonly`)을 분리하고 readonly 계정에는 view `SELECT`만 부여
+  - app container에 `LMS_DATABASE_URL`, `LMS_POSTGRES_SSL`, `LMS_CONTENT_CATALOG_VIEW`, `LMS_LEARNING_RECORD_VIEW`, `LMS_READONLY_QUERY_LIMIT` env 전달
+  - LMS runtime provider를 읽는 `/student`, `/journeys/students`, `/admin/lms-content-mappings`를 dynamic render로 고정
+- 검증:
+  - `docker compose --profile postgres --profile lms config` 통과
+  - local `lms-postgres` healthy 확인
+  - `lms_content_catalog_view` catalog row 4건 확인
+  - `lms_learning_record_view` completed 2건, not_completed 2건 확인
+  - `lms_readonly` 계정으로 contract view `SELECT` 성공
+  - `lms_readonly` 계정으로 source table `INSERT` 시도 시 `permission denied` 확인
+  - `LMS_PROVIDER=readonly-db`, `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock` 앱 컨테이너 build/recreate 성공
+  - `/api/health`에서 `lmsProvider: readonly-db` 확인
+  - `/admin/lms-content-mappings?role=admin`에서 `readonly-db`, catalog 4개, synthetic LMS catalog title 렌더링 확인
+  - `/student?role=student`에서 LMS 완료 2개 렌더링 확인
+  - `/journeys/students?role=admin` smoke 중 정적 렌더링 이슈 발견 후 dynamic render로 보강, 최종 브라우저 확인에서 `LMS 완료 2`, `미반영 1` 렌더링 확인
+- 오진/교훈:
+  - adapter 연결만 확인하면 충분하지 않다. Runtime env provider를 읽는 page는 Next build 시 정적화될 수 있으므로 smoke test가 화면 단위로 확인해야 한다.
