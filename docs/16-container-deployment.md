@@ -15,7 +15,8 @@
 | `Dockerfile` | Next.js standalone production image build |
 | `.dockerignore` | build context 최소화 |
 | `docker-compose.yml` | local container smoke run |
-| `src/app/api/health/route.ts` | container health check endpoint |
+| `src/app/api/health/route.ts` | shallow container liveness endpoint |
+| `src/app/api/ready/route.ts` | provider/database readiness endpoint |
 
 ## Runtime Defaults
 
@@ -81,6 +82,12 @@ Health check:
 curl http://localhost:3000/api/health
 ```
 
+Readiness check:
+
+```bash
+curl http://localhost:3000/api/ready
+```
+
 ## Verification Status
 
 - `npm run build` creates `.next/standalone`.
@@ -90,6 +97,7 @@ curl http://localhost:3000/api/health
 - `db/private-postgres/schema/001_core_auth_scope.sql` and `db/private-postgres/seed/001_core_auth_scope_seed.sql` were applied successfully inside the PostgreSQL container.
 - `docker build -t ps-track-dashboard:local .` completed successfully.
 - Running the built image on host port 3002 responded on `/api/health`.
+- `/api/ready` returns provider-level readiness and uses HTTP 503 when a required provider check fails or is degraded.
 
 Build note:
 
