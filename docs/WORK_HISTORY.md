@@ -911,6 +911,27 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
 - 남은 범위:
   - 실제 공지 발송 채널 연동, 읽음 사용자별 로그, 공지 수정/비공개 처리 정책은 MVP 이후 확장 범위로 둔다.
 
+### Keycloak access log policy diagnostics
+
+- 목적: AlphaCampus/Keycloak gateway 실연동 전, 인증 진단 화면에서 session 기준과 access log 책임 경계를 운영팀과 공유할 수 있게 보강
+- 산출물:
+  - `src/lib/keycloak/access-policy.ts` 신규 추가
+  - Keycloak realm/client/session timeout/logout landing 기준을 diagnostics 데이터로 노출
+  - login/logout/session refresh/client context access log 정책 항목을 diagnostics 화면에 표시
+  - `docs/15-alphacampus-msa-boundary.md`에 access log owner와 production decision needed 표 추가
+  - `docs/16-container-deployment.md`, `docs/17-private-postgres-migration.md`에 Keycloak session/logout 관련 env 보강
+- 설계 판단:
+  - 로그인/로그아웃/refresh는 AlphaCampus/LMS gateway가 관측하는 이벤트이므로 PS Track이 단독 생성하지 않는다.
+  - PS Track은 현재 server action `requireSession()` 경로에서 `세션 확인 / 역할 선택` access log만 best-effort로 남긴다.
+  - 실제 IP, User-Agent, gateway request id는 reverse proxy/gateway에서 신뢰 가능한 header 정책이 확정된 뒤 저장한다.
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - `docker compose build ps-track-dashboard` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - `/admin/auth-diagnostics?role=admin`에서 `Keycloak 세션 기준`, `접속 로그 정책`, `앱 준비`, `Gateway 연계`, `정책 필요` 렌더링 확인
+- 남은 범위:
+  - 실제 gateway header 이름, request id header, IP/User-Agent 신뢰 경계, 보존/마스킹 정책 확정 후 access log field 확장
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

@@ -31,6 +31,9 @@
 | `KEYCLOAK_REALM` | `kird` | confirmed AlphaCampus production realm |
 | `KEYCLOAK_CLIENT_ID` | `kird-ps-track-dashboard` | tentative request value following `kird-[target-system-english-name]` |
 | `KEYCLOAK_LOGOUT_URL` | AlphaCampus logout endpoint | non-secret endpoint for logout handoff |
+| `KEYCLOAK_POST_LOGOUT_REDIRECT_PATH` | `/login` | local path used after Keycloak logout returns to PS Track |
+| `KEYCLOAK_SSO_IDLE_TIMEOUT` | `2시간` | diagnostic display value from AlphaCampus policy |
+| `KEYCLOAK_SSO_MAX_TIMEOUT` | `10시간` | diagnostic display value from AlphaCampus policy |
 | `DATABASE_URL` | empty in production image | future private PostgreSQL connection string |
 | `POSTGRES_SSL` | `false` | enable TLS for managed/private PostgreSQL when required |
 

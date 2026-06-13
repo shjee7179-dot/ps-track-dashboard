@@ -119,6 +119,10 @@ Operational mapping policy:
 | `AUTH_PROVIDER=keycloak` | AlphaCampus/Keycloak trusted-header session |
 | `REPOSITORY_PROVIDER=postgres` | future private PostgreSQL repository selector |
 | `KEYCLOAK_SUB_HEADER` | Keycloak subject header name |
+| `KEYCLOAK_USERNAME_HEADER` | diagnostic username/login id header name |
+| `KEYCLOAK_EMAIL_HEADER` | diagnostic email header name |
+| `KEYCLOAK_CLIENT_ID` | diagnostic client id display value; no secret |
+| `KEYCLOAK_POST_LOGOUT_REDIRECT_PATH` | local path used after Keycloak logout returns to PS Track |
 
 ## Query Helper Direction
 
