@@ -991,3 +991,15 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - `/journeys/students?role=admin` smoke 중 정적 렌더링 이슈 발견 후 dynamic render로 보강, 최종 브라우저 확인에서 `LMS 완료 2`, `미반영 1` 렌더링 확인
 - 오진/교훈:
   - adapter 연결만 확인하면 충분하지 않다. Runtime env provider를 읽는 page는 Next build 시 정적화될 수 있으므로 smoke test가 화면 단위로 확인해야 한다.
+
+### Readiness endpoint
+
+- 목적: container liveness와 별도로 운영 준비 상태를 provider 단위로 확인하는 `/api/ready` 추가
+- 산출물:
+  - `src/lib/readiness.ts`에 auth/repository/LMS readiness check helper 추가
+  - `src/app/api/ready/route.ts` 추가
+  - `REPOSITORY_PROVIDER=postgres`일 때 PS Track PostgreSQL `select 1` 확인
+  - `LMS_PROVIDER=mock-view|readonly-db`일 때 LMS catalog shallow 조회 확인
+  - readiness 실패 또는 degraded 상태는 HTTP 503으로 반환
+- 설계 판단:
+  - `/api/health`는 컨테이너 생존 확인으로 유지하고, `/api/ready`는 운영 트래픽을 받을 준비가 되었는지 확인하는 용도로 분리한다.
