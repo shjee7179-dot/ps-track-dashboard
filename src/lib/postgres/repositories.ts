@@ -43,6 +43,8 @@ import type {
   MentoringSession,
   Module,
   OutcomeEvidence,
+  ReminderCandidate,
+  RiskSignal,
   Role,
   RoleAssignment,
   Rubric,
@@ -190,6 +192,31 @@ type MentoringSessionRow = {
   next_actions: string[] | null;
 };
 
+type RiskSignalRow = {
+  id: string;
+  cohort_id: string;
+  target_type: string;
+  target_id: string;
+  risk_type: string;
+  severity: string;
+  related_object_type: string;
+  related_object_id: string;
+  action_status: string;
+  action_note: string;
+};
+
+type ReminderCandidateRow = {
+  id: string;
+  risk_signal_id: string;
+  target_type: string;
+  target_id: string;
+  reason: string;
+  channel: string;
+  send_status: string;
+  recommended_at: Date | string;
+  sent_at: Date | string | null;
+};
+
 type LearningOutcomeRow = {
   id: string;
   code: string;
@@ -325,6 +352,21 @@ const artifactTypes: Artifact["artifactType"][] = [
   "final_report",
 ];
 const artifactOwnerTypes: Artifact["ownerType"][] = ["student", "team"];
+const riskTargetTypes: RiskSignal["targetType"][] = ["student", "team"];
+const riskTypes: RiskSignal["riskType"][] = [
+  "learning_piece_delay",
+  "artifact_missing",
+  "mentoring_issue",
+];
+const riskSeverities: RiskSignal["severity"][] = ["low", "medium", "high"];
+const riskRelatedObjectTypes: RiskSignal["relatedObjectType"][] = [
+  "learning_piece",
+  "artifact",
+  "mentoring_session",
+];
+const riskActionStatuses: RiskSignal["actionStatus"][] = ["open", "in_progress", "resolved"];
+const reminderChannels: ReminderCandidate["channel"][] = ["email", "sms", "kakao", "manual"];
+const reminderSendStatuses: ReminderCandidate["sendStatus"][] = ["pending", "sent", "skipped"];
 const artifactStatuses: ArtifactStatus[] = [
   "not_started",
   "drafting",
@@ -397,6 +439,34 @@ function isArtifactType(value: string): value is Artifact["artifactType"] {
 
 function isArtifactOwnerType(value: string): value is Artifact["ownerType"] {
   return artifactOwnerTypes.includes(value as Artifact["ownerType"]);
+}
+
+function isRiskTargetType(value: string): value is RiskSignal["targetType"] {
+  return riskTargetTypes.includes(value as RiskSignal["targetType"]);
+}
+
+function isRiskType(value: string): value is RiskSignal["riskType"] {
+  return riskTypes.includes(value as RiskSignal["riskType"]);
+}
+
+function isRiskSeverity(value: string): value is RiskSignal["severity"] {
+  return riskSeverities.includes(value as RiskSignal["severity"]);
+}
+
+function isRiskRelatedObjectType(value: string): value is RiskSignal["relatedObjectType"] {
+  return riskRelatedObjectTypes.includes(value as RiskSignal["relatedObjectType"]);
+}
+
+function isRiskActionStatus(value: string): value is RiskSignal["actionStatus"] {
+  return riskActionStatuses.includes(value as RiskSignal["actionStatus"]);
+}
+
+function isReminderChannel(value: string): value is ReminderCandidate["channel"] {
+  return reminderChannels.includes(value as ReminderCandidate["channel"]);
+}
+
+function isReminderSendStatus(value: string): value is ReminderCandidate["sendStatus"] {
+  return reminderSendStatuses.includes(value as ReminderCandidate["sendStatus"]);
 }
 
 function isArtifactStatus(value: string): value is ArtifactStatus {
@@ -692,6 +762,53 @@ export function mapPostgresMentoringSession(row: MentoringSessionRow): Mentoring
     notes: row.notes,
     linkedArtifactId: row.linked_artifact_id ?? undefined,
     nextActions: row.next_actions ?? [],
+  };
+}
+
+export function mapPostgresRiskSignal(row: RiskSignalRow): RiskSignal | null {
+  if (
+    !isRiskTargetType(row.target_type) ||
+    !isRiskType(row.risk_type) ||
+    !isRiskSeverity(row.severity) ||
+    !isRiskRelatedObjectType(row.related_object_type) ||
+    !isRiskActionStatus(row.action_status)
+  ) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    cohortId: row.cohort_id,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    riskType: row.risk_type,
+    severity: row.severity,
+    relatedObjectType: row.related_object_type,
+    relatedObjectId: row.related_object_id,
+    actionStatus: row.action_status,
+    actionNote: row.action_note,
+  };
+}
+
+export function mapPostgresReminderCandidate(row: ReminderCandidateRow): ReminderCandidate | null {
+  if (
+    !isRiskTargetType(row.target_type) ||
+    !isReminderChannel(row.channel) ||
+    !isReminderSendStatus(row.send_status)
+  ) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    riskSignalId: row.risk_signal_id,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    reason: row.reason,
+    channel: row.channel,
+    sendStatus: row.send_status,
+    recommendedAt: toIsoString(row.recommended_at),
+    sentAt: row.sent_at ? toIsoString(row.sent_at) : undefined,
   };
 }
 
@@ -998,6 +1115,35 @@ const mentoringSessionSelect = `
     linked_artifact_id,
     next_actions
   from public.mentoring_sessions
+`;
+
+const riskSignalSelect = `
+  select
+    id,
+    cohort_id,
+    target_type,
+    target_id,
+    risk_type,
+    severity,
+    related_object_type,
+    related_object_id,
+    action_status,
+    action_note
+  from public.risk_signals
+`;
+
+const reminderCandidateSelect = `
+  select
+    id,
+    risk_signal_id,
+    target_type,
+    target_id,
+    reason,
+    channel,
+    send_status,
+    recommended_at,
+    sent_at
+  from public.reminder_candidates
 `;
 
 const learningOutcomeSelect = `
@@ -1603,6 +1749,173 @@ export const postgresOperationsRepository: OperationsRepository = {
         data: session,
         auditLogId: auditLog?.id,
       } satisfies MutationResult<MentoringSession>;
+    });
+  },
+  async listRiskSignals(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      values.push(query.cohortId);
+      filters.push(`cohort_id = $${values.length}`);
+    }
+    if (query?.studentId) {
+      values.push(query.studentId);
+      filters.push(`target_type = 'student' and target_id = $${values.length}`);
+    }
+    if (query?.teamId) {
+      values.push(query.teamId);
+      filters.push(`target_type = 'team' and target_id = $${values.length}`);
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<RiskSignalRow>(
+      `${riskSignalSelect}${whereClause} order by severity desc, id asc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresRiskSignal(row))
+      .filter((risk): risk is RiskSignal => Boolean(risk));
+  },
+  async listReminderCandidates(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      values.push(query.cohortId);
+      filters.push(`risk_signal_id in (select id from public.risk_signals where cohort_id = $${values.length})`);
+    }
+    if (query?.studentId) {
+      values.push(query.studentId);
+      filters.push(`target_type = 'student' and target_id = $${values.length}`);
+    }
+    if (query?.teamId) {
+      values.push(query.teamId);
+      filters.push(`target_type = 'team' and target_id = $${values.length}`);
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<ReminderCandidateRow>(
+      `${reminderCandidateSelect}${whereClause} order by recommended_at asc, id asc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresReminderCandidate(row))
+      .filter((reminder): reminder is ReminderCandidate => Boolean(reminder));
+  },
+  async updateRiskSignalStatus(input) {
+    return transactionPostgres(async (query) => {
+      const result = await query<RiskSignalRow>(
+        `
+          update public.risk_signals
+          set action_status = $2
+          where id = $1
+          returning
+            id,
+            cohort_id,
+            target_type,
+            target_id,
+            risk_type,
+            severity,
+            related_object_type,
+            related_object_id,
+            action_status,
+            action_note
+        `,
+        [input.riskSignalId, input.status],
+      );
+      const risk = result.rows[0] ? mapPostgresRiskSignal(result.rows[0]) : null;
+      if (!risk) {
+        throw new Error("Failed to update risk signal status");
+      }
+
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "위험 신호 조치 상태 변경",
+              targetType: "risk_signal",
+              targetId: risk.id,
+              targetLabel: `${risk.targetType}:${risk.targetId}`,
+              severity: risk.severity === "high" ? "warning" : "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                status: risk.actionStatus,
+                riskType: risk.riskType,
+                targetType: risk.targetType,
+                targetId: risk.targetId,
+                relatedObjectType: risk.relatedObjectType,
+                relatedObjectId: risk.relatedObjectId,
+              }),
+            },
+            query,
+          )
+        : undefined;
+
+      return {
+        data: risk,
+        auditLogId: auditLog?.id,
+      } satisfies MutationResult<RiskSignal>;
+    });
+  },
+  async updateReminderSendStatus(input) {
+    return transactionPostgres(async (query) => {
+      const result = await query<ReminderCandidateRow>(
+        `
+          update public.reminder_candidates
+          set send_status = $2,
+              sent_at = case
+                when $2 = 'sent' then coalesce(sent_at, now())
+                when $2 = 'pending' then null
+                else sent_at
+              end
+          where id = $1
+          returning
+            id,
+            risk_signal_id,
+            target_type,
+            target_id,
+            reason,
+            channel,
+            send_status,
+            recommended_at,
+            sent_at
+        `,
+        [input.reminderId, input.status],
+      );
+      const reminder = result.rows[0] ? mapPostgresReminderCandidate(result.rows[0]) : null;
+      if (!reminder) {
+        throw new Error("Failed to update reminder send status");
+      }
+
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "리마인드 발송 상태 변경",
+              targetType: "reminder_candidate",
+              targetId: reminder.id,
+              targetLabel: `${reminder.targetType}:${reminder.targetId}`,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                status: reminder.sendStatus,
+                riskSignalId: reminder.riskSignalId,
+                targetType: reminder.targetType,
+                targetId: reminder.targetId,
+                channel: reminder.channel,
+              }),
+            },
+            query,
+          )
+        : undefined;
+
+      return {
+        data: reminder,
+        auditLogId: auditLog?.id,
+      } satisfies MutationResult<ReminderCandidate>;
     });
   },
 };

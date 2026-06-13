@@ -388,10 +388,10 @@ export const mockRepositories: AppRepositories = {
       });
       return applyLimit(rows, query);
     },
-    async updateRiskSignalStatus(riskSignalId, status) {
-      const existing = riskSignals.find((risk) => risk.id === riskSignalId);
+    async updateRiskSignalStatus(input) {
+      const existing = riskSignals.find((risk) => risk.id === input.riskSignalId);
       const updated: RiskSignal = {
-        id: riskSignalId,
+        id: input.riskSignalId,
         cohortId: existing?.cohortId ?? cohort2026.id,
         targetType: existing?.targetType ?? "student",
         targetId: existing?.targetId ?? "student-001",
@@ -399,23 +399,23 @@ export const mockRepositories: AppRepositories = {
         severity: existing?.severity ?? "medium",
         relatedObjectType: existing?.relatedObjectType ?? "learning_piece",
         relatedObjectId: existing?.relatedObjectId ?? "lp-001",
-        actionStatus: status,
+        actionStatus: input.status,
         actionNote: existing?.actionNote ?? "mock repository status update",
       };
       return withAudit(updated);
     },
-    async updateReminderSendStatus(reminderId, status) {
-      const existing = reminderCandidates.find((reminder) => reminder.id === reminderId);
+    async updateReminderSendStatus(input) {
+      const existing = reminderCandidates.find((reminder) => reminder.id === input.reminderId);
       const updated: ReminderCandidate = {
-        id: reminderId,
+        id: input.reminderId,
         riskSignalId: existing?.riskSignalId ?? "risk-001",
         targetType: existing?.targetType ?? "student",
         targetId: existing?.targetId ?? "student-001",
         reason: existing?.reason ?? "mock repository reminder update",
         channel: existing?.channel ?? "manual",
-        sendStatus: status,
+        sendStatus: input.status,
         recommendedAt: existing?.recommendedAt ?? today(),
-        sentAt: status === "sent" ? today() : existing?.sentAt,
+        sentAt: input.status === "sent" ? today() : existing?.sentAt,
       };
       return withAudit(updated);
     },

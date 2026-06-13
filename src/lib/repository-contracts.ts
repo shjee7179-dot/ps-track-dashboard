@@ -176,14 +176,16 @@ export type OperationsRepository = {
   }): RepositoryResult<MutationResult<MentoringSession>>;
   listRiskSignals(query?: ListQuery): RepositoryResult<RiskSignal[]>;
   listReminderCandidates(query?: ListQuery): RepositoryResult<ReminderCandidate[]>;
-  updateRiskSignalStatus(
-    riskSignalId: string,
-    status: RiskSignal["actionStatus"],
-  ): RepositoryResult<MutationResult<RiskSignal>>;
-  updateReminderSendStatus(
-    reminderId: string,
-    status: ReminderCandidate["sendStatus"],
-  ): RepositoryResult<MutationResult<ReminderCandidate>>;
+  updateRiskSignalStatus(input: {
+    riskSignalId: string;
+    status: RiskSignal["actionStatus"];
+    audit?: AuditWriteContext;
+  }): RepositoryResult<MutationResult<RiskSignal>>;
+  updateReminderSendStatus(input: {
+    reminderId: string;
+    status: ReminderCandidate["sendStatus"];
+    audit?: AuditWriteContext;
+  }): RepositoryResult<MutationResult<ReminderCandidate>>;
 };
 
 export type SurveyRepository = {

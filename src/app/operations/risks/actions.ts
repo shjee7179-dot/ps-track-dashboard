@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
 import type { ReminderCandidate, RiskSignal } from "@/lib/types";
 
@@ -32,7 +32,7 @@ export async function updateRiskStatusAction(formData: FormData) {
     redirect(buildRedirectPath("invalid"));
   }
 
-  const risks = await mockRepositories.operations.listRiskSignals();
+  const risks = await repositories.operations.listRiskSignals();
   const risk = risks.find((item) => item.id === riskSignalId);
   if (!risk) {
     redirect(buildRedirectPath("missing"));
@@ -51,9 +51,20 @@ export async function updateRiskStatusAction(formData: FormData) {
     redirect(buildRedirectPath("denied"));
   }
 
-  const result = await mockRepositories.operations.updateRiskSignalStatus(risk.id, nextStatus);
+  const result = await repositories.operations.updateRiskSignalStatus({
+    riskSignalId: risk.id,
+    status: nextStatus,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
+  });
   revalidatePath("/operations/risks");
-  redirect(buildRedirectPath("risk-saved", result.auditLogId ?? "mock"));
+  redirect(buildRedirectPath("risk-saved", result.auditLogId));
 }
 
 export async function updateReminderStatusAction(formData: FormData) {
@@ -65,7 +76,7 @@ export async function updateReminderStatusAction(formData: FormData) {
     redirect(buildRedirectPath("invalid"));
   }
 
-  const reminders = await mockRepositories.operations.listReminderCandidates();
+  const reminders = await repositories.operations.listReminderCandidates();
   const reminder = reminders.find((item) => item.id === reminderId);
   if (!reminder) {
     redirect(buildRedirectPath("missing"));
@@ -84,10 +95,18 @@ export async function updateReminderStatusAction(formData: FormData) {
     redirect(buildRedirectPath("denied"));
   }
 
-  const result = await mockRepositories.operations.updateReminderSendStatus(
-    reminder.id,
-    nextStatus,
-  );
+  const result = await repositories.operations.updateReminderSendStatus({
+    reminderId: reminder.id,
+    status: nextStatus,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
+  });
   revalidatePath("/operations/risks");
-  redirect(buildRedirectPath("reminder-saved", result.auditLogId ?? "mock"));
+  redirect(buildRedirectPath("reminder-saved", result.auditLogId));
 }

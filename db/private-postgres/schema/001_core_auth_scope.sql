@@ -283,6 +283,51 @@ create table if not exists public.mentoring_sessions (
     check (status in ('scheduled', 'completed', 'absent', 'cancelled'))
 );
 
+create table if not exists public.risk_signals (
+  id text primary key,
+  cohort_id uuid not null references public.cohorts(id) on delete cascade,
+  target_type text not null,
+  target_id text not null,
+  risk_type text not null,
+  severity text not null,
+  related_object_type text not null,
+  related_object_id text not null,
+  action_status text not null default 'open',
+  action_note text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint risk_signals_target_type_check
+    check (target_type in ('student', 'team')),
+  constraint risk_signals_risk_type_check
+    check (risk_type in ('learning_piece_delay', 'artifact_missing', 'mentoring_issue')),
+  constraint risk_signals_severity_check
+    check (severity in ('low', 'medium', 'high')),
+  constraint risk_signals_related_object_type_check
+    check (related_object_type in ('learning_piece', 'artifact', 'mentoring_session')),
+  constraint risk_signals_action_status_check
+    check (action_status in ('open', 'in_progress', 'resolved'))
+);
+
+create table if not exists public.reminder_candidates (
+  id text primary key,
+  risk_signal_id text not null references public.risk_signals(id) on delete cascade,
+  target_type text not null,
+  target_id text not null,
+  reason text not null,
+  channel text not null,
+  send_status text not null default 'pending',
+  recommended_at timestamptz not null,
+  sent_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint reminder_candidates_target_type_check
+    check (target_type in ('student', 'team')),
+  constraint reminder_candidates_channel_check
+    check (channel in ('email', 'sms', 'kakao', 'manual')),
+  constraint reminder_candidates_send_status_check
+    check (send_status in ('pending', 'sent', 'skipped'))
+);
+
 create table if not exists public.learning_outcomes (
   id text primary key,
   code text not null unique,
@@ -525,6 +570,24 @@ create index if not exists mentoring_sessions_target_idx
 create index if not exists mentoring_sessions_status_idx
   on public.mentoring_sessions (status);
 
+create index if not exists risk_signals_cohort_idx
+  on public.risk_signals (cohort_id);
+
+create index if not exists risk_signals_target_idx
+  on public.risk_signals (target_type, target_id);
+
+create index if not exists risk_signals_status_idx
+  on public.risk_signals (action_status, severity);
+
+create index if not exists reminder_candidates_risk_signal_idx
+  on public.reminder_candidates (risk_signal_id);
+
+create index if not exists reminder_candidates_target_idx
+  on public.reminder_candidates (target_type, target_id);
+
+create index if not exists reminder_candidates_status_idx
+  on public.reminder_candidates (send_status, recommended_at);
+
 create index if not exists learning_outcomes_category_idx
   on public.learning_outcomes (category);
 
@@ -646,6 +709,16 @@ create trigger set_mentoring_sessions_updated_at
 before update on public.mentoring_sessions
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_risk_signals_updated_at on public.risk_signals;
+create trigger set_risk_signals_updated_at
+before update on public.risk_signals
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_reminder_candidates_updated_at on public.reminder_candidates;
+create trigger set_reminder_candidates_updated_at
+before update on public.reminder_candidates
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_learning_outcomes_updated_at on public.learning_outcomes;
 create trigger set_learning_outcomes_updated_at
 before update on public.learning_outcomes
@@ -716,6 +789,12 @@ comment on table public.feedback is
 
 comment on table public.mentoring_sessions is
   'Mentoring schedule and record rows owned by PS Track for MVP operations.';
+
+comment on table public.risk_signals is
+  'Operational risk signals used by operators to detect learning delays, missing artifacts, and mentoring issues.';
+
+comment on table public.reminder_candidates is
+  'Recommended reminder targets linked to risk signals. Actual external sending is handled outside the MVP.';
 
 comment on table public.learning_outcomes is
   'Learning outcome definitions connected to rubric items and evidence.';

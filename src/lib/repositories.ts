@@ -157,11 +157,11 @@ export const repositories: AppRepositories = {
     listReminderCandidates(query) {
       return getRepositories().operations.listReminderCandidates(query);
     },
-    updateRiskSignalStatus(riskSignalId, status) {
-      return getRepositories().operations.updateRiskSignalStatus(riskSignalId, status);
+    updateRiskSignalStatus(input) {
+      return getRepositories().operations.updateRiskSignalStatus(input);
     },
-    updateReminderSendStatus(reminderId, status) {
-      return getRepositories().operations.updateReminderSendStatus(reminderId, status);
+    updateReminderSendStatus(input) {
+      return getRepositories().operations.updateReminderSendStatus(input);
     },
   },
   surveys: {
