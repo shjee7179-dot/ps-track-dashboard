@@ -1,4 +1,4 @@
-export type LmsProviderName = "none" | "mock-view";
+export type LmsProviderName = "none" | "mock-view" | "readonly-db";
 
 export type LmsContentGroup = "regular" | "subscription" | "community";
 

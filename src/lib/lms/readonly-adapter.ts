@@ -6,6 +6,7 @@ import type {
   LmsProviderName,
   LmsReadonlyViewAdapter,
 } from "@/lib/lms/contracts";
+import { readonlyDbLmsReadonlyViewAdapter } from "@/lib/lms/readonly-db-adapter";
 import { syntheticLmsIds } from "@/lib/lms/source-table-contract";
 
 export function getLmsProviderName(value = process.env.LMS_PROVIDER): LmsProviderName {
@@ -14,6 +15,9 @@ export function getLmsProviderName(value = process.env.LMS_PROVIDER): LmsProvide
   }
   if (value === "mock-view") {
     return "mock-view";
+  }
+  if (value === "readonly-db") {
+    return "readonly-db";
   }
 
   throw new Error(`Unsupported LMS_PROVIDER value: ${value}`);
@@ -186,6 +190,9 @@ export function getLmsReadonlyViewAdapter(): LmsReadonlyViewAdapter {
   const providerName = getLmsProviderName();
   if (providerName === "mock-view") {
     return mockLmsReadonlyViewAdapter;
+  }
+  if (providerName === "readonly-db") {
+    return readonlyDbLmsReadonlyViewAdapter;
   }
   return noneLmsReadonlyViewAdapter;
 }
