@@ -1721,89 +1721,146 @@ export const postgresLmsContentMappingRepository: LmsContentMappingRepository = 
     return result.rows[0] ? mapPostgresLmsContentMapping(result.rows[0]) ?? undefined : undefined;
   },
   async createMapping(input) {
-    const result = await queryPostgres<LmsContentMappingRow>(
-      `
-        insert into public.lms_content_mappings (
-          cohort_id,
-          module_id,
-          content_id,
-          learning_piece_id,
-          lms_content_id,
-          lms_course_round_id,
-          content_group,
-          content_type,
-          required,
-          activation_rule,
-          status,
-          created_by
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        returning
-          id,
-          cohort_id,
-          module_id,
-          content_id,
-          learning_piece_id,
-          lms_content_id,
-          lms_course_round_id,
-          content_group,
-          content_type,
-          required,
-          activation_rule,
-          status,
-          created_by,
-          created_at,
-          updated_at
-      `,
-      [
-        input.cohortId,
-        input.moduleId,
-        input.contentId,
-        input.learningPieceId,
-        input.lmsContentId,
-        input.lmsCourseRoundId ?? null,
-        input.contentGroup,
-        input.contentType,
-        input.required,
-        input.activationRule,
-        input.status,
-        isUuid(input.createdBy) ? input.createdBy : null,
-      ],
-    );
-    const mapping = result.rows[0] ? mapPostgresLmsContentMapping(result.rows[0]) : null;
-    if (!mapping) {
-      throw new Error("Failed to create LMS content mapping");
-    }
+    return transactionPostgres(async (query) => {
+      const result = await query<LmsContentMappingRow>(
+        `
+          insert into public.lms_content_mappings (
+            cohort_id,
+            module_id,
+            content_id,
+            learning_piece_id,
+            lms_content_id,
+            lms_course_round_id,
+            content_group,
+            content_type,
+            required,
+            activation_rule,
+            status,
+            created_by
+          )
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          returning
+            id,
+            cohort_id,
+            module_id,
+            content_id,
+            learning_piece_id,
+            lms_content_id,
+            lms_course_round_id,
+            content_group,
+            content_type,
+            required,
+            activation_rule,
+            status,
+            created_by,
+            created_at,
+            updated_at
+        `,
+        [
+          input.cohortId,
+          input.moduleId,
+          input.contentId,
+          input.learningPieceId,
+          input.lmsContentId,
+          input.lmsCourseRoundId ?? null,
+          input.contentGroup,
+          input.contentType,
+          input.required,
+          input.activationRule,
+          input.status,
+          isUuid(input.createdBy) ? input.createdBy : null,
+        ],
+      );
+      const mapping = result.rows[0] ? mapPostgresLmsContentMapping(result.rows[0]) : null;
+      if (!mapping) {
+        throw new Error("Failed to create LMS content mapping");
+      }
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "LMS 콘텐츠 매핑 생성",
+              targetType: "lms_content_mapping",
+              targetId: mapping.id,
+              targetLabel: `${mapping.learningPieceId} -> ${mapping.lmsContentId}`,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                cohortId: mapping.cohortId,
+                learningPieceId: mapping.learningPieceId,
+                lmsContentId: mapping.lmsContentId,
+                lmsCourseRoundId: mapping.lmsCourseRoundId,
+                status: mapping.status,
+              }),
+            },
+            query,
+          )
+        : undefined;
 
-    return mapping;
+      return {
+        data: mapping,
+        auditLogId: auditLog?.id,
+      };
+    });
   },
   async updateMappingStatus(input) {
-    const result = await queryPostgres<LmsContentMappingRow>(
-      `
-        update public.lms_content_mappings
-        set status = $2
-        where id = $1
-        returning
-          id,
-          cohort_id,
-          module_id,
-          content_id,
-          learning_piece_id,
-          lms_content_id,
-          lms_course_round_id,
-          content_group,
-          content_type,
-          required,
-          activation_rule,
-          status,
-          created_by,
-          created_at,
-          updated_at
-      `,
-      [input.mappingId, input.status],
-    );
+    return transactionPostgres(async (query) => {
+      const result = await query<LmsContentMappingRow>(
+        `
+          update public.lms_content_mappings
+          set status = $2
+          where id = $1
+          returning
+            id,
+            cohort_id,
+            module_id,
+            content_id,
+            learning_piece_id,
+            lms_content_id,
+            lms_course_round_id,
+            content_group,
+            content_type,
+            required,
+            activation_rule,
+            status,
+            created_by,
+            created_at,
+            updated_at
+        `,
+        [input.mappingId, input.status],
+      );
 
-    return result.rows[0] ? mapPostgresLmsContentMapping(result.rows[0]) ?? undefined : undefined;
+      const mapping = result.rows[0]
+        ? mapPostgresLmsContentMapping(result.rows[0]) ?? undefined
+        : undefined;
+      if (!mapping) {
+        return undefined;
+      }
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "LMS 콘텐츠 매핑 상태 변경",
+              targetType: "lms_content_mapping",
+              targetId: mapping.id,
+              targetLabel: `${mapping.learningPieceId} -> ${mapping.status}`,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                cohortId: mapping.cohortId,
+                learningPieceId: mapping.learningPieceId,
+                lmsContentId: mapping.lmsContentId,
+                lmsCourseRoundId: mapping.lmsCourseRoundId,
+                status: mapping.status,
+              }),
+            },
+            query,
+          )
+        : undefined;
+
+      return {
+        data: mapping,
+        auditLogId: auditLog?.id,
+      };
+    });
   },
 };
 

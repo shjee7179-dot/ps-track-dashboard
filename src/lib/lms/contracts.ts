@@ -85,6 +85,17 @@ export type LmsContentMapping = LmsContentMappingDraft & {
   updatedAt: string;
 };
 
+export type LmsAuditContext = {
+  actorId: string;
+  actorLabel: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type LmsMutationResult<T> = {
+  data: T;
+  auditLogId?: string;
+};
+
 export type LmsContentMappingQuery = {
   cohortId?: string;
   learningPieceId?: string;
@@ -102,11 +113,13 @@ export type LmsContentMappingRepository = {
   }): Promise<LmsContentMapping | undefined>;
   createMapping(input: LmsContentMappingDraft & {
     createdBy?: string;
-  }): Promise<LmsContentMapping>;
+    audit?: LmsAuditContext;
+  }): Promise<LmsMutationResult<LmsContentMapping>>;
   updateMappingStatus(input: {
     mappingId: string;
     status: LmsContentMappingStatus;
-  }): Promise<LmsContentMapping | undefined>;
+    audit?: LmsAuditContext;
+  }): Promise<LmsMutationResult<LmsContentMapping> | undefined>;
 };
 
 export type LmsReadonlyViewAdapter = {

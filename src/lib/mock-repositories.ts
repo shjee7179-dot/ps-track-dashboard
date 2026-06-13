@@ -514,7 +514,7 @@ export const mockRepositories: AppRepositories = {
           updatedAt: now,
         };
         lmsContentMappings.push(mapping);
-        return mapping;
+        return withAudit(mapping);
       },
       async updateMappingStatus(input) {
         const mapping = lmsContentMappings.find((item) => item.id === input.mappingId);
@@ -527,7 +527,7 @@ export const mockRepositories: AppRepositories = {
         };
         const index = lmsContentMappings.findIndex((item) => item.id === input.mappingId);
         lmsContentMappings[index] = updated;
-        return updated;
+        return withAudit(updated);
       },
     },
   },

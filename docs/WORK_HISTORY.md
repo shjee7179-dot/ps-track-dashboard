@@ -777,6 +777,30 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - LMS mapping action은 현재 `LmsContentMappingRepository`가 `MutationResult` 계약을 쓰지 않으므로 별도 계약 정리 후 audit write를 붙인다.
   - mentoring, notice, risk/reminder는 아직 mock-backed mutation이므로 Postgres 전환 또는 별도 audit action helper가 필요하다.
 
+### LMS mapping audit write
+
+- 목적: LMS 콘텐츠 매핑 생성/상태 변경 server action도 실제 Postgres `audit_logs`에 기록되도록 연결
+- 산출물:
+  - `LmsContentMappingRepository` create/update 계약을 mutation result 형태로 확장하고 optional audit context를 추가
+  - mock LMS mapping repository는 기존 동작을 유지하면서 audit-compatible result를 반환하도록 보강
+  - LMS 매핑 생성/상태 변경 server action이 session user, role, source metadata를 repository에 전달
+  - Postgres LMS mapping 생성/상태 변경을 domain write와 audit insert가 같은 transaction에서 처리되도록 보강
+  - LMS 매핑 성공 메시지에 mapping id와 audit log id를 함께 표시
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - `docker compose build ps-track-dashboard` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - LMS 매핑 상태 변경 action 호출 후 redirect audit 값이 실제 UUID `f4a515a7-9e6d-4761-8bf5-19fe8ea2c260`로 반환됨
+  - DB `audit_logs`에서 `시스템 총괄 / LMS 콘텐츠 매핑 상태 변경 / lms_content_mapping` row 확인
+  - `/admin/lms-content-mappings` 성공 메시지에서 `audit: f4a515a7-9e6d-4761-8bf5-19fe8ea2c260` 렌더링 확인
+  - `/admin/audit-logs?role=admin`에서 `감사 이벤트 6건`, `LMS 콘텐츠 매핑 상태 변경` 렌더링 확인
+- 오진/교훈:
+  - Docker 컨테이너 재기동 후 기존 HTML에서 가져온 Server Action ID로 POST하면 `Failed to find Server Action` 500이 발생한다.
+  - 원인은 코드/DB 문제가 아니라 배포 단위가 바뀌며 action id가 변경된 것이므로, 컨테이너 재기동 후에는 반드시 새 페이지에서 action id를 다시 수집해야 한다.
+- 남은 범위:
+  - mentoring, notice, risk/reminder 등 아직 mock-backed mutation의 Postgres ownership 또는 별도 audit write 정책 정리
+  - login/logout/role switch/session refresh access log write 정책 확정
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
