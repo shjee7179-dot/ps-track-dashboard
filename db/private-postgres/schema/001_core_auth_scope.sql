@@ -328,6 +328,24 @@ create table if not exists public.reminder_candidates (
     check (send_status in ('pending', 'sent', 'skipped'))
 );
 
+create table if not exists public.notices (
+  id text primary key default gen_random_uuid()::text,
+  cohort_id uuid not null references public.cohorts(id) on delete cascade,
+  title text not null,
+  body text not null,
+  target_scope_type text not null,
+  target_scope_id text not null,
+  published_at timestamptz not null default now(),
+  created_by text not null,
+  read_count int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint notices_target_scope_type_check
+    check (target_scope_type in ('program', 'cohort', 'track', 'team', 'student')),
+  constraint notices_read_count_check
+    check (read_count >= 0)
+);
+
 create table if not exists public.learning_outcomes (
   id text primary key,
   code text not null unique,
@@ -588,6 +606,12 @@ create index if not exists reminder_candidates_target_idx
 create index if not exists reminder_candidates_status_idx
   on public.reminder_candidates (send_status, recommended_at);
 
+create index if not exists notices_cohort_published_idx
+  on public.notices (cohort_id, published_at desc);
+
+create index if not exists notices_target_scope_idx
+  on public.notices (target_scope_type, target_scope_id);
+
 create index if not exists learning_outcomes_category_idx
   on public.learning_outcomes (category);
 
@@ -719,6 +743,11 @@ create trigger set_reminder_candidates_updated_at
 before update on public.reminder_candidates
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_notices_updated_at on public.notices;
+create trigger set_notices_updated_at
+before update on public.notices
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_learning_outcomes_updated_at on public.learning_outcomes;
 create trigger set_learning_outcomes_updated_at
 before update on public.learning_outcomes
@@ -795,6 +824,9 @@ comment on table public.risk_signals is
 
 comment on table public.reminder_candidates is
   'Recommended reminder targets linked to risk signals. Actual external sending is handled outside the MVP.';
+
+comment on table public.notices is
+  'Operator-created notices separated from learning content so communication does not pollute journey object data.';
 
 comment on table public.learning_outcomes is
   'Learning outcome definitions connected to rubric items and evidence.';

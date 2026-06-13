@@ -2,10 +2,10 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { getUserById } from "@/lib/domain";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 
 const updateMessages: Record<string, string> = {
-  created: "공지 생성 요청이 mock repository를 통해 접수되었습니다.",
+  created: "공지 생성 요청이 저장되었습니다.",
 };
 
 export default async function NoticesPage({
@@ -14,7 +14,7 @@ export default async function NoticesPage({
   searchParams: Promise<{ update?: string; audit?: string }>;
 }) {
   const query = await searchParams;
-  const notices = await mockRepositories.admin.listNotices();
+  const notices = await repositories.admin.listNotices();
   const updateMessage = query.update ? updateMessages[query.update] : undefined;
 
   return (
@@ -47,7 +47,7 @@ export default async function NoticesPage({
                 <StatusBadge>{notice.targetScopeType}</StatusBadge>
               </div>
               <p className="mt-3 text-xs text-stone-500">
-                {getUserById(notice.createdBy)?.name} / {notice.publishedAt} / 읽음 {notice.readCount}
+                {getUserById(notice.createdBy)?.name ?? notice.createdBy} / {notice.publishedAt} / 읽음 {notice.readCount}
               </p>
             </div>
           ))}

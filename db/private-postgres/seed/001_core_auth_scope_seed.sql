@@ -756,6 +756,76 @@ on conflict (id) do update
       sent_at = excluded.sent_at,
       updated_at = now();
 
+insert into public.notices (
+  id,
+  cohort_id,
+  title,
+  body,
+  target_scope_type,
+  target_scope_id,
+  published_at,
+  created_by,
+  read_count
+)
+select
+  seed_rows.id,
+  cohort_ref.id,
+  seed_rows.title,
+  seed_rows.body,
+  seed_rows.target_scope_type,
+  case
+    when seed_rows.target_scope_type = 'cohort' then cohort_ref.id::text
+    else seed_rows.target_scope_id
+  end,
+  seed_rows.published_at,
+  seed_rows.created_by,
+  seed_rows.read_count
+from (
+  values
+    (
+      'notice-001',
+      '7월 학습피스 진행 안내',
+      '오리엔테이션 이후 연구 관심사 자기소개와 연구 질문 강의를 순서대로 진행해 주세요.',
+      'cohort',
+      'cohort-2026',
+      timestamptz '2026-07-01 10:00:00+09',
+      'operator-001',
+      43
+    ),
+    (
+      'notice-002',
+      '멘토링 외부 회의 링크 확인',
+      '멘토링 전 외부 회의 링크와 접속 환경을 미리 확인해 주세요.',
+      'team',
+      'team-001',
+      timestamptz '2026-07-17 11:00:00+09',
+      'operator-001',
+      4
+    )
+) as seed_rows (
+  id,
+  title,
+  body,
+  target_scope_type,
+  target_scope_id,
+  published_at,
+  created_by,
+  read_count
+)
+cross join lateral (
+  select id from public.cohorts where code = 'cohort-2026-1' limit 1
+) as cohort_ref
+on conflict (id) do update
+  set cohort_id = excluded.cohort_id,
+      title = excluded.title,
+      body = excluded.body,
+      target_scope_type = excluded.target_scope_type,
+      target_scope_id = excluded.target_scope_id,
+      published_at = excluded.published_at,
+      created_by = excluded.created_by,
+      read_count = excluded.read_count,
+      updated_at = now();
+
 insert into public.feedback (
   id,
   artifact_id,

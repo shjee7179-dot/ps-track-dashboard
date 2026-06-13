@@ -129,7 +129,7 @@ Operational mapping policy:
 - 나중에 Spring Boot/MyBatis로 옮기더라도 repository SQL을 비교적 쉽게 재사용하거나 변환할 수 있다.
 - 복잡한 query builder는 domain table migration이 충분히 쌓인 뒤 필요성을 다시 판단한다.
 
-현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses`, `modules`, `contents`, `learning_pieces`, `artifacts`, `submissions`, `feedback`, `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence`, `mentoring_sessions`, `risk_signals`, `reminder_candidates`, `audit_logs`, `access_logs` repository다.
+현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses`, `modules`, `contents`, `learning_pieces`, `artifacts`, `submissions`, `feedback`, `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence`, `mentoring_sessions`, `risk_signals`, `reminder_candidates`, `notices`, `audit_logs`, `access_logs` repository다.
 
 `learning_piece_statuses`는 Postgres가 소유하고, `modules`, `contents`, `learning_pieces` 정의도 Postgres read path로 전환했다. 아직 cohort/template cloning ownership은 별도 table로 분리하지 않았고, 첫 전환에서는 기존 mock id(`module-001`, `content-003`, `lp-003`)를 유지하는 text primary key를 사용한다.
 
@@ -170,7 +170,7 @@ Audit/access log table expansion on 2026-06-12:
 - write path currently keeps audit insert in the same transaction as the domain mutation for those Postgres-backed methods.
 - access log write helper now records successful `sessionProvider.requireSession()` resolutions for server-action paths as `세션 확인` or `역할 선택` events.
 - access log writes are best-effort in MVP so domain actions are not blocked by access log storage outages.
-- remaining audit write expansion: notices.
+- remaining audit write expansion: none for the current MVP write actions.
 - remaining access log expansion: real Keycloak gateway login/logout/session refresh policy, trusted client IP handling, and retention/masking policy.
 - diagnostic correction: after a Docker container rebuild/recreate, Next Server Action IDs must be collected from the freshly rendered page before POST smoke tests. Reusing an older action ID produces `Failed to find Server Action` 500 even when the implementation is healthy.
 - diagnostic note: curl-based Server Action smoke tests may emit a Next warning about a missing `origin` header. The warning is expected for non-browser smoke requests when the action succeeds.
@@ -197,8 +197,18 @@ Risk/reminder table expansion on 2026-06-13:
 - risk action status updates and reminder send status updates write domain changes and `audit_logs` rows in a single Postgres transaction.
 - transition note: reminder sending remains an external/manual operation in MVP; PS Track currently owns the operational status record, not the delivery integration.
 
+Notice table expansion on 2026-06-13:
+
+- added `notices` table to private PostgreSQL schema with cohort, title, body, target scope, published time, creator, and read count fields.
+- seeded MVP notice rows for cohort guidance and team mentoring link guidance.
+- app runtime grant SQL now allows notice reads and inserts.
+- `postgresAdminRepository` now reads notice lists and creates notices through Postgres.
+- `/notices` and `/notices/new` use repository reads/writes under `REPOSITORY_PROVIDER=postgres`.
+- notice creation writes the notice row and `audit_logs` row in a single Postgres transaction.
+- transition note: notices remain separate from learning content objects by IA decision, so communication records do not pollute journey object data.
+
 ## Next Implementation Step
 
-1. notice 생성/조회 action의 Postgres ownership 또는 audit write contract 정리
-2. Keycloak gateway 실연동 후 login, logout, session refresh access log policy 확정
-3. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
+1. Keycloak gateway 실연동 후 login, logout, session refresh access log policy 확정
+2. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가
+3. 공지 읽음 사용자별 로그, 수정/비공개 정책, 실제 발송 채널 연동은 MVP 이후 판단

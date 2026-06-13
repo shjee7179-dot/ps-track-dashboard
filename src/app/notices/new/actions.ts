@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
 import type { ScopeType } from "@/lib/types";
 
@@ -48,17 +48,25 @@ export async function createNoticeAction(formData: FormData) {
     redirect(buildRedirectPath("denied"));
   }
 
-  const cohort = await mockRepositories.cohorts.getActiveCohort();
-  const result = await mockRepositories.admin.createNotice({
+  const cohort = await repositories.cohorts.getActiveCohort();
+  const result = await repositories.admin.createNotice({
     cohortId: cohort?.id ?? "cohort-2026",
     title,
     body,
     targetScopeType,
     targetScopeId,
     createdBy: session.user.id,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
   });
 
   revalidatePath("/notices");
   revalidatePath("/notices/new");
-  redirect(`/notices?update=created&audit=${result.auditLogId ?? "mock"}`);
+  redirect(`/notices?update=created${result.auditLogId ? `&audit=${result.auditLogId}` : ""}`);
 }

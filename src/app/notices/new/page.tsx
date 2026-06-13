@@ -32,7 +32,7 @@ export default async function NewNoticePage({
         </div>
       ) : null}
 
-      <Card title="공지 작성 폼" subtitle="대상 범위와 본문을 mock action으로 저장">
+      <Card title="공지 작성 폼" subtitle="대상 범위와 본문을 저장">
         <form action={createNoticeAction} className="grid gap-4">
           <input type="hidden" name="role" value={query.role ?? "operator"} />
           <label className="grid gap-2 text-sm">
