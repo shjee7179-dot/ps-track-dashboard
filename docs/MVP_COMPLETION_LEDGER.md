@@ -2,6 +2,41 @@
 
 이 문서는 Sprint 0~5의 구현 상태를 `완료/미완료`처럼 단순 판정하지 않고, 현재 MVP가 어느 수준까지 작동하는지 기록한다. 앞으로 기능 PR이 병합될 때 함께 갱신한다.
 
+## 2026-06-14 업데이트
+
+초기 ledger의 `Mock` 중심 상태에서 현재는 주요 도메인 read/write path가 `repository contract + Postgres provider`로 상당 부분 전환되었다. 또한 AlphaCampus/LMS 실연계 전 준비를 위해 `LMS_PROVIDER=readonly-db`, local Docker `lms-postgres`, `/api/ready`, `/admin/lms-diagnostics`까지 smoke 검증을 마쳤다.
+
+### 현재 상위 판단
+
+| 관점 | 현재 상태 | 판단 |
+| --- | --- | --- |
+| MVP 화면 지도 | Verified Postgres-Ready | P0/P1 주요 화면은 유지되고, 주요 운영 read/write 경로가 repository provider를 경유한다. |
+| 도메인 구조 | Verified Postgres-Ready | repository contract, mock/postgres provider, LMS readonly adapter, diagnostics가 분리되었다. |
+| 실제 운영 기능 | Functional Postgres | 학습 상태, 산출물, 피드백, 평가, 멘토링 기록, 위험/리마인드, 공지 생성은 Postgres write와 audit 일부가 연결되었다. |
+| 실서비스 준비 | Operational Smoke | Docker, private Postgres, local mock LMS readonly-db, readiness, Auth/LMS diagnostics smoke를 완료했다. |
+
+### 2026-06-14 기준 완료된 전환
+
+| 항목 | 상태 | 근거 |
+| --- | --- | --- |
+| Auth/session contract | Functional Integration Prep | `mockSessionProvider`, `keycloakSessionProvider`, Keycloak trusted-header diagnostics |
+| Repository contract | Verified | `src/lib/repository-contracts.ts`, mock/postgres provider |
+| Postgres domain repositories | Functional Postgres | learning, artifacts, evaluations, mentoring, risks/reminders, notices, audit/access logs |
+| LMS readonly-db local smoke | Verified Docker Smoke | `lms-postgres`, readonly views, readonly account, `/api/ready`, `/admin/lms-diagnostics` |
+| Audit/access log ownership | Functional Postgres | 주요 server action audit write, session access log best-effort write |
+| Container readiness | Verified Docker Smoke | `/api/health`, `/api/ready`, Docker build/recreate under `REPOSITORY_PROVIDER=postgres`, `LMS_PROVIDER=readonly-db` |
+
+### 현재 남은 제품화 Gap
+
+1. 실제 AlphaCampus gateway header 정책 확정과 Keycloak smoke
+2. 실제 LMS readonly view 명세 반영 및 운영 DB 접속 smoke
+3. 산출물 파일 업로드/버전 관리
+4. role+scope 서버 권한의 전체 server action/API 재점검
+5. 로그 보존기간, IP/User-Agent/request id, 개인정보 마스킹 정책 확정
+6. 리포트 필터, 권한, CSV export 품질 강화
+7. 모바일/PWA 실제 기기 QA
+8. UI 디자인 고도화
+
 ## 상태 정의
 
 | 상태 | 의미 |
