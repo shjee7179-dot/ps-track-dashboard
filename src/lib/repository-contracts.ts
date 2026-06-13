@@ -56,6 +56,17 @@ export type AuditLogDraft = AuditWriteContext & {
   severity?: LogEvent["severity"];
 };
 
+export type AccessLogDraft = AuditWriteContext & {
+  event: string;
+  targetType: string;
+  targetId: string;
+  targetLabel: string;
+  severity?: LogEvent["severity"];
+  ipAddress?: string;
+  userAgent?: string;
+  sessionId?: string;
+};
+
 export type StudentJourneyItem = {
   status: StudentLearningPieceStatus;
   learningPiece: LearningPiece;
@@ -184,6 +195,7 @@ export type AdminRepository = {
   listAuditLogs(query?: ListQuery): RepositoryResult<LogEvent[]>;
   listAccessLogs(query?: ListQuery): RepositoryResult<LogEvent[]>;
   createAuditLog(input: AuditLogDraft): RepositoryResult<LogEvent>;
+  createAccessLog(input: AccessLogDraft): RepositoryResult<LogEvent>;
   listNotices(query?: ListQuery): RepositoryResult<Notice[]>;
   createNotice(input: {
     cohortId: string;

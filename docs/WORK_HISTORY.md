@@ -801,6 +801,33 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - mentoring, notice, risk/reminder 등 아직 mock-backed mutation의 Postgres ownership 또는 별도 audit write 정책 정리
   - login/logout/role switch/session refresh access log write 정책 확정
 
+### Session access log write helper
+
+- 목적: `access_logs`를 조회 전용에서 실제 세션 확인 이벤트를 남기는 MVP 운영 증적으로 확장
+- 산출물:
+  - repository contract에 `AccessLogDraft`, `AdminRepository.createAccessLog` 추가
+  - mock repository에 access log write fallback 추가
+  - Postgres repository에 `createPostgresAccessLog` helper와 `createAccessLog` 구현 추가
+  - `sessionProvider.requireSession()` 성공 시 `세션 확인` 또는 `역할 선택` access log를 best-effort로 기록
+  - access log metadata에 auth source, requested role, active assignment id를 저장
+  - 접속 로그 화면의 기록 범위 문구를 `로그인 / 세션 / 역할`로 조정
+- 설계 판단:
+  - MVP에서는 모든 페이지 렌더링을 기록하지 않고, server action처럼 실제 조치 직전에 `requireSession()`이 호출되는 경로부터 기록한다.
+  - 접속 로그 저장 실패가 도메인 조치를 막지 않도록 best-effort로 처리한다. 감사 로그는 domain mutation과 transaction으로 묶지만, access log는 세션 관측 로그 성격이 더 강하기 때문이다.
+  - 실제 Keycloak/AlphaCampus gateway 적용 이후에는 login/logout, SSO session refresh, gateway request id, client IP 신뢰 경계를 별도 정책으로 확정해야 한다.
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - `docker compose build ps-track-dashboard` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - LMS 매핑 상태 변경 action 호출 전 `access_logs=2`, 호출 후 `access_logs=3` 확인
+  - DB 최신 access log row 확인: `시스템 총괄 / 세션 확인 / admin / system:system`
+  - `/admin/access-logs?role=admin`에서 `접속 이벤트 3건`, `세션 확인`, `로그인 / 세션 / 역할` 렌더링 확인
+- 오진/교훈:
+  - curl 기반 Server Action smoke에서는 브라우저 origin header가 없어 Next가 warning을 남긴다. 요청은 정상 처리되지만, 실제 브라우저 검증과 구분해 해석해야 한다.
+- 남은 범위:
+  - Keycloak gateway 실연동 후 실제 login/logout/session refresh 이벤트 정의
+  - client IP/user-agent 신뢰 기준과 보존/마스킹 정책 확정
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.
