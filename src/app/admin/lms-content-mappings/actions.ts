@@ -58,9 +58,10 @@ function isMappingStatus(value: FormDataEntryValue | null): value is LmsContentM
   return typeof value === "string" && mappingStatuses.includes(value as LmsContentMappingStatus);
 }
 
-function buildRedirectPath(update: string, mappingId?: string) {
+function buildRedirectPath(update: string, mappingId?: string, auditLogId?: string) {
   const params = new URLSearchParams({ update });
   if (mappingId) params.set("mapping", mappingId);
+  if (auditLogId) params.set("audit", auditLogId);
   return `/admin/lms-content-mappings?${params.toString()}`;
 }
 
@@ -127,7 +128,7 @@ export async function createLmsContentMappingAction(formData: FormData) {
   }
 
   try {
-    const mapping = await repositories.lms.contentMappings.createMapping({
+    const result = await repositories.lms.contentMappings.createMapping({
       cohortId,
       moduleId,
       contentId,
@@ -140,10 +141,18 @@ export async function createLmsContentMappingAction(formData: FormData) {
       activationRule,
       status,
       createdBy: session.user.id,
+      audit: {
+        actorId: session.user.id,
+        actorLabel: session.user.name,
+        metadata: {
+          role: session.activeRole,
+          source: session.source,
+        },
+      },
     });
 
     revalidatePath("/admin/lms-content-mappings");
-    redirect(buildRedirectPath("created", mapping.id));
+    redirect(buildRedirectPath("created", result.data.id, result.auditLogId));
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("duplicate") || message.includes("unique")) {
@@ -183,6 +192,14 @@ export async function updateLmsContentMappingStatusAction(formData: FormData) {
   const updated = await repositories.lms.contentMappings.updateMappingStatus({
     mappingId: mapping.id,
     status,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
   });
 
   if (!updated) {
@@ -190,5 +207,5 @@ export async function updateLmsContentMappingStatusAction(formData: FormData) {
   }
 
   revalidatePath("/admin/lms-content-mappings");
-  redirect(buildRedirectPath("status-updated", updated.id));
+  redirect(buildRedirectPath("status-updated", updated.data.id, updated.auditLogId));
 }

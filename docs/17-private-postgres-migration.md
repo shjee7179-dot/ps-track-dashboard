@@ -166,12 +166,13 @@ Audit/access log table expansion on 2026-06-12:
 - app runtime grant SQL now allows audit/access log read and future server-side inserts.
 - `postgresAdminRepository` now reads audit/access log lists from Postgres while retaining mock fallback for other admin repository methods.
 - `/admin/audit-logs` and `/admin/access-logs` render through repository reads under `REPOSITORY_PROVIDER=postgres`.
-- audit write helper now records selected Postgres-backed mutations in `audit_logs`: LMS completion apply, artifact submission, artifact feedback, and artifact evaluation.
+- audit write helper now records selected Postgres-backed mutations in `audit_logs`: LMS completion apply, artifact submission, artifact feedback, artifact evaluation, LMS content mapping create, and LMS content mapping status update.
 - write path currently keeps audit insert in the same transaction as the domain mutation for those Postgres-backed methods.
-- remaining audit write expansion: LMS mapping actions, notices, mentoring, risk/reminder actions, and final access log write policy.
+- remaining audit write expansion: notices, mentoring, risk/reminder actions, and final access log write policy.
+- diagnostic correction: after a Docker container rebuild/recreate, Next Server Action IDs must be collected from the freshly rendered page before POST smoke tests. Reusing an older action ID produces `Failed to find Server Action` 500 even when the implementation is healthy.
 
 ## Next Implementation Step
 
-1. LMS mapping actions and remaining mock-backed mutations의 audit write contract 정리
+1. remaining mock-backed mutations의 Postgres ownership 또는 audit write contract 정리
 2. access log write policy 확정: login, logout, role switch, session refresh
 3. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가

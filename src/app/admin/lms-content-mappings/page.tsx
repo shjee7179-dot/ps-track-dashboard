@@ -80,7 +80,7 @@ function getCatalogOptionLabel(record: LmsContentCatalogRecord) {
 export default async function LmsContentMappingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string; update?: string; mapping?: string }>;
+  searchParams: Promise<{ role?: string; update?: string; mapping?: string; audit?: string }>;
 }) {
   const params = await searchParams;
   const [cohort, learningPieces, lmsCatalog] = await Promise.all([
@@ -115,6 +115,7 @@ export default async function LmsContentMappingsPage({
         <div className="mb-4 rounded-md border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700">
           {updateMessage}
           {params.mapping ? <span className="ml-2 text-stone-500">mapping: {params.mapping}</span> : null}
+          {params.audit ? <span className="ml-2 text-stone-500">audit: {params.audit}</span> : null}
         </div>
       ) : null}
 
