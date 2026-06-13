@@ -883,8 +883,33 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - Risk/Reminder action은 이미 권한 확인 구조가 있었으므로 인증/인가 흐름을 새로 만들기보다 repository ownership과 audit context만 바꾸는 편이 안전했다.
   - curl 기반 Server Action smoke는 브라우저 origin이 없어도 성공 redirect와 DB row를 기준으로 판단한다.
 - 남은 범위:
-  - notices 생성/조회 action의 Postgres ownership 및 audit write 전환
   - 실제 알림 발송 연동은 MVP 외부 범위로 두고, 현재는 발송 상태 기록만 소유한다.
+
+### Notice Postgres repository and audit write
+
+- 목적: 운영 공지 객체를 mock ownership에서 Postgres repository ownership으로 전환하고, 생성 이력을 감사 로그로 남김
+- 산출물:
+  - private PostgreSQL schema에 `notices` table, index, updated_at trigger 추가
+  - seed/grant SQL에 MVP 공지 2건과 runtime read/write 권한 추가
+  - `AdminRepository.createNotice` 계약에 optional audit context 추가
+  - Postgres admin repository에 공지 목록 조회와 공지 생성 transaction 구현
+  - `/notices` 목록 화면과 `/notices/new` 생성 action을 `repositories.admin` 경유로 전환
+  - 공지 생성 시 실제 `audit_logs` row 생성
+  - 작성 화면의 mock 표현을 제거해 Postgres ownership 전환 상태와 맞춤
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - private PostgreSQL schema/seed/grant SQL 재적용 성공
+  - DB에서 `notices=2` seed 확인
+  - `docker compose build ps-track-dashboard` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - `/notices?role=admin`에서 공지 2건과 읽음 합계 47회 렌더링 확인
+  - 공지 생성 action 호출 후 redirect audit 값이 실제 UUID `b7498ad9-a3fe-47ed-ba65-6ce9978d5069`로 반환됨
+  - DB `notices`에서 `8월 중간 산출물 제출 안내`, DB `audit_logs`에서 `공지 생성 / notice` row 확인
+- 오진/교훈:
+  - 공지는 콘텐츠 객체와 분리한 IA 결정이 있었으므로, learning/content repository에 섞지 않고 admin repository ownership으로 두는 편이 데이터 의미가 선명하다.
+  - 생성 action은 이미 scope permission check가 있으므로 repository 전환과 audit context 추가만으로 운영 증적 요구를 충족할 수 있었다.
+- 남은 범위:
+  - 실제 공지 발송 채널 연동, 읽음 사용자별 로그, 공지 수정/비공개 처리 정책은 MVP 이후 확장 범위로 둔다.
 
 ## 열린 판단
 

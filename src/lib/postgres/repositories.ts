@@ -42,6 +42,7 @@ import type {
   LogEvent,
   MentoringSession,
   Module,
+  Notice,
   OutcomeEvidence,
   ReminderCandidate,
   RiskSignal,
@@ -217,6 +218,18 @@ type ReminderCandidateRow = {
   sent_at: Date | string | null;
 };
 
+type NoticeRow = {
+  id: string;
+  cohort_id: string;
+  title: string;
+  body: string;
+  target_scope_type: string;
+  target_scope_id: string;
+  published_at: Date | string;
+  created_by: string;
+  read_count: number;
+};
+
 type LearningOutcomeRow = {
   id: string;
   code: string;
@@ -367,6 +380,7 @@ const riskRelatedObjectTypes: RiskSignal["relatedObjectType"][] = [
 const riskActionStatuses: RiskSignal["actionStatus"][] = ["open", "in_progress", "resolved"];
 const reminderChannels: ReminderCandidate["channel"][] = ["email", "sms", "kakao", "manual"];
 const reminderSendStatuses: ReminderCandidate["sendStatus"][] = ["pending", "sent", "skipped"];
+const noticeScopeTypes: Notice["targetScopeType"][] = ["program", "cohort", "track", "team", "student"];
 const artifactStatuses: ArtifactStatus[] = [
   "not_started",
   "drafting",
@@ -467,6 +481,10 @@ function isReminderChannel(value: string): value is ReminderCandidate["channel"]
 
 function isReminderSendStatus(value: string): value is ReminderCandidate["sendStatus"] {
   return reminderSendStatuses.includes(value as ReminderCandidate["sendStatus"]);
+}
+
+function isNoticeScopeType(value: string): value is Notice["targetScopeType"] {
+  return noticeScopeTypes.includes(value as Notice["targetScopeType"]);
 }
 
 function isArtifactStatus(value: string): value is ArtifactStatus {
@@ -809,6 +827,24 @@ export function mapPostgresReminderCandidate(row: ReminderCandidateRow): Reminde
     sendStatus: row.send_status,
     recommendedAt: toIsoString(row.recommended_at),
     sentAt: row.sent_at ? toIsoString(row.sent_at) : undefined,
+  };
+}
+
+export function mapPostgresNotice(row: NoticeRow): Notice | null {
+  if (!isNoticeScopeType(row.target_scope_type)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    cohortId: row.cohort_id,
+    title: row.title,
+    body: row.body,
+    targetScopeType: row.target_scope_type,
+    targetScopeId: row.target_scope_id,
+    publishedAt: toKoreanMinuteString(row.published_at),
+    createdBy: row.created_by,
+    readCount: row.read_count,
   };
 }
 
@@ -1200,6 +1236,20 @@ const auditLogSelect = `
 const accessLogSelect = `
   select id, actor_label, event, target_label, severity, occurred_at
   from public.access_logs
+`;
+
+const noticeSelect = `
+  select
+    id,
+    cohort_id,
+    title,
+    body,
+    target_scope_type,
+    target_scope_id,
+    published_at,
+    created_by,
+    read_count
+  from public.notices
 `;
 
 async function resolvePostgresUserId(userIdOrAlias: string): Promise<string | undefined> {
@@ -2405,6 +2455,91 @@ export const postgresAdminRepository: AdminRepository = {
   },
   async createAccessLog(input) {
     return createPostgresAccessLog(input);
+  },
+  async listNotices(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      values.push(query.cohortId);
+      filters.push(`cohort_id = $${values.length}`);
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<NoticeRow>(
+      `${noticeSelect}${whereClause} order by published_at desc, id desc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresNotice(row))
+      .filter((notice): notice is Notice => Boolean(notice));
+  },
+  async createNotice(input) {
+    return transactionPostgres(async (query) => {
+      const result = await query<NoticeRow>(
+        `
+          insert into public.notices (
+            cohort_id,
+            title,
+            body,
+            target_scope_type,
+            target_scope_id,
+            created_by,
+            published_at,
+            read_count
+          )
+          values ($1, $2, $3, $4, $5, $6, now(), 0)
+          returning
+            id,
+            cohort_id,
+            title,
+            body,
+            target_scope_type,
+            target_scope_id,
+            published_at,
+            created_by,
+            read_count
+        `,
+        [
+          input.cohortId,
+          input.title,
+          input.body,
+          input.targetScopeType,
+          input.targetScopeId,
+          input.createdBy,
+        ],
+      );
+      const notice = result.rows[0] ? mapPostgresNotice(result.rows[0]) : null;
+      if (!notice) {
+        throw new Error("Failed to create notice");
+      }
+
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "공지 생성",
+              targetType: "notice",
+              targetId: notice.id,
+              targetLabel: notice.title,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                cohortId: notice.cohortId,
+                targetScopeType: notice.targetScopeType,
+                targetScopeId: notice.targetScopeId,
+              }),
+            },
+            query,
+          )
+        : undefined;
+
+      return {
+        data: notice,
+        auditLogId: auditLog?.id,
+      } satisfies MutationResult<Notice>;
+    });
   },
 };
 

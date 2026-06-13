@@ -207,6 +207,7 @@ export type AdminRepository = {
     targetScopeType: Notice["targetScopeType"];
     targetScopeId: string;
     createdBy: string;
+    audit?: AuditWriteContext;
   }): RepositoryResult<MutationResult<Notice>>;
 };
 
