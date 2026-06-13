@@ -854,8 +854,37 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - seed SQL의 CTE는 statement 단위로만 유효하다. `cohort_row` CTE를 뒤 insert에서 재사용해 `relation "cohort_row" does not exist`가 발생했고, lateral subquery로 cohort id를 다시 조회하도록 수정했다.
   - Postgres auth/session 전환 전에는 seed의 domain alias id(`student-001`, `mentor-001`)와 Postgres user UUID가 섞일 수 있다. 화면 표시에서는 repository 우선 조회 후 MVP alias fallback을 둬 전환기 UI 품질을 유지한다.
 - 남은 범위:
-  - notices, risk/reminder 등 남은 mock-backed mutation의 Postgres ownership 또는 audit write 정책 정리
+  - notices 등 남은 mock-backed mutation의 Postgres ownership 또는 audit write 정책 정리
   - Keycloak gateway 실연동 후 실제 user UUID 기반으로 멘토링 target/mentor FK 정책 정리
+
+### Risk/Reminder Postgres repository and audit write
+
+- 목적: 위험 신호와 리마인드 추천 운영 흐름을 mock ownership에서 Postgres repository ownership으로 전환하고, 조치 이력을 감사 로그로 남김
+- 산출물:
+  - private PostgreSQL schema에 `risk_signals`, `reminder_candidates` table, index, updated_at trigger 추가
+  - seed/grant SQL에 MVP 위험 신호 3건, 리마인드 후보 3건과 runtime read/write 권한 추가
+  - `OperationsRepository`의 risk/reminder update 계약을 audit context를 받을 수 있는 입력 객체 형태로 확장
+  - mock repository와 repository facade를 새 계약에 맞게 보강
+  - Postgres operations repository에 위험 신호/리마인드 목록 조회와 상태 변경 transaction 구현
+  - `/operations/risks` 화면과 server action을 `repositories.operations` 경유로 전환
+  - 위험 신호 조치 상태 변경, 리마인드 발송 상태 변경 시 실제 `audit_logs` row 생성
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - private PostgreSQL schema/seed/grant SQL 재적용 성공
+  - DB에서 `risk_signals=3`, `reminder_candidates=3` 확인
+  - `docker compose build ps-track-dashboard` 통과
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - `/operations/risks?role=admin`에서 위험 신호 3건, 리마인드 3건 렌더링 확인
+  - 위험 신호 상태 변경 action 호출 후 redirect audit 값이 실제 UUID `4c3c1394-c174-4fd2-b954-f269d2cf4e62`로 반환됨
+  - 리마인드 발송 상태 변경 action 호출 후 redirect audit 값이 실제 UUID `c54145ef-298e-4d6e-8fde-cbf485dee70e`로 반환됨
+  - DB에서 `risk-001` 상태가 `in_progress`, `reminder-001` 상태가 `sent` 및 `sent_at` 존재로 변경된 것 확인
+  - DB `audit_logs`에서 `위험 신호 조치 상태 변경`, `리마인드 발송 상태 변경` row 확인
+- 오진/교훈:
+  - Risk/Reminder action은 이미 권한 확인 구조가 있었으므로 인증/인가 흐름을 새로 만들기보다 repository ownership과 audit context만 바꾸는 편이 안전했다.
+  - curl 기반 Server Action smoke는 브라우저 origin이 없어도 성공 redirect와 DB row를 기준으로 판단한다.
+- 남은 범위:
+  - notices 생성/조회 action의 Postgres ownership 및 audit write 전환
+  - 실제 알림 발송 연동은 MVP 외부 범위로 두고, 현재는 발송 상태 기록만 소유한다.
 
 ## 열린 판단
 

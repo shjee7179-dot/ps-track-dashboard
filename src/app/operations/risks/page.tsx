@@ -6,7 +6,7 @@ import {
   getRiskTargetName,
   getRiskTypeLabel,
 } from "@/lib/domain";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 
 const riskStatusOptions = [
   { value: "open", label: "열림" },
@@ -21,8 +21,8 @@ const reminderStatusOptions = [
 ];
 
 const updateMessages: Record<string, string> = {
-  "risk-saved": "위험 신호 조치 상태가 mock repository를 통해 접수되었습니다.",
-  "reminder-saved": "리마인드 발송 상태가 mock repository를 통해 접수되었습니다.",
+  "risk-saved": "위험 신호 조치 상태가 저장되었습니다.",
+  "reminder-saved": "리마인드 발송 상태가 저장되었습니다.",
   denied: "현재 역할/scope에서는 이 운영 조치를 수행할 수 없습니다.",
   invalid: "조치 요청 값이 올바르지 않습니다.",
   missing: "조치 대상 레코드를 찾을 수 없습니다.",
@@ -35,8 +35,8 @@ export default async function RisksPage({
 }) {
   const query = await searchParams;
   const [riskSignals, reminderCandidates] = await Promise.all([
-    mockRepositories.operations.listRiskSignals(),
-    mockRepositories.operations.listReminderCandidates(),
+    repositories.operations.listRiskSignals(),
+    repositories.operations.listReminderCandidates(),
   ]);
   const updateMessage = query.update ? updateMessages[query.update] : undefined;
 

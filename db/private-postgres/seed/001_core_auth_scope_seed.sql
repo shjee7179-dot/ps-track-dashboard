@@ -616,6 +616,146 @@ on conflict (id) do update
       next_actions = excluded.next_actions,
       updated_at = now();
 
+insert into public.risk_signals (
+  id,
+  cohort_id,
+  target_type,
+  target_id,
+  risk_type,
+  severity,
+  related_object_type,
+  related_object_id,
+  action_status,
+  action_note
+)
+select
+  seed_rows.id,
+  cohort_ref.id,
+  seed_rows.target_type,
+  seed_rows.target_id,
+  seed_rows.risk_type,
+  seed_rows.severity,
+  seed_rows.related_object_type,
+  seed_rows.related_object_id,
+  seed_rows.action_status,
+  seed_rows.action_note
+from (
+  values
+    (
+      'risk-001',
+      'student',
+      'student-001',
+      'artifact_missing',
+      'medium',
+      'artifact',
+      'artifact-002',
+      'open',
+      '문헌 탐색 기록 제출 마감 전 리마인드 필요'
+    ),
+    (
+      'risk-002',
+      'team',
+      'team-001',
+      'mentoring_issue',
+      'low',
+      'mentoring_session',
+      'mentoring-001',
+      'in_progress',
+      '첫 멘토링 외부 링크 확인 필요'
+    ),
+    (
+      'risk-003',
+      'student',
+      'student-001',
+      'learning_piece_delay',
+      'low',
+      'learning_piece',
+      'lp-003',
+      'open',
+      '영상 학습 진행 중 상태가 3일 이상 유지됨'
+    )
+) as seed_rows (
+  id,
+  target_type,
+  target_id,
+  risk_type,
+  severity,
+  related_object_type,
+  related_object_id,
+  action_status,
+  action_note
+)
+cross join lateral (
+  select id from public.cohorts where code = 'cohort-2026-1' limit 1
+) as cohort_ref
+on conflict (id) do update
+  set cohort_id = excluded.cohort_id,
+      target_type = excluded.target_type,
+      target_id = excluded.target_id,
+      risk_type = excluded.risk_type,
+      severity = excluded.severity,
+      related_object_type = excluded.related_object_type,
+      related_object_id = excluded.related_object_id,
+      action_status = excluded.action_status,
+      action_note = excluded.action_note,
+      updated_at = now();
+
+insert into public.reminder_candidates (
+  id,
+  risk_signal_id,
+  target_type,
+  target_id,
+  reason,
+  channel,
+  send_status,
+  recommended_at,
+  sent_at
+)
+values
+  (
+    'reminder-001',
+    'risk-001',
+    'student',
+    'student-001',
+    '산출물 제출 마감이 임박했습니다.',
+    'email',
+    'pending',
+    timestamptz '2026-07-22 09:00:00+09',
+    null
+  ),
+  (
+    'reminder-002',
+    'risk-003',
+    'student',
+    'student-001',
+    '학습피스 진행 상태 확인이 필요합니다.',
+    'manual',
+    'pending',
+    timestamptz '2026-07-13 09:00:00+09',
+    null
+  ),
+  (
+    'reminder-003',
+    'risk-002',
+    'team',
+    'team-001',
+    '멘토링 참석 링크를 확인해야 합니다.',
+    'kakao',
+    'sent',
+    timestamptz '2026-07-17 09:00:00+09',
+    timestamptz '2026-07-17 10:10:00+09'
+  )
+on conflict (id) do update
+  set risk_signal_id = excluded.risk_signal_id,
+      target_type = excluded.target_type,
+      target_id = excluded.target_id,
+      reason = excluded.reason,
+      channel = excluded.channel,
+      send_status = excluded.send_status,
+      recommended_at = excluded.recommended_at,
+      sent_at = excluded.sent_at,
+      updated_at = now();
+
 insert into public.feedback (
   id,
   artifact_id,
