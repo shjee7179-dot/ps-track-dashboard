@@ -537,6 +537,85 @@ on conflict (artifact_id, version) do update
       note = excluded.note,
       updated_at = now();
 
+insert into public.mentoring_sessions (
+  id,
+  cohort_id,
+  target_type,
+  target_id,
+  mentor_id,
+  scheduled_at,
+  status,
+  external_meeting_url,
+  notes,
+  linked_artifact_id,
+  next_actions
+)
+select
+  seed_rows.id,
+  cohort_ref.id,
+  seed_rows.target_type,
+  seed_rows.target_id,
+  seed_rows.mentor_id,
+  seed_rows.scheduled_at,
+  seed_rows.status,
+  seed_rows.external_meeting_url,
+  seed_rows.notes,
+  seed_rows.linked_artifact_id,
+  seed_rows.next_actions
+from (
+  values
+    (
+      'mentoring-001',
+      'student',
+      'student-001',
+      'mentor-001',
+      '2026-07-18 19:00',
+      'scheduled',
+      'https://meet.example.com/ps-track-mentoring-001',
+      '연구 관심사와 문헌 탐색 방향을 점검할 예정',
+      'artifact-001',
+      array['관심 주제를 연구 질문 형태로 다시 작성', '문헌 탐색 키워드 5개 정리']::text[]
+    ),
+    (
+      'mentoring-002',
+      'team',
+      'team-001',
+      'mentor-001',
+      '2026-08-10 20:00',
+      'completed',
+      'https://meet.example.com/ps-track-mentoring-002',
+      '연구계획서 초안의 연구 질문 범위를 좁히도록 피드백',
+      'artifact-003',
+      array['연구 대상 정의 보완', '방법론 섹션에 변수 정의 추가']::text[]
+    )
+) as seed_rows (
+  id,
+  target_type,
+  target_id,
+  mentor_id,
+  scheduled_at,
+  status,
+  external_meeting_url,
+  notes,
+  linked_artifact_id,
+  next_actions
+)
+cross join lateral (
+  select id from public.cohorts where code = 'cohort-2026-1' limit 1
+) as cohort_ref
+on conflict (id) do update
+  set cohort_id = excluded.cohort_id,
+      target_type = excluded.target_type,
+      target_id = excluded.target_id,
+      mentor_id = excluded.mentor_id,
+      scheduled_at = excluded.scheduled_at,
+      status = excluded.status,
+      external_meeting_url = excluded.external_meeting_url,
+      notes = excluded.notes,
+      linked_artifact_id = excluded.linked_artifact_id,
+      next_actions = excluded.next_actions,
+      updated_at = now();
+
 insert into public.feedback (
   id,
   artifact_id,

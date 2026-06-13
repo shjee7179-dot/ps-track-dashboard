@@ -172,6 +172,7 @@ export type OperationsRepository = {
     status: MentoringSession["status"];
     notes: string;
     nextActions: string[];
+    audit?: AuditWriteContext;
   }): RepositoryResult<MutationResult<MentoringSession>>;
   listRiskSignals(query?: ListQuery): RepositoryResult<RiskSignal[]>;
   listReminderCandidates(query?: ListQuery): RepositoryResult<ReminderCandidate[]>;

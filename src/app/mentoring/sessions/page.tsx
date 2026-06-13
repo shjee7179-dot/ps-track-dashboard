@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { MentoringSessionCard } from "@/components/mentoring";
 import { Stat } from "@/components/ui";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 
 export default async function MentoringSessionsPage() {
-  const mentoringSessions = await mockRepositories.operations.listMentoringSessions();
+  const mentoringSessions = await repositories.operations.listMentoringSessions();
 
   return (
     <AppShell title="멘토링 일정" eyebrow="Mentoring / Sessions">

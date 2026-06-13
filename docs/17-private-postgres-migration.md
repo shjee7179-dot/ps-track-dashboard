@@ -129,7 +129,7 @@ Operational mapping policy:
 - 나중에 Spring Boot/MyBatis로 옮기더라도 repository SQL을 비교적 쉽게 재사용하거나 변환할 수 있다.
 - 복잡한 query builder는 domain table migration이 충분히 쌓인 뒤 필요성을 다시 판단한다.
 
-현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses`, `modules`, `contents`, `learning_pieces`, `artifacts`, `submissions`, `feedback`, `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence`, `audit_logs`, `access_logs` repository다.
+현재 구현 범위는 `users`, `role_assignments`, `cohorts`, `lms_content_mappings`, `learning_piece_statuses`, `modules`, `contents`, `learning_pieces`, `artifacts`, `submissions`, `feedback`, `learning_outcomes`, `rubrics`, `rubric_items`, `evaluations`, `evaluation_item_scores`, `outcome_evidence`, `mentoring_sessions`, `audit_logs`, `access_logs` repository다.
 
 `learning_piece_statuses`는 Postgres가 소유하고, `modules`, `contents`, `learning_pieces` 정의도 Postgres read path로 전환했다. 아직 cohort/template cloning ownership은 별도 table로 분리하지 않았고, 첫 전환에서는 기존 mock id(`module-001`, `content-003`, `lp-003`)를 유지하는 text primary key를 사용한다.
 
@@ -170,10 +170,21 @@ Audit/access log table expansion on 2026-06-12:
 - write path currently keeps audit insert in the same transaction as the domain mutation for those Postgres-backed methods.
 - access log write helper now records successful `sessionProvider.requireSession()` resolutions for server-action paths as `세션 확인` or `역할 선택` events.
 - access log writes are best-effort in MVP so domain actions are not blocked by access log storage outages.
-- remaining audit write expansion: notices, mentoring, risk/reminder actions.
+- remaining audit write expansion: notices and risk/reminder actions.
 - remaining access log expansion: real Keycloak gateway login/logout/session refresh policy, trusted client IP handling, and retention/masking policy.
 - diagnostic correction: after a Docker container rebuild/recreate, Next Server Action IDs must be collected from the freshly rendered page before POST smoke tests. Reusing an older action ID produces `Failed to find Server Action` 500 even when the implementation is healthy.
 - diagnostic note: curl-based Server Action smoke tests may emit a Next warning about a missing `origin` header. The warning is expected for non-browser smoke requests when the action succeeds.
+
+Mentoring session table expansion on 2026-06-13:
+
+- added `mentoring_sessions` table to private PostgreSQL schema with cohort, target, mentor, schedule, status, external meeting URL, notes, linked artifact, and next action fields.
+- seeded MVP mentoring session rows for one student target and one team target.
+- app runtime grant SQL now allows mentoring session reads and updates.
+- `postgresOperationsRepository` now reads mentoring session list/detail and writes mentoring record updates through Postgres.
+- `/mentoring/sessions` and `/mentoring/sessions/[sessionId]` render through repository reads under `REPOSITORY_PROVIDER=postgres`.
+- mentoring record updates write domain changes and `audit_logs` rows in a single Postgres transaction.
+- transition note: MVP seed rows still use stable text aliases such as `student-001`, `team-001`, and `mentor-001`; full Keycloak/Postgres cutover should replace or formally map these aliases to LMS/Keycloak UUIDs.
+- diagnostic correction: SQL CTEs are scoped per statement, so seed inserts that need the cohort id after the first insert must query the cohort row again instead of reusing an earlier CTE.
 
 ## Next Implementation Step
 
