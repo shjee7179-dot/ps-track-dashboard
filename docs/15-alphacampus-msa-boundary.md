@@ -114,6 +114,25 @@ Because the gateway verifies JWTs, PS Track's first production integration shoul
 
 PS Track은 header의 `subject`를 `users.external_subject`와 매핑한 뒤, 자체 `role_assignments`로 역할과 scope를 결정한다. Keycloak realm/client role만으로 PS Track 내부 권한을 대체하지 않는다. 운영 기본 매핑값은 Keycloak/LMS `uuid`를 `users.external_subject`에 저장하는 것이다. `email`과 `username/login_id`는 진단, 감사, 사용자 동기화 보조키로 사용한다.
 
+## Access Log Policy Boundary
+
+접속 로그는 PS Track 단독으로 모두 판단하지 않는다. AlphaCampus/LMS gateway가 실제 로그인, 로그아웃, token refresh를 관측하므로 MVP의 앱 내부 access log와 gateway 로그를 다음 기준으로 연결한다.
+
+| event group | owner | PS Track MVP behavior | production decision needed |
+| --- | --- | --- | --- |
+| 세션 확인 / 역할 선택 | PS Track | `SessionProvider.requireSession()` 성공 시 best-effort access log 기록 | 유지 |
+| 로그인 성공 | AlphaCampus/LMS gateway | 직접 기록하지 않음 | gateway request id 또는 login event id 전달 방식 |
+| 로그아웃 요청 / 완료 | gateway + PS Track landing | logout URL 등록 전에는 정책만 보관 | `post_logout_redirect_uri`, id token hint 전달 방식 |
+| SSO 세션 갱신 | AlphaCampus/LMS gateway | 직접 기록하지 않음 | refresh event 관측 가능 여부와 저장 필드 |
+| IP / User-Agent | reverse proxy / gateway | 현재는 미확정 | 신뢰 가능한 header 이름, 마스킹, 보존 기간 |
+
+운영 기본 원칙:
+
+- 감사 로그는 domain mutation과 같은 transaction으로 저장한다.
+- 접속 로그는 인증/세션 관측 로그이므로 MVP에서는 best-effort로 저장한다.
+- gateway에서 검증하지 않은 client-provided IP/header를 신뢰하지 않는다.
+- 운영 보존 기간과 마스킹 정책이 확정되기 전까지 access log는 최소 필드 중심으로 유지한다.
+
 Logout integration should use the AlphaCampus Keycloak logout endpoint shape:
 
 ```text

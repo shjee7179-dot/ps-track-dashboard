@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getKeycloakAccessLogPolicy, getKeycloakSessionPolicy } from "@/lib/keycloak/access-policy";
 import { getAuthProviderName } from "@/lib/session-provider";
 import { getKeycloakHeaderNames, getKeycloakHeaderSnapshot } from "@/lib/keycloak/session-provider";
 
@@ -36,6 +37,8 @@ export async function getKeycloakDiagnostics() {
         preview: previewValue(snapshot.email),
       },
     },
+    sessionPolicy: getKeycloakSessionPolicy(),
+    accessLogPolicy: getKeycloakAccessLogPolicy(),
     notes: [
       "AlphaCampus/LMS gateway validates Keycloak JWT before forwarding identity headers.",
       "PS Track only resolves a local role assignment after a trusted subject header is present.",
