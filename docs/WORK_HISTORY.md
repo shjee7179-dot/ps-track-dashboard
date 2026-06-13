@@ -828,6 +828,35 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - Keycloak gateway 실연동 후 실제 login/logout/session refresh 이벤트 정의
   - client IP/user-agent 신뢰 기준과 보존/마스킹 정책 확정
 
+### Mentoring session Postgres repository and audit write
+
+- 목적: 멘토링 기록 화면과 저장 action을 mock ownership에서 Postgres repository ownership으로 전환하고, 저장 이력을 감사 로그로 남김
+- 산출물:
+  - private PostgreSQL schema에 `mentoring_sessions` table, index, updated_at trigger 추가
+  - seed/grant SQL에 MVP 멘토링 세션 2건과 runtime read/write 권한 추가
+  - repository contract의 `updateMentoringSessionRecord`에 optional audit context 추가
+  - Postgres operations repository에 멘토링 목록/상세 조회와 기록 저장 transaction 구현
+  - 멘토링 목록/상세 화면이 `repositories.operations`를 통해 데이터를 읽도록 전환
+  - 멘토링 기록 저장 server action이 session user와 role/source metadata를 audit context로 전달
+  - 멘토링 저장 성공 시 실제 `audit_logs`에 `멘토링 기록 저장` 이벤트 생성
+- 검증:
+  - `npm run typecheck`, `npm run lint`, `npm run build` 통과
+  - `docker compose build ps-track-dashboard` 통과
+  - private PostgreSQL schema/seed/grant SQL 재적용 성공
+  - `REPOSITORY_PROVIDER=postgres`, `AUTH_PROVIDER=mock`, `LMS_PROVIDER=mock-view` 앱 컨테이너 재기동 후 `/api/health` 정상
+  - DB에서 `mentoring_sessions=2` 확인
+  - `/mentoring/sessions?role=admin`에서 Postgres 멘토링 목록 2건 렌더링 확인
+  - `/mentoring/sessions/mentoring-001?role=admin`에서 `김서연 멘토링`, `김서연`, `이멘토` 렌더링 확인
+  - 멘토링 기록 저장 action 호출 후 redirect audit 값이 실제 UUID `b5017253-9740-4d63-a850-85ef13deaefe`로 반환됨
+  - DB `audit_logs`에서 `시스템 총괄 / 멘토링 기록 저장 / mentoring_session / mentoring-001` row 확인
+  - `/admin/audit-logs?role=admin`에서 `멘토링 기록 저장` 렌더링 확인
+- 오진/교훈:
+  - seed SQL의 CTE는 statement 단위로만 유효하다. `cohort_row` CTE를 뒤 insert에서 재사용해 `relation "cohort_row" does not exist`가 발생했고, lateral subquery로 cohort id를 다시 조회하도록 수정했다.
+  - Postgres auth/session 전환 전에는 seed의 domain alias id(`student-001`, `mentor-001`)와 Postgres user UUID가 섞일 수 있다. 화면 표시에서는 repository 우선 조회 후 MVP alias fallback을 둬 전환기 UI 품질을 유지한다.
+- 남은 범위:
+  - notices, risk/reminder 등 남은 mock-backed mutation의 Postgres ownership 또는 audit write 정책 정리
+  - Keycloak gateway 실연동 후 실제 user UUID 기반으로 멘토링 target/mentor FK 정책 정리
+
 ## 열린 판단
 
 - `DOCS/`와 `docs/`가 동시에 존재하므로, 문서 폴더 표준화가 필요하다.

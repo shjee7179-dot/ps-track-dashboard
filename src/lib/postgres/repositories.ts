@@ -15,6 +15,7 @@ import type {
   JourneySummary,
   LearningRepository,
   MutationResult,
+  OperationsRepository,
   OutcomeScoreSummary,
   StudentJourneyItem,
   UserRepository,
@@ -39,6 +40,7 @@ import type {
   LearningPieceStatus,
   LearningOutcome,
   LogEvent,
+  MentoringSession,
   Module,
   OutcomeEvidence,
   Role,
@@ -172,6 +174,20 @@ type FeedbackRow = {
   body: string;
   status: string;
   created_at: Date | string;
+};
+
+type MentoringSessionRow = {
+  id: string;
+  cohort_id: string;
+  target_type: string;
+  target_id: string;
+  mentor_id: string;
+  scheduled_at: string;
+  status: string;
+  external_meeting_url: string | null;
+  notes: string;
+  linked_artifact_id: string | null;
+  next_actions: string[] | null;
 };
 
 type LearningOutcomeRow = {
@@ -405,6 +421,14 @@ function isOutcomeEvidenceSourceType(value: string): value is OutcomeEvidence["s
 
 function isLogSeverity(value: string): value is LogEvent["severity"] {
   return logSeverities.includes(value as LogEvent["severity"]);
+}
+
+function isMentoringTargetType(value: string): value is MentoringSession["targetType"] {
+  return value === "student" || value === "team";
+}
+
+function isMentoringStatus(value: string): value is MentoringSession["status"] {
+  return value === "scheduled" || value === "completed" || value === "absent" || value === "cancelled";
 }
 
 function toIsoString(value: Date | string) {
@@ -648,6 +672,26 @@ export function mapPostgresFeedback(row: FeedbackRow): Feedback | null {
     body: row.body,
     status: row.status,
     createdAt: toIsoString(row.created_at),
+  };
+}
+
+export function mapPostgresMentoringSession(row: MentoringSessionRow): MentoringSession | null {
+  if (!isMentoringTargetType(row.target_type) || !isMentoringStatus(row.status)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    cohortId: row.cohort_id,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    mentorId: row.mentor_id,
+    scheduledAt: row.scheduled_at,
+    status: row.status,
+    externalMeetingUrl: row.external_meeting_url ?? undefined,
+    notes: row.notes,
+    linkedArtifactId: row.linked_artifact_id ?? undefined,
+    nextActions: row.next_actions ?? [],
   };
 }
 
@@ -938,6 +982,22 @@ const feedbackSelect = `
     status,
     created_at
   from public.feedback
+`;
+
+const mentoringSessionSelect = `
+  select
+    id,
+    cohort_id,
+    target_type,
+    target_id,
+    mentor_id,
+    scheduled_at,
+    status,
+    external_meeting_url,
+    notes,
+    linked_artifact_id,
+    next_actions
+  from public.mentoring_sessions
 `;
 
 const learningOutcomeSelect = `
@@ -1452,6 +1512,101 @@ export const postgresArtifactRepository: ArtifactRepository = {
   },
 };
 
+export const postgresOperationsRepository: OperationsRepository = {
+  ...mockRepositories.operations,
+  async listMentoringSessions(query) {
+    const values: unknown[] = [];
+    const filters: string[] = [];
+
+    if (query?.cohortId) {
+      values.push(query.cohortId);
+      filters.push(`cohort_id = $${values.length}`);
+    }
+    if (query?.studentId) {
+      values.push(query.studentId);
+      filters.push(`target_type = 'student' and target_id = $${values.length}`);
+    }
+    if (query?.teamId) {
+      values.push(query.teamId);
+      filters.push(`target_type = 'team' and target_id = $${values.length}`);
+    }
+
+    values.push(query?.limit ?? 100);
+    const whereClause = filters.length ? ` where ${filters.join(" and ")}` : "";
+    const result = await queryPostgres<MentoringSessionRow>(
+      `${mentoringSessionSelect}${whereClause} order by scheduled_at asc, id asc limit $${values.length}`,
+      values,
+    );
+
+    return result.rows
+      .map((row) => mapPostgresMentoringSession(row))
+      .filter((session): session is MentoringSession => Boolean(session));
+  },
+  async getMentoringSessionById(sessionId) {
+    const result = await queryPostgres<MentoringSessionRow>(
+      `${mentoringSessionSelect} where id = $1 limit 1`,
+      [sessionId],
+    );
+
+    return result.rows[0] ? mapPostgresMentoringSession(result.rows[0]) ?? undefined : undefined;
+  },
+  async updateMentoringSessionRecord(input) {
+    return transactionPostgres(async (query) => {
+      const result = await query<MentoringSessionRow>(
+        `
+          update public.mentoring_sessions
+          set status = $2,
+              notes = $3,
+              next_actions = $4
+          where id = $1
+          returning
+            id,
+            cohort_id,
+            target_type,
+            target_id,
+            mentor_id,
+            scheduled_at,
+            status,
+            external_meeting_url,
+            notes,
+            linked_artifact_id,
+            next_actions
+        `,
+        [input.sessionId, input.status, input.notes, input.nextActions],
+      );
+      const session = result.rows[0] ? mapPostgresMentoringSession(result.rows[0]) : null;
+      if (!session) {
+        throw new Error("Failed to update mentoring session record");
+      }
+
+      const auditLog = input.audit
+        ? await createPostgresAuditLog(
+            {
+              ...input.audit,
+              event: "멘토링 기록 저장",
+              targetType: "mentoring_session",
+              targetId: session.id,
+              targetLabel: `${session.targetType}:${session.targetId}`,
+              severity: "notice",
+              metadata: mergeAuditMetadata(input.audit, {
+                status: session.status,
+                targetType: session.targetType,
+                targetId: session.targetId,
+                mentorId: session.mentorId,
+              }),
+            },
+            query,
+          )
+        : undefined;
+
+      return {
+        data: session,
+        auditLogId: auditLog?.id,
+      } satisfies MutationResult<MentoringSession>;
+    });
+  },
+};
+
 function toNumber(value: number | string | null | undefined) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
@@ -1947,6 +2102,7 @@ export const postgresRepositories = {
   cohorts: postgresCohortRepository,
   artifacts: postgresArtifactRepository,
   evaluations: postgresEvaluationRepository,
+  operations: postgresOperationsRepository,
   admin: postgresAdminRepository,
   lms: {
     ...mockRepositories.lms,

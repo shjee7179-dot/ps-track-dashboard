@@ -4,14 +4,23 @@ import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { updateMentoringRecordAction } from "@/app/mentoring/sessions/[sessionId]/actions";
 import { getMentoringStatusLabel } from "@/lib/domain";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { teams as fallbackTeams, users as fallbackUsers } from "@/lib/mock-data";
+import { repositories } from "@/lib/repositories";
 import type { MentoringSession, Team, User } from "@/lib/types";
 
 function getMentoringTargetName(session: MentoringSession, users: User[], teams: Team[]) {
   if (session.targetType === "student") {
-    return users.find((user) => user.id === session.targetId)?.name ?? session.targetId;
+    return (
+      users.find((user) => user.id === session.targetId)?.name ??
+      fallbackUsers.find((user) => user.id === session.targetId)?.name ??
+      session.targetId
+    );
   }
-  return teams.find((team) => team.id === session.targetId)?.name ?? session.targetId;
+  return (
+    teams.find((team) => team.id === session.targetId)?.name ??
+    fallbackTeams.find((team) => team.id === session.targetId)?.name ??
+    session.targetId
+  );
 }
 
 export default async function MentoringSessionDetailPage({
@@ -24,19 +33,21 @@ export default async function MentoringSessionDetailPage({
   const { sessionId } = await params;
   const query = await searchParams;
   const [session, users, teams] = await Promise.all([
-    mockRepositories.operations.getMentoringSessionById(sessionId),
-    mockRepositories.users.listUsers(),
-    mockRepositories.cohorts.listTeams(),
+    repositories.operations.getMentoringSessionById(sessionId),
+    repositories.users.listUsers(),
+    repositories.cohorts.listTeams(),
   ]);
   if (!session) notFound();
 
-  const mentor = users.find((user) => user.id === session.mentorId);
+  const mentor =
+    users.find((user) => user.id === session.mentorId) ??
+    fallbackUsers.find((user) => user.id === session.mentorId);
   const artifact = session.linkedArtifactId
-    ? await mockRepositories.artifacts.getArtifactById(session.linkedArtifactId)
+    ? await repositories.artifacts.getArtifactById(session.linkedArtifactId)
     : undefined;
   const targetName = getMentoringTargetName(session, users, teams);
   const updateMessages: Record<string, string> = {
-    saved: "멘토링 기록 저장 요청이 mock repository를 통해 접수되었습니다.",
+    saved: "멘토링 기록이 저장되었습니다.",
     denied: "현재 역할/scope에서는 이 멘토링 기록을 수정할 수 없습니다.",
     invalid: "상태와 기록 본문을 확인해 주세요.",
     missing: "멘토링 세션 레코드를 찾을 수 없습니다.",
@@ -94,7 +105,7 @@ export default async function MentoringSessionDetailPage({
             ))}
           </div>
         </Card>
-        <Card title="기록 수정" subtitle="상태, 기록, 후속 액션을 mock action으로 저장">
+        <Card title="기록 수정" subtitle="상태, 기록, 후속 액션을 저장">
           <form action={updateMentoringRecordAction} className="grid gap-3 text-sm">
             <input type="hidden" name="sessionId" value={session.id} />
             <input type="hidden" name="role" value={query.role ?? defaultEditorRole} />

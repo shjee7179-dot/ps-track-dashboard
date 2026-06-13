@@ -263,6 +263,26 @@ create table if not exists public.feedback (
     check (target_user_id is not null or target_team_id is not null)
 );
 
+create table if not exists public.mentoring_sessions (
+  id text primary key,
+  cohort_id uuid not null references public.cohorts(id) on delete cascade,
+  target_type text not null,
+  target_id text not null,
+  mentor_id text not null,
+  scheduled_at text not null,
+  status text not null default 'scheduled',
+  external_meeting_url text,
+  notes text not null default '',
+  linked_artifact_id text references public.artifacts(id) on delete set null,
+  next_actions text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint mentoring_sessions_target_type_check
+    check (target_type in ('student', 'team')),
+  constraint mentoring_sessions_status_check
+    check (status in ('scheduled', 'completed', 'absent', 'cancelled'))
+);
+
 create table if not exists public.learning_outcomes (
   id text primary key,
   code text not null unique,
@@ -496,6 +516,15 @@ create index if not exists feedback_artifact_status_idx
 create index if not exists feedback_author_idx
   on public.feedback (author_id);
 
+create index if not exists mentoring_sessions_cohort_idx
+  on public.mentoring_sessions (cohort_id);
+
+create index if not exists mentoring_sessions_target_idx
+  on public.mentoring_sessions (target_type, target_id);
+
+create index if not exists mentoring_sessions_status_idx
+  on public.mentoring_sessions (status);
+
 create index if not exists learning_outcomes_category_idx
   on public.learning_outcomes (category);
 
@@ -612,6 +641,11 @@ create trigger set_feedback_updated_at
 before update on public.feedback
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_mentoring_sessions_updated_at on public.mentoring_sessions;
+create trigger set_mentoring_sessions_updated_at
+before update on public.mentoring_sessions
+for each row execute function public.set_updated_at();
+
 drop trigger if exists set_learning_outcomes_updated_at on public.learning_outcomes;
 create trigger set_learning_outcomes_updated_at
 before update on public.learning_outcomes
@@ -679,6 +713,9 @@ comment on table public.submissions is
 
 comment on table public.feedback is
   'Artifact or mentoring feedback records shown in review workflows.';
+
+comment on table public.mentoring_sessions is
+  'Mentoring schedule and record rows owned by PS Track for MVP operations.';
 
 comment on table public.learning_outcomes is
   'Learning outcome definitions connected to rubric items and evidence.';

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { mockRepositories } from "@/lib/mock-repositories";
+import { repositories } from "@/lib/repositories";
 import { sessionProvider } from "@/lib/session-provider";
 import type { MentoringSession } from "@/lib/types";
 
@@ -40,7 +40,7 @@ export async function updateMentoringRecordAction(formData: FormData) {
     redirect("/mentoring/sessions?update=invalid");
   }
 
-  const sessionRecord = await mockRepositories.operations.getMentoringSessionById(sessionId);
+  const sessionRecord = await repositories.operations.getMentoringSessionById(sessionId);
   if (!sessionRecord) {
     redirect("/mentoring/sessions?update=missing");
   }
@@ -64,14 +64,22 @@ export async function updateMentoringRecordAction(formData: FormData) {
       .map((item) => item.trim())
       .filter(Boolean) ?? [];
 
-  const result = await mockRepositories.operations.updateMentoringSessionRecord({
+  const result = await repositories.operations.updateMentoringSessionRecord({
     sessionId: sessionRecord.id,
     status,
     notes,
     nextActions,
+    audit: {
+      actorId: session.user.id,
+      actorLabel: session.user.name,
+      metadata: {
+        role: session.activeRole,
+        source: session.source,
+      },
+    },
   });
 
   revalidatePath(`/mentoring/sessions/${sessionRecord.id}`);
   revalidatePath("/mentoring/sessions");
-  redirect(buildRedirectPath(sessionRecord.id, "saved", result.auditLogId ?? "mock"));
+  redirect(buildRedirectPath(sessionRecord.id, "saved", result.auditLogId));
 }
