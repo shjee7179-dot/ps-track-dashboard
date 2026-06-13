@@ -1014,3 +1014,12 @@ REPOSITORY_PROVIDER=postgres AUTH_PROVIDER=mock docker compose --profile postgre
   - 현재 LMS provider catalog sample 최대 8건 표시
 - 설계 판단:
   - 인증 진단과 LMS 진단을 분리해 Keycloak/gateway 이슈와 LMS readonly view 이슈를 따로 확인한다.
+
+### Report export API authorization
+
+- 목적: CSV export API가 공개로 다운로드되지 않도록 session + cohort read 권한 확인 추가
+- 산출물:
+  - `/api/reports/exports/[reportType]`에서 `sessionProvider.requireSession`과 `canAccess` 확인 추가
+  - `/reports/exports` 다운로드 링크에 현재 role query 전달
+- 설계 판단:
+  - `/api/health`, `/api/ready`는 운영 상태 확인용으로 공개 유지하되, 운영 데이터가 담긴 CSV export는 서버 권한 확인을 거친다.

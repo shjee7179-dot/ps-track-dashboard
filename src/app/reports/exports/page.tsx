@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Card, Stat, StatusBadge } from "@/components/ui";
 import { getCsvPreview, reportExports } from "@/lib/domain";
+import { getRoleFromParam, withRoleQuery } from "@/lib/session";
 
 const reportTypeLabels = {
   participation: "참여율",
@@ -9,7 +10,14 @@ const reportTypeLabels = {
   outcome_summary: "성과",
 };
 
-export default function ReportExportsPage() {
+export default async function ReportExportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string }>;
+}) {
+  const { role } = await searchParams;
+  const activeRole = getRoleFromParam(role);
+
   return (
     <AppShell title="CSV 내보내기" eyebrow="Report Exports">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -28,7 +36,7 @@ export default function ReportExportsPage() {
             </div>
             <div className="mb-4">
               <a
-                href={`/api/reports/exports/${report.reportType}`}
+                href={withRoleQuery(`/api/reports/exports/${report.reportType}`, activeRole)}
                 className="inline-flex rounded-md border border-teal-700 bg-teal-700 px-3 py-2 text-sm font-medium text-white"
               >
                 CSV 다운로드
