@@ -185,6 +185,9 @@ export const repositories: AppRepositories = {
     createAuditLog(input) {
       return getRepositories().admin.createAuditLog(input);
     },
+    createAccessLog(input) {
+      return getRepositories().admin.createAccessLog(input);
+    },
     listNotices(query) {
       return getRepositories().admin.listNotices(query);
     },

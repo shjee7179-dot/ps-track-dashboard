@@ -168,11 +168,15 @@ Audit/access log table expansion on 2026-06-12:
 - `/admin/audit-logs` and `/admin/access-logs` render through repository reads under `REPOSITORY_PROVIDER=postgres`.
 - audit write helper now records selected Postgres-backed mutations in `audit_logs`: LMS completion apply, artifact submission, artifact feedback, artifact evaluation, LMS content mapping create, and LMS content mapping status update.
 - write path currently keeps audit insert in the same transaction as the domain mutation for those Postgres-backed methods.
-- remaining audit write expansion: notices, mentoring, risk/reminder actions, and final access log write policy.
+- access log write helper now records successful `sessionProvider.requireSession()` resolutions for server-action paths as `세션 확인` or `역할 선택` events.
+- access log writes are best-effort in MVP so domain actions are not blocked by access log storage outages.
+- remaining audit write expansion: notices, mentoring, risk/reminder actions.
+- remaining access log expansion: real Keycloak gateway login/logout/session refresh policy, trusted client IP handling, and retention/masking policy.
 - diagnostic correction: after a Docker container rebuild/recreate, Next Server Action IDs must be collected from the freshly rendered page before POST smoke tests. Reusing an older action ID produces `Failed to find Server Action` 500 even when the implementation is healthy.
+- diagnostic note: curl-based Server Action smoke tests may emit a Next warning about a missing `origin` header. The warning is expected for non-browser smoke requests when the action succeeds.
 
 ## Next Implementation Step
 
 1. remaining mock-backed mutations의 Postgres ownership 또는 audit write contract 정리
-2. access log write policy 확정: login, logout, role switch, session refresh
+2. Keycloak gateway 실연동 후 login, logout, session refresh access log policy 확정
 3. LMS readonly catalog view 명세 수령 후 `LMS_PROVIDER=readonly-db` adapter 추가

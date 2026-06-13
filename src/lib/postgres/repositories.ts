@@ -6,6 +6,7 @@ import { mockRepositories } from "@/lib/mock-repositories";
 import { queryPostgres, transactionPostgres } from "@/lib/postgres/client";
 import type {
   AdminRepository,
+  AccessLogDraft,
   AuditLogDraft,
   AuditWriteContext,
   ArtifactRepository,
@@ -787,6 +788,51 @@ async function createPostgresAuditLog(
   }
 
   return auditLog;
+}
+
+async function createPostgresAccessLog(
+  input: AccessLogDraft,
+  query: PostgresQuery = queryPostgres,
+) {
+  const result = await query<LogEventRow>(
+    `
+      insert into public.access_logs (
+        actor_id,
+        actor_label,
+        event,
+        target_type,
+        target_id,
+        target_label,
+        severity,
+        ip_address,
+        user_agent,
+        session_id,
+        metadata,
+        occurred_at
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8::inet, $9, $10, $11::jsonb, now())
+      returning id, actor_label, event, target_label, severity, occurred_at
+    `,
+    [
+      input.actorId,
+      input.actorLabel,
+      input.event,
+      input.targetType,
+      input.targetId,
+      input.targetLabel,
+      input.severity ?? "info",
+      input.ipAddress ?? null,
+      input.userAgent ?? null,
+      input.sessionId ?? null,
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  );
+  const accessLog = result.rows[0] ? mapPostgresLogEvent(result.rows[0]) : null;
+  if (!accessLog) {
+    throw new Error("Failed to create access log");
+  }
+
+  return accessLog;
 }
 
 const userSelect = `
@@ -1888,6 +1934,9 @@ export const postgresAdminRepository: AdminRepository = {
   },
   async createAuditLog(input) {
     return createPostgresAuditLog(input);
+  },
+  async createAccessLog(input) {
+    return createPostgresAccessLog(input);
   },
 };
 
