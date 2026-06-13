@@ -20,6 +20,11 @@ services:
       LMS_PROVIDER: ${LMS_PROVIDER:-none}
       DATABASE_URL: ${DATABASE_URL:-postgresql://ps_track_app:ps_track_app_password@postgres:5432/ps_track}
       POSTGRES_SSL: ${POSTGRES_SSL:-false}
+      LMS_DATABASE_URL: ${LMS_DATABASE_URL:-postgresql://lms_readonly:lms_readonly_password@lms-postgres:5432/lms_mock}
+      LMS_POSTGRES_SSL: ${LMS_POSTGRES_SSL:-false}
+      LMS_CONTENT_CATALOG_VIEW: ${LMS_CONTENT_CATALOG_VIEW:-lms_content_catalog_view}
+      LMS_LEARNING_RECORD_VIEW: ${LMS_LEARNING_RECORD_VIEW:-lms_learning_record_view}
+      LMS_READONLY_QUERY_LIMIT: ${LMS_READONLY_QUERY_LIMIT:-500}
       KEYCLOAK_SUB_HEADER: x-keycloak-sub
       KEYCLOAK_USERNAME_HEADER: x-keycloak-preferred-username
       KEYCLOAK_EMAIL_HEADER: x-keycloak-email
@@ -50,8 +55,29 @@ services:
       retries: 3
       start_period: 10s
 
+  lms-postgres:
+    image: postgres:16-alpine
+    profiles:
+      - lms
+    environment:
+      POSTGRES_DB: lms_mock
+      POSTGRES_USER: lms_mock_owner
+      POSTGRES_PASSWORD: lms_mock_owner_password
+    volumes:
+      - ps-track-lms-postgres-data:/var/lib/postgresql/data
+      - ./db/lms-mock/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - lms_private_zone
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms_mock_owner -d lms_mock"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 volumes:
   ps-track-postgres-data:
+  ps-track-lms-postgres-data:
 
 networks:
   public_zone:

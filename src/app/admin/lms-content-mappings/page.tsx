@@ -15,6 +15,8 @@ import type {
   LmsContentType,
 } from "@/lib/lms/contracts";
 
+export const dynamic = "force-dynamic";
+
 const updateMessages: Record<string, string> = {
   created: "LMS 콘텐츠 매핑이 저장되었습니다.",
   denied: "현재 역할/scope에서는 LMS 콘텐츠 매핑을 생성할 수 없습니다.",

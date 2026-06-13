@@ -124,15 +124,15 @@ lms_private_zone
 
 ### PR 3: LMS Mock DB
 
-- Wait for LMS operations team confirmation about DBMS and table shape.
+- Use local PostgreSQL only to simulate the agreed readonly view contract before real LMS connection details arrive.
 - Add LMS mock PostgreSQL profile.
-- Add minimal LMS schema/seed.
+- Add minimal local-only LMS source tables, seed rows, and readonly contract views.
 - Add readonly DB user if practical.
 - Verify PS Track container cannot write to LMS mock DB in the intended flow.
 
 ### PR 4: LMS Adapter Contract
 
-- Add `LMS_PROVIDER=none|mock-view`.
+- Add `LMS_PROVIDER=none|mock-view|readonly-db`.
 - Add readonly view contract for content catalog and learning records.
 - Add internal mapping model draft.
 - Keep deep LMS integration out of scope.
@@ -141,7 +141,7 @@ lms_private_zone
 
 - Add `/api/ready`.
 - Check PS Track DB only when `REPOSITORY_PROVIDER=postgres`.
-- Check LMS only when `LMS_PROVIDER=mock-view` or a future real LMS provider is enabled.
+- Check LMS only when `LMS_PROVIDER=mock-view`, `LMS_PROVIDER=readonly-db`, or a future real LMS provider is enabled.
 - Check Keycloak only when `AUTH_PROVIDER=keycloak` or integration test profile enables it.
 
 ## Stop Conditions

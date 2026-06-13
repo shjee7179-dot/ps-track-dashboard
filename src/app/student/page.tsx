@@ -5,6 +5,8 @@ import { Card, Stat, StatusBadge } from "@/components/ui";
 import { attachLmsRecordsToJourney } from "@/lib/lms/journey-overlay";
 import { repositories } from "@/lib/repositories";
 
+export const dynamic = "force-dynamic";
+
 const studentId = "student-001";
 
 export default async function StudentDashboardPage() {
